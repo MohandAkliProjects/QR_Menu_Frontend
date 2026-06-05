@@ -1,0 +1,17 @@
+export { default as DashboardIcon } from "./ic_overview.svg?react";
+export { default as CategoriesIcon } from "./ic_categorie.svg?react";
+export { default as DishesIcon } from "./ic_dishe.svg?react";
+export { default as MenuIcon } from "./ic_menu.svg?react";
+export { default as BannersIcon } from "./ic_image.svg?react";
+export { default as QrCodeIcon } from "./ic_qr.svg?react";
+export { default as InformationIcon } from "./ic_account.svg?react";
+export { default as LogoutIcon } from "./ic_logout.svg?react";
+export { default as HeartIcon } from "./ic_heart.svg?react";
+export { default as EyeIcon } from "./ic_eye.svg?react";
+export { default as EyeOffIcon } from "./ic_eye_off.svg?react";
+export { default as TestIcon } from "./ic_test.svg?react";
+export { default as UploadIcon } from "./ic_upload.svg?react";
+export { default as SendIcon } from "./ic_send.svg?react";
+export { default as CopyIcon } from "./ic_copy.svg?react";
+export { default as DownloadIcon } from "./ic_download.svg?react";
+export { default as ForkIcon } from "./ic_fork.svg?react";

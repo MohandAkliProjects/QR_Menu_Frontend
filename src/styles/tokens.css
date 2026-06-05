@@ -1,0 +1,105 @@
+@theme {
+  /* Primary Brown */
+  --color-primary-50: #f3efec;
+  --color-primary-100: #dbcdc3;
+  --color-primary-200: #cab5a5;
+  --color-primary-300: #b1937c;
+  --color-primary-400: #a27e63;
+  --color-primary-500: #8b5e3c;
+  --color-primary-600: #7e5637;
+  --color-primary-700: #63432b;
+  --color-primary-800: #4c3421;
+  --color-primary-900: #3a2719;
+
+  /* Dark Brown */
+  --color-dark-50: #efebea;
+  --color-dark-100: #ccc2bc;
+  --color-dark-200: #b4a59c;
+  --color-dark-300: #927c6f;
+  --color-dark-400: #7d6253;
+  --color-dark-500: #5c3b28;
+  --color-dark-600: #543624;
+  --color-dark-700: #412a1c;
+  --color-dark-800: #332016;
+  --color-dark-900: #271911;
+
+  /* Accent Gold */
+  --color-gold-50: #faf5ec;
+  --color-gold-100: #eee0c3;
+  --color-gold-200: #e6d1a5;
+  --color-gold-300: #dabc7c;
+  --color-gold-400: #d3af63;
+  --color-gold-500: #c89b3c;
+  --color-gold-600: #b68d37;
+  --color-gold-700: #8e6e2b;
+  --color-gold-800: #6e5521;
+  --color-gold-900: #544119;
+
+  /* Light Cream */
+  --color-cream-50: #fefefd;
+  --color-cream-100: #fdfbf9;
+  --color-cream-200: #fcf9f7;
+  --color-cream-300: #faf7f3;
+  --color-cream-400: #f9f5f1;
+  --color-cream-500: #f8f3ed;
+  --color-cream-600: #e2ddd8;
+  --color-cream-700: #b0ada8;
+  --color-cream-800: #888682;
+  --color-cream-900: #686664;
+
+  /* Soft Beige */
+  --color-beige-50: #fdfbfa;
+  --color-beige-100: #f8f3ee;
+  --color-beige-200: #f4eee6;
+  --color-beige-300: #f0e6da;
+  --color-beige-400: #ede1d3;
+  --color-beige-500: #e8d9c8;
+  --color-beige-600: #d3c5b6;
+  --color-beige-700: #a59a8e;
+  --color-beige-800: #80776e;
+  --color-beige-900: #615b54;
+
+  /* Text Dark */
+  --color-text-50: #eae8e7;
+  --color-text-100: #beb7b5;
+  --color-text-200: #9e9591;
+  --color-text-300: #72645f;
+  --color-text-400: #564640;
+  --color-text-500: #2c1810;
+  --color-text-600: #28160f;
+  --color-text-700: #1f110b;
+  --color-text-800: #180d09;
+  --color-text-900: #120a07;
+
+  --color-danger-red: #C0392B;
+
+  --color-card-bg: #FCFAF8;
+
+
+
+
+
+--color-success: #2D7A4F;
+--color-success-bg: #F0FBF4;
+--color-info: #1A6B9A;
+--color-info-bg: #EDF6FC;
+--color-warning: #B7770D;
+--color-warning-bg: #FDF8EC;
+--color-error: #C0392B;
+--color-error-bg: #FEF5F4;
+
+--shadow-card: 0 6px 18px 0 #8a6e5a14;
+
+
+
+
+--font-sans: "DM Sans", sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+}

@@ -3,8 +3,8 @@ import {
   Eye, EyeOff, Pencil, Trash2, Save,
   Upload, Image as ImageIcon,
 } from "lucide-react";
-import Badge from "./Badge";
-import TableCell from "./table/TableCell";
+import Badge from "../Badge";
+import TableCell from "../table/TableCell";
 import type { UniqueIdentifier } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import {
   DndContext,
@@ -15,28 +15,26 @@ import {
 } from "@dnd-kit/sortable";
 import type { UniqueIdentifier } from "@dnd-kit/core";
 
+import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
+import PageErrorState from "../../components/shared/PageErrorState";
+import PageLoadingState from "../../components/shared/PageLoadingState";
 import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
 import Table from "../../components/ui/table/Table";
 import type { Column } from "../../components/ui/table/Table";
-import CategoryRow, { type Category, type LanguageConfig } from "../../components/ui/category/CategoryRow";
+import CategoryRow, {
+  type Category,
+  type LanguageConfig,
+} from "../../components/ui/category/CategoryRow";
 import AddCategoryModal from "../../components/ui/category/AddCategoryModal";
 import ToastContainer from "../../components/ui/ToastContainer";
+import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
+import { categoryResponseToUI, categoryUIToTranslations } from "../../lib/mappers";
+import * as categoryService from "../../services/category.service";
 
 const ITEMS_PER_PAGE = 10;
-
-const MOCK: Category[] = [
-  { id: 1,  order: 1,  icon: null, english: "Appetizers",   french: "Apéritifs",  arabic: "مقبلات",           status: "visible" },
-  { id: 2,  order: 2,  icon: null, english: "Salads",       french: "Salades",    arabic: "سلطات",            status: "visible" },
-  { id: 3,  order: 3,  icon: null, english: "Grills",       french: "Grillades",  arabic: "مشويات",           status: "visible" },
-  { id: 4,  order: 4,  icon: null, english: "Burgers",      french: "Burgers",    arabic: "برغر",             status: "hidden"  },
-  { id: 5,  order: 5,  icon: null, english: "Pizzas",       french: "Pizzas",     arabic: "بيتزا",            status: "visible" },
-  { id: 6,  order: 6,  icon: null, english: "Desserts",     french: "Desserts",   arabic: "حلويات",           status: "visible" },
-  { id: 7,  order: 7,  icon: null, english: "Drinks",       french: "Boissons",   arabic: "مشروبات",          status: "visible" },
-  { id: 8,  order: 8,  icon: null, english: "Main Courses", french: "Plat Cours", arabic: "الأطباق الرئيسية", status: "hidden"  },
-];
 
 const languages: LanguageConfig = {
   showEnglish: true,
@@ -45,160 +43,230 @@ const languages: LanguageConfig = {
 };
 
 function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(MOCK);
-  const [modalOpen, setModalOpen]   = useState(false);
+  const { menuId } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toasts, showToast, removeToast } = useToast();
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // ── pagination ──────────────────────────────────────
-  const totalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
+  const loadCategories = useCallback(async () => {
+    if (!menuId) {
+      setError("No menu found for this restaurant. Please create a menu first.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await categoryService.getCategoriesByMenu(menuId);
+      setCategories(data.map(categoryResponseToUI));
+    } catch (err) {
+      const message = getErrorMessage(err, "Could not load categories.");
+      setError(message);
+      showToast("error", "Load Failed", message);
+    } finally {
+      setLoading(false);
+    }
+  }, [menuId, showToast]);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  const totalPages = Math.max(1, Math.ceil(categories.length / ITEMS_PER_PAGE));
   const paginatedCategories = categories.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
   const columns: Column[] = [
-    { key: "order",   label: "Order",    center: true, width: "min-w-[80px]"  },
-    { key: "icon",    label: "Icon",     center: true, width: "min-w-[80px]"  },
-    { key: "english", label: "English",  center: true, width: "min-w-[140px]", hidden: !languages.showEnglish },
-    { key: "french",  label: "Français", center: true, width: "min-w-[140px]", hidden: !languages.showFrench  },
-    { key: "arabic",  label: "Arabic",   center: true, width: "min-w-[140px]", hidden: !languages.showArabic  },
-    { key: "status",  label: "Status",   center: true, width: "min-w-[120px]" },
-    { key: "actions", label: "Actions",  center: true, width: "min-w-[140px]" },
+    { key: "order", label: "Order", center: true, width: "min-w-[80px]" },
+    { key: "icon", label: "Icon", center: true, width: "min-w-[80px]" },
+    { key: "english", label: "English", center: true, width: "min-w-[140px]", hidden: !languages.showEnglish },
+    { key: "french", label: "Français", center: true, width: "min-w-[140px]", hidden: !languages.showFrench },
+    { key: "arabic", label: "Arabic", center: true, width: "min-w-[140px]", hidden: !languages.showArabic },
+    { key: "status", label: "Status", center: true, width: "min-w-[120px]" },
+    { key: "actions", label: "Actions", center: true, width: "min-w-[140px]" },
   ];
 
-  // ── drag end ─────────────────────────────────────────
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setCategories((prev) => {
-      const oldIndex = prev.findIndex((c) => c.id === active.id);
-      const newIndex = prev.findIndex((c) => c.id === over.id);
-      const reordered = arrayMove(prev, oldIndex, newIndex);
-      return reordered.map((c, i) => ({ ...c, order: i + 1 }));
-    });
+    if (!over || active.id === over.id || !menuId) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex).map((c, i) => ({
+      ...c,
+      order: i + 1,
+    }));
+
+    setCategories(reordered);
+
+    try {
+      await categoryService.reorderCategories(menuId, {
+        orderedCategoriesIds: reordered.map((c) => String(c.id)),
+      });
+      showToast("success", "Order Updated", "Category order has been saved.");
+    } catch (err) {
+      await loadCategories();
+      showToast("error", "Reorder Failed", getErrorMessage(err));
+    }
   };
 
-  // ── add / update from modal ───────────────────────────
-  const handleConfirm = (data: Omit<Category, "id" | "order">) => {
+  const handleConfirm = async (data: Omit<Category, "id" | "order">) => {
+    if (!menuId) return;
+
     try {
       if (editTarget) {
+        const updated = await categoryService.updateCategory(String(editTarget.id), {
+          translations: categoryUIToTranslations(data),
+          isVisible: data.status === "visible",
+        });
         setCategories((prev) =>
-          prev.map((c) => (c.id === editTarget.id ? { ...c, ...data } : c))
+          prev.map((c) =>
+            c.id === editTarget.id ? categoryResponseToUI(updated) : c
+          )
         );
         showToast("success", "Category Updated", "Category has been updated successfully.");
       } else {
-        setCategories((prev) => [
-          ...prev,
-          { ...data, id: Date.now(), order: prev.length + 1 },
-        ]);
+        const created = await categoryService.createCategory(menuId, {
+          translations: categoryUIToTranslations(data),
+          isVisible: data.status === "visible",
+        });
+        setCategories((prev) => [...prev, categoryResponseToUI(created)]);
         setCurrentPage(1);
         showToast("success", "Category Added", "New category has been added successfully.");
       }
       setEditTarget(null);
-    } catch {
-      showToast("error", "Something went wrong", "Please try again.");
+    } catch (err) {
+      showToast("error", "Save Failed", getErrorMessage(err));
     }
   };
 
-  // ── delete ────────────────────────────────────────────
-  const handleDelete = (id: UniqueIdentifier) => {
-    try {
-      setCategories((prev) => {
-        const filtered = prev.filter((c) => c.id !== id);
-        return filtered.map((c, i) => ({ ...c, order: i + 1 }));
-      });
-      showToast("success", "Category Deleted", "Category has been removed.");
-    } catch {
-      showToast("error", "Something went wrong", "Please try again.");
-    }
+  const handleDelete = (_id: UniqueIdentifier) => {
+    showToast(
+      "error",
+      "Not Available",
+      "Category deletion is not enabled on the server yet."
+    );
   };
 
-  // ── inline save ───────────────────────────────────────
-  const handleEdit = (category: Category) => {
+  const handleEdit = async (category: Category) => {
+    const previous = categories.find((c) => c.id === category.id);
+    if (!previous) return;
+
+    const onlyStatusChanged =
+      previous.english === category.english &&
+      previous.french === category.french &&
+      previous.arabic === category.arabic &&
+      previous.icon === category.icon &&
+      previous.status !== category.status;
+
+    setCategories((prev) =>
+      prev.map((c) => (c.id === category.id ? category : c))
+    );
+
     try {
+      const response = onlyStatusChanged
+        ? await categoryService.toggleCategoryVisible(String(category.id))
+        : await categoryService.updateCategory(String(category.id), {
+            translations: categoryUIToTranslations(category),
+            isVisible: category.status === "visible",
+          });
+
       setCategories((prev) =>
-        prev.map((c) => (c.id === category.id ? category : c))
+        prev.map((c) =>
+          c.id === category.id ? categoryResponseToUI(response) : c
+        )
       );
       showToast("success", "Category Saved", "Your changes have been saved.");
-    } catch {
-      showToast("error", "Something went wrong", "Please try again.");
+    } catch (err) {
+      setCategories((prev) =>
+        prev.map((c) => (c.id === category.id ? previous : c))
+      );
+      showToast("error", "Save Failed", getErrorMessage(err));
     }
   };
 
- return (
-  <div className="flex flex-col min-h-full p-6 sm:p-8 lg:p-10 w-full">
+  return (
+    <div className="flex flex-col min-h-full p-6 sm:p-8 lg:p-10 w-full">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
 
-    <ToastContainer toasts={toasts} onClose={removeToast} />
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
+        <PageHeader
+          title="Category Manager"
+          description="Organize and manage your menu categories"
+          showDescription
+        />
+        <Button
+          label="Add Category"
+          icon={Plus}
+          onClick={() => {
+            setEditTarget(null);
+            setModalOpen(true);
+          }}
+          disabled={loading || Boolean(error)}
+        />
+      </div>
 
-    {/* Header */}
-    <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
-      <PageHeader
-        title="Category Manager"
-        description="Organize and manage your menu categories"
-        showDescription
-      />
-      <Button
-        label="Add Category"
-        icon={Plus}
-        onClick={() => {
+      {loading ? (
+        <PageLoadingState message="Loading categories..." />
+      ) : error ? (
+        <PageErrorState message={error} onRetry={loadCategories} />
+      ) : (
+        <>
+          <div className="flex-1">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={paginatedCategories.map((c) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <Table columns={columns}>
+                  {paginatedCategories.map((category, index) => (
+                    <CategoryRow
+                      key={category.id}
+                      category={category}
+                      onSave={handleEdit}
+                      onDelete={handleDelete}
+                      isLast={index === paginatedCategories.length - 1}
+                      languages={languages}
+                    />
+                  ))}
+                </Table>
+              </SortableContext>
+            </DndContext>
+          </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
+
+      <AddCategoryModal
+        key={editTarget?.id ?? "new"}
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
           setEditTarget(null);
-          setModalOpen(true);
         }}
+        onConfirm={handleConfirm}
+        editData={editTarget}
       />
     </div>
-
-    {/* Table — takes all available space */}
-    <div className="flex-1">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={paginatedCategories.map((c) => c.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <Table columns={columns}>
-            {paginatedCategories.map((category, index) => (
-              <CategoryRow
-                key={category.id}
-                category={category}
-                onSave={handleEdit}
-                onDelete={handleDelete}
-                isLast={index === paginatedCategories.length - 1}
-                languages={languages}
-              />
-            ))}
-          </Table>
-        </SortableContext>
-      </DndContext>
-    </div>
-
-    {/* Pagination — always at bottom */}
-    <Pagination
-      currentPage={currentPage}
-      totalPages={totalPages}
-      onPageChange={setCurrentPage}
-    />
-
-    {/* Modal */}
-    <AddCategoryModal
-      key={editTarget?.id ?? "new"}
-      isOpen={modalOpen}
-      onClose={() => {
-        setModalOpen(false);
-        setEditTarget(null);
-      }}
-      onConfirm={handleConfirm}
-      editData={editTarget}
-    />
-
-  </div>
-);
+  );
 }
 
 export default CategoriesPage;

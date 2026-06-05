@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Mail, Lock, LogIn } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import IconInput from "../../components/ui/IconInput";
+import { getErrorMessage } from "../../api/errors";
+import { useAuth } from "../../context/AuthContext";
 
 interface FormState {
   email: string;
@@ -33,9 +35,12 @@ function validate(form: FormState): FormErrors {
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [form, setForm]     = useState<FormState>({ email: "", password: "" });
+  const { login, isAuthenticated } = useAuth();
+  const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   const field = (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,19 +57,10 @@ function LoginPage() {
 
     setLoading(true);
     try {
-      // TODO: replace with real API call
-      // const res = await api.login(form.email, form.password);
+      await login(form.email, form.password);
       navigate("/dashboard");
-
-      // mock — remove when backend is ready
-      await new Promise((r) => setTimeout(r, 800));
-      if (form.email === "spectral@gmail.com" && form.password === "123456") {
-        navigate("/dashboard");
-      } else {
-        setErrors({ general: "Invalid email or password." });
-      }
-    } catch {
-      setErrors({ general: "Something went wrong. Please try again." });
+    } catch (error) {
+      setErrors({ general: getErrorMessage(error, "Invalid email or password.") });
     } finally {
       setLoading(false);
     }
@@ -76,26 +72,20 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-primary-50 flex flex-col items-center justify-center px-4">
-
-      {/* brand */}
       <div className="flex flex-col items-center gap-1 mb-8">
         <h1 className="text-3xl font-bold text-primary-800">Spectral QR</h1>
         <p className="text-base text-text-400">Restaurant Admin Dashboard</p>
       </div>
 
-      {/* card */}
       <Card className="w-full max-w-md flex flex-col gap-6">
-
         <h2 className="text-xl font-bold text-dark-700 text-center">Welcome Back</h2>
 
-        {/* general error */}
         {errors.general && (
           <div className="px-4 py-3 rounded-xl bg-error-bg border border-error text-sm text-error">
             {errors.general}
           </div>
         )}
 
-        {/* fields */}
         <div className="flex flex-col gap-4" onKeyDown={handleKeyDown}>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-600">Email</label>
@@ -122,7 +112,6 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* submit */}
         <Button
           label={loading ? "Signing in..." : "Sign In"}
           icon={LogIn}
@@ -132,11 +121,9 @@ function LoginPage() {
         />
       </Card>
 
-      {/* footer */}
       <p className="mt-8 text-sm text-text-400">
         © 2024 Spectral QR. All rights reserved.
       </p>
-
     </div>
   );
 }

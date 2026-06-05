@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Building2, Phone, Globe, Edit2, Save, Plus } from "lucide-react";
 
+import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
+import PageErrorState from "../../components/shared/PageErrorState";
+import PageLoadingState from "../../components/shared/PageLoadingState";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -9,6 +12,14 @@ import SectionHeader from "../../components/shared/SectionHeader";
 import PhoneNumberItem from "../../components/ui/information/PhoneNumberItem";
 import SocialMediaItem from "../../components/ui/information/SocialMediaItem";
 import AvatarUpload from "../../components/ui/AvatarUpload";
+import ToastContainer from "../../components/ui/ToastContainer";
+import { useAuth } from "../../context/AuthContext";
+import useToast from "../../hooks/useToast";
+import {
+  restaurantFormToUpdateRequest,
+  restaurantResponseToForm,
+} from "../../lib/mappers";
+import * as restaurantService from "../../services/restaurant.service";
 
 interface SocialLink {
   id: number;
@@ -24,6 +35,7 @@ interface FormData {
   city: string;
   phones: { id: number; value: string }[];
   socials: SocialLink[];
+  logoUrl: string | null;
 }
 
 interface FormErrors {
@@ -32,22 +44,9 @@ interface FormErrors {
   password?: string;
   address?: string;
   city?: string;
-  phones?: Record<number, string | undefined>; // ← add | undefined
-  socials?: Record<number, string | undefined>; // ← add | undefined
+  phones?: Record<number, string | undefined>;
+  socials?: Record<number, string | undefined>;
 }
-
-const INITIAL: FormData = {
-  restaurantName: "Spectral",
-  email: "spectral@gmail.com",
-  password: "············",
-  address: "140 log B 3 N 22",
-  city: "Algeria",
-  phones: [{ id: 1, value: "05 58 76 58 96" }],
-  socials: [
-    { id: 1, platform: "FaceBook", url: "" },
-    { id: 2, platform: "Instagram", url: "" },
-  ],
-};
 
 const SOCIAL_PLATFORMS = [
   "FaceBook",
@@ -58,7 +57,6 @@ const SOCIAL_PLATFORMS = [
   "YouTube",
 ];
 
-// ── validation ─────────────────────────────────────────
 function validate(form: FormData): FormErrors {
   const errors: FormErrors = {};
 
@@ -69,20 +67,17 @@ function validate(form: FormData): FormErrors {
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
     errors.email = "Enter a valid email address.";
   }
-  if (!form.password.trim()) errors.password = "Password is required.";
   if (!form.address.trim()) errors.address = "Address is required.";
   if (!form.city.trim()) errors.city = "City is required.";
 
-  // phones — each must be non-empty
   const phoneErrors: Record<number, string> = {};
   form.phones.forEach((p) => {
     if (!p.value.trim()) phoneErrors[p.id] = "Phone number cannot be empty.";
   });
   if (Object.keys(phoneErrors).length) errors.phones = phoneErrors;
 
-  // socials — url must be filled + no duplicate platforms
   const socialErrors: Record<number, string> = {};
-  const seenPlatforms: Record<string, number> = {}; // platform → first id
+  const seenPlatforms: Record<string, number> = {};
 
   form.socials.forEach((s) => {
     if (!s.url.trim()) {
@@ -90,11 +85,9 @@ function validate(form: FormData): FormErrors {
     } else if (!/^https?:\/\/.+/.test(s.url.trim())) {
       socialErrors[s.id] = "URL must start with https://";
     }
-
     if (seenPlatforms[s.platform] !== undefined) {
-      // mark the duplicate (current row), not the first one
       socialErrors[s.id] =
-        (socialErrors[s.id] ? socialErrors[s.id] + " " : "") +
+        (socialErrors[s.id] ? `${socialErrors[s.id]} ` : "") +
         `${s.platform} is already added.`;
     } else {
       seenPlatforms[s.platform] = s.id;
@@ -105,27 +98,58 @@ function validate(form: FormData): FormErrors {
   return errors;
 }
 
-// ── page ───────────────────────────────────────────────
 function InformationPage() {
+  const { restaurantId } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<FormData>(INITIAL);
+  const [form, setForm] = useState<FormData | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const { toasts, showToast, removeToast } = useToast();
 
-  /* ---- field helpers ---- */
+  const loadProfile = useCallback(async () => {
+    if (!restaurantId) {
+      setError("Restaurant session is missing.");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const restaurant = await restaurantService.getRestaurant(restaurantId);
+      console.log("API RESPONSE", restaurant);
+      setForm(restaurantResponseToForm(restaurant));
+    } catch (err) {
+      const message = getErrorMessage(err, "Could not load restaurant profile.");
+      setError(message);
+      showToast("error", "Load Failed", message);
+    } finally {
+      setLoading(false);
+    }
+  }, [restaurantId, showToast]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  // ── ALL HANDLERS DEFINED HERE ──────────────────────────────────────
+  // must be before early returns so they are always defined
+
   const field =
     (key: keyof Omit<FormData, "phones" | "socials">) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [key]: e.target.value }));
-      // clear error on change
+      setForm((prev) => (prev ? { ...prev, [key]: e.target.value } : prev));
       setErrors((prev) => ({ ...prev, [key]: undefined }));
     };
 
-  /* ---- phone helpers ---- */
   const updatePhone = (id: number, value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      phones: prev.phones.map((p) => (p.id === id ? { ...p, value } : p)),
-    }));
+    setForm((prev) =>
+      prev
+        ? { ...prev, phones: prev.phones.map((p) => (p.id === id ? { ...p, value } : p)) }
+        : prev
+    );
     setErrors((prev) => ({
       ...prev,
       phones: { ...prev.phones, [id]: undefined },
@@ -133,29 +157,27 @@ function InformationPage() {
   };
 
   const deletePhone = (id: number) =>
-    setForm((prev) => ({
-      ...prev,
-      phones: prev.phones.filter((p) => p.id !== id),
-    }));
+    setForm((prev) =>
+      prev ? { ...prev, phones: prev.phones.filter((p) => p.id !== id) } : prev
+    );
 
   const addPhone = () =>
-    setForm((prev) => ({
-      ...prev,
-      phones: [...prev.phones, { id: Date.now(), value: "" }],
-    }));
+    setForm((prev) =>
+      prev
+        ? { ...prev, phones: [...prev.phones, { id: Date.now(), value: "" }] }
+        : prev
+    );
 
-  /* ---- social helpers ---- */
   const updateSocial = (
     id: number,
     key: keyof Omit<SocialLink, "id">,
-    value: string,
+    value: string
   ) => {
-    setForm((prev) => ({
-      ...prev,
-      socials: prev.socials.map((s) =>
-        s.id === id ? { ...s, [key]: value } : s,
-      ),
-    }));
+    setForm((prev) =>
+      prev
+        ? { ...prev, socials: prev.socials.map((s) => (s.id === id ? { ...s, [key]: value } : s)) }
+        : prev
+    );
     setErrors((prev) => ({
       ...prev,
       socials: { ...prev.socials, [id]: undefined },
@@ -163,81 +185,146 @@ function InformationPage() {
   };
 
   const deleteSocial = (id: number) =>
-    setForm((prev) => ({
-      ...prev,
-      socials: prev.socials.filter((s) => s.id !== id),
-    }));
+    setForm((prev) =>
+      prev ? { ...prev, socials: prev.socials.filter((s) => s.id !== id) } : prev
+    );
 
   const addSocial = () => {
-    // pick a platform that hasn't been used yet
-    const usedPlatforms = new Set(form.socials.map((s) => s.platform));
-    const nextPlatform =
-      SOCIAL_PLATFORMS.find((p) => !usedPlatforms.has(p)) ??
-      SOCIAL_PLATFORMS[0];
-
-    setForm((prev) => ({
-      ...prev,
-      socials: [
-        ...prev.socials,
-        { id: Date.now(), platform: nextPlatform, url: "" },
-      ],
-    }));
+    setForm((prev) => {
+      if (!prev) return prev;
+      const usedPlatforms = new Set(prev.socials.map((s) => s.platform));
+      const nextPlatform =
+        SOCIAL_PLATFORMS.find((p) => !usedPlatforms.has(p)) ?? SOCIAL_PLATFORMS[0];
+      return {
+        ...prev,
+        socials: [...prev.socials, { id: Date.now(), platform: nextPlatform, url: "" }],
+      };
+    });
   };
 
-  /* ---- actions ---- */
   const handleEdit = () => {
     setErrors({});
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleCancel = () => {
+    setIsEditing(false);
+    setErrors({});
+    setLogoFile(null);
+    loadProfile();
+  };
+
+  const handleSave = async () => {
+     console.log("FORM:", form);
+
+    if (!restaurantId || !form) {
+      showToast("error", "Session Error", "Restaurant session is missing.");
+      return;
+    }
+
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      return; // stop — don't save
+      showToast("error", "Validation Error", "Please fix the highlighted fields.");
+      return;
     }
-    // ✅ No errors — safe to save
-    // TODO: call your API here later → await api.updateProfile(form)
-    setIsEditing(false);
-    setErrors({});
+
+    setSaving(true);
+    try {
+      if (logoFile) {
+        try {
+          await restaurantService.uploadLogo(restaurantId, logoFile);
+          setLogoFile(null);
+        } catch (err) {
+          showToast("error", "Logo Upload Failed", getErrorMessage(err));
+        }
+      }
+
+      const updated = await restaurantService.updateRestaurant(
+        restaurantId,
+        restaurantFormToUpdateRequest(form)
+      );
+      setForm(restaurantResponseToForm(updated));
+      setIsEditing(false);
+      setErrors({});
+      showToast("success", "Profile Saved", "Your restaurant profile has been updated.");
+    } catch (err) {
+      showToast("error", "Save Failed", getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  /* ---- render ---- */
+  // ── EARLY RETURNS AFTER ALL HANDLERS ───────────────────────────────
+
+  if (!form && loading) {
+    return (
+      <div className="flex flex-col gap-6 p-6 w-full">
+        <PageLoadingState message="Loading profile..." />
+      </div>
+    );
+  }
+
+  if (!form && error) {
+    return (
+      <div className="flex flex-col gap-6 p-6 w-full">
+        <ToastContainer toasts={toasts} onClose={removeToast} />
+        <PageErrorState message={error} onRetry={loadProfile} />
+      </div>
+    );
+  }
+
+  if (!form) return null;
+
+  // ── RENDER ─────────────────────────────────────────────────────────
+
   return (
     <div className="flex flex-col gap-6 p-6 w-full">
-      {/* page header */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <PageHeader
           title="Profile Settings"
           description="Manage your restaurant profile and digital presence"
           showDescription
         />
-        {isEditing ? (
-          <Button label="Save Changes" icon={Save} onClick={handleSave} />
-        ) : (
-          <Button label="Edit" icon={Edit2} onClick={handleEdit} />
-        )}
+        <div className="flex items-center gap-3">
+          {isEditing && (
+            <Button
+              label="Cancel"
+              onClick={handleCancel}
+              className="bg-transparent border border-primary-300 text-text-600 hover:bg-primary-100"
+            />
+          )}
+          {isEditing ? (
+            <Button
+              label={saving ? "Saving..." : "Save Changes"}
+              icon={Save}
+              onClick={handleSave}
+              disabled={saving}
+            />
+          ) : (
+            <Button label="Edit" icon={Edit2} onClick={handleEdit} />
+          )}
+        </div>
       </div>
 
-      {/* business information */}
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Building2}
           title="Business Information"
           description="Restaurant profile details"
         />
-
         <div className="flex flex-col gap-4">
+          <AvatarUpload
+            isEditing={isEditing}
+            initialUrl={form.logoUrl}
+            onFileSelected={(file) => setLogoFile(file)}
+          />
+          <div className="border-t border-primary-200" />
 
-        <AvatarUpload isEditing={isEditing} />
-
-    {/* divider */}
-    <div className="border-t border-primary-200" />
-          
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-600">
-              Restaurant Name
-            </label>
+            <label className="text-sm font-medium text-text-600">Restaurant Name</label>
             <Input
               value={form.restaurantName}
               readOnly={!isEditing}
@@ -258,42 +345,25 @@ function InformationPage() {
                 placeholder="email@example.com"
                 onChange={field("email")}
               />
-              {errors.email && (
-                <p className="text-xs text-error">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-xs text-error">{errors.email}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-text-600">
-                Password
-              </label>
-              <Input
-                value={form.password}
-                readOnly={!isEditing}
-                placeholder="••••••••"
-                onChange={field("password")}
-              />
-              {errors.password && (
-                <p className="text-xs text-error">{errors.password}</p>
-              )}
+              <label className="text-sm font-medium text-text-600">Password</label>
+              <Input value={form.password} readOnly placeholder="••••••••" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-text-600">
-                Address
-              </label>
+              <label className="text-sm font-medium text-text-600">Address</label>
               <Input
                 value={form.address}
                 readOnly={!isEditing}
                 placeholder="Street address"
                 onChange={field("address")}
               />
-              {errors.address && (
-                <p className="text-xs text-error">{errors.address}</p>
-              )}
+              {errors.address && <p className="text-xs text-error">{errors.address}</p>}
             </div>
-
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-text-600">City</label>
               <Input
@@ -302,28 +372,25 @@ function InformationPage() {
                 placeholder="City"
                 onChange={field("city")}
               />
-              {errors.city && (
-                <p className="text-xs text-error">{errors.city}</p>
-              )}
+              {errors.city && <p className="text-xs text-error">{errors.city}</p>}
             </div>
           </div>
         </div>
       </Card>
 
-      {/* phone numbers */}
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Phone}
           title="Phone Numbers"
           description="Manage contact numbers"
-          action={
-            isEditing && (
-              <Button label="Add Number" icon={Plus} onClick={addPhone} />
-            )
-          }
+          action={isEditing && <Button label="Add Number" icon={Plus} onClick={addPhone} />}
         />
-
         <div className="flex flex-col gap-3">
+          {form.phones.length === 0 && (
+            <p className="text-sm text-text-400 text-center py-2">
+              No phone numbers added yet.
+            </p>
+          )}
           {form.phones.map((phone) => (
             <div key={phone.id} className="flex flex-col gap-1">
               <PhoneNumberItem
@@ -333,29 +400,26 @@ function InformationPage() {
                 onDelete={() => deletePhone(phone.id)}
               />
               {errors.phones?.[phone.id] && (
-                <p className="text-xs text-error pl-1">
-                  {errors.phones[phone.id]}
-                </p>
+                <p className="text-xs text-error pl-1">{errors.phones[phone.id]}</p>
               )}
             </div>
           ))}
         </div>
       </Card>
 
-      {/* social media */}
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Globe}
           title="Social Media"
           description="Connect your social profiles"
-          action={
-            isEditing && (
-              <Button label="Add Link" icon={Plus} onClick={addSocial} />
-            )
-          }
+          action={isEditing && <Button label="Add Link" icon={Plus} onClick={addSocial} />}
         />
-
         <div className="flex flex-col gap-3">
+          {form.socials.length === 0 && (
+            <p className="text-sm text-text-400 text-center py-2">
+              No social links added yet.
+            </p>
+          )}
           {form.socials.map((social) => (
             <div key={social.id} className="flex flex-col gap-1">
               <SocialMediaItem
@@ -367,9 +431,7 @@ function InformationPage() {
                 onDelete={() => deleteSocial(social.id)}
               />
               {errors.socials?.[social.id] && (
-                <p className="text-xs text-error pl-1">
-                  {errors.socials[social.id]}
-                </p>
+                <p className="text-xs text-error pl-1">{errors.socials[social.id]}</p>
               )}
             </div>
           ))}

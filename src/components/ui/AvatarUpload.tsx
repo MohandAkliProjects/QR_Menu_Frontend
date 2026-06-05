@@ -3,26 +3,27 @@ import { Camera } from "lucide-react";
 
 interface AvatarUploadProps {
   isEditing?: boolean;
+  initialUrl?: string | null;
+  onFileSelected?: (file: File) => void;
 }
 
-function AvatarUpload({ isEditing }: AvatarUploadProps) {
-  const [preview, setPreview] = useState<string | null>(null);
+function AvatarUpload({ isEditing, initialUrl, onFileSelected }: AvatarUploadProps) {
+  const [preview, setPreview] = useState<string | null>(initialUrl ?? null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // only images
-    if (!file.type.startsWith("image/")) return;
+    if (!file || !file.type.startsWith("image/")) return;
 
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
+
+    onFileSelected?.(file);
   };
 
   return (
-    <div className="flex flex-col  gap-2">
+    <div className="flex flex-col gap-2">
       <div
         className={`
           relative w-28 h-28 rounded-2xl overflow-hidden
@@ -31,7 +32,6 @@ function AvatarUpload({ isEditing }: AvatarUploadProps) {
         `}
         onClick={() => isEditing && inputRef.current?.click()}
       >
-        {/* image or placeholder */}
         {preview ? (
           <img
             src={preview}
@@ -44,7 +44,6 @@ function AvatarUpload({ isEditing }: AvatarUploadProps) {
           </div>
         )}
 
-        {/* hover overlay — only in edit mode */}
         {isEditing && (
           <div className="
             absolute inset-0 bg-dark-700/50
@@ -58,7 +57,6 @@ function AvatarUpload({ isEditing }: AvatarUploadProps) {
         )}
       </div>
 
-      {/* hidden file input */}
       {isEditing && (
         <input
           ref={inputRef}

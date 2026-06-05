@@ -4,7 +4,7 @@ import Button from "../Button";
 import Input from "../Input";
 import CategoryImageUpload from "./CategoryImageUpload";
 import { Trash2, Check } from "lucide-react";
-import type { Category } from "../CategoryRow";
+import type { Category } from "./CategoryRow";
 
 interface AddCategoryModalProps {
   isOpen: boolean;

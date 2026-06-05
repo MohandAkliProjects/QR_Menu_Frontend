@@ -1,6 +1,6 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../../assets/Logo.svg";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   DashboardIcon,
   CategoriesIcon,
@@ -23,13 +23,13 @@ const links = [
 ];
 
 function Sidebar() {
-
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
-const handleLogout = () => {
-  // TODO: clear token here when you add auth
-  navigate("/login");
-};
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
   return (
     <aside className="w-70 min-h-screen bg-primary-900 flex flex-col gap-6 px-5 py-6 rounded-r-xl">
       

@@ -180,8 +180,8 @@ export interface UpdateMenuRequest {
 }
 
 export interface RestaurantUpdateRequest {
-  restaurantName: string;
-  ville: string;
+  restaurantName?: string;
+  ville?: string;
   address?: string;
   phones?: string[];
   instagramLink?: string;

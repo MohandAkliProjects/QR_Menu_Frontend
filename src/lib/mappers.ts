@@ -93,12 +93,12 @@ export function dishUIToTranslations(
   return translations;
 }
 
-const SOCIAL_FIELD_MAP: Record<string, keyof RestaurantUpdateRequest> = {
+/*const SOCIAL_FIELD_MAP: Record<string, keyof RestaurantUpdateRequest> = {
   FaceBook: "facebookLink",
   Instagram: "instagramLink",
   TikTok: "tiktokLink",
   WebSite: "googleMapsLink",
-};
+};*/
 
 export function restaurantResponseToForm(restaurant: RestaurantResponse) {
   const socials: { id: number; platform: string; url: string }[] = [];
@@ -123,9 +123,7 @@ export function restaurantResponseToForm(restaurant: RestaurantResponse) {
       id: index + 1,
       value,
     })),
-    socials: socials.length
-      ? socials
-      : [{ id: 1, platform: "FaceBook", url: "" }],
+    socials: socials,
     logoUrl: restaurant.logoUrl ?? null,
   };
 }
@@ -133,28 +131,34 @@ export function restaurantResponseToForm(restaurant: RestaurantResponse) {
 export function restaurantFormToUpdateRequest(
   form: {
     restaurantName: string;
-    email: string;
+    emailAddress: string;
     address: string;
     city: string;
     phones: { value: string }[];
     socials: { platform: string; url: string }[];
   }
 ): RestaurantUpdateRequest {
-  const request: RestaurantUpdateRequest = {
-    restaurantName: form.restaurantName,
-    ville: form.city,
-    address: form.address || undefined,
-    phones: form.phones.map((p) => p.value).filter(Boolean),
-    emailAddress: form.email,
-  };
+  const request: RestaurantUpdateRequest = {};
 
+  // Only send if not empty
+  if (form.restaurantName?.trim()) request.restaurantName = form.restaurantName.trim();
+  if (form.city?.trim()) request.ville = form.city.trim();
+  if (form.address?.trim()) request.address = form.address.trim();
+  if (form.emailAddress?.trim()) request.emailAddress = form.emailAddress.trim();
+
+  // Only send phones if there are valid ones
+  const validPhones = form.phones.map((p) => p.value.trim()).filter(Boolean);
+  if (validPhones.length > 0) request.phones = validPhones;
+
+  // Social links — only send if url is filled
   for (const social of form.socials) {
-    const field = SOCIAL_FIELD_MAP[social.platform];
-    if (!field || !social.url.trim()) continue;
-    if (field === "facebookLink") request.facebookLink = social.url.trim();
-    if (field === "instagramLink") request.instagramLink = social.url.trim();
-    if (field === "tiktokLink") request.tiktokLink = social.url.trim();
-    if (field === "googleMapsLink") request.googleMapsLink = social.url.trim();
+    const url = social.url.trim();
+    if (!url) continue;
+    if (social.platform === "FaceBook") request.facebookLink = url;
+    if (social.platform === "Instagram") request.instagramLink = url;
+    if (social.platform === "TikTok") request.tiktokLink = url;
+    if (social.platform === "WebSite") request.googleMapsLink = url;
+    if (social.platform === "Snapchat") request.snapshatLink = url;
   }
 
   return request;

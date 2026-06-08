@@ -11,14 +11,48 @@ export async function getRestaurant(restaurantId: string): Promise<RestaurantRes
 
 export async function updateRestaurant(
   restaurantId: string,
-  data: RestaurantUpdateRequest
+  data: RestaurantUpdateRequest,
+  logoFile?: File | null,
+  deleteLogo?: boolean,
+  publicImageFile?: File | null,
+  deletePublicImage?: boolean
 ): Promise<RestaurantResponse> {
+  const formData = new FormData();
+
+  if (data.restaurantName) formData.append("restaurantName", data.restaurantName);
+  if (data.ville) formData.append("ville", data.ville);
+  if (data.address) formData.append("address", data.address);
+  if (data.emailAddress) formData.append("emailAddress", data.emailAddress);
+  if (data.instagramLink) formData.append("instagramLink", data.instagramLink);
+  if (data.facebookLink) formData.append("facebookLink", data.facebookLink);
+  if (data.tiktokLink) formData.append("tiktokLink", data.tiktokLink);
+  if (data.snapshatLink) formData.append("snapshatLink", data.snapshatLink);
+  if (data.googleMapsLink) formData.append("googleMapsLink", data.googleMapsLink);
+
+  // Phones — only send if there are valid ones
+  if (data.phones && data.phones.length > 0) {
+    data.phones.forEach((phone) => formData.append("phones", phone));
+  }
+
+  // Logo
+  if (deleteLogo) {
+    formData.append("deleteLogo", "true");
+  } else if (logoFile) {
+    formData.append("logo", logoFile);
+  }
+
+  // Public image
+  if (deletePublicImage) {
+    formData.append("deletePublicImage", "true");
+  } else if (publicImageFile) {
+    formData.append("publicImage", publicImageFile);
+  }
+
   return apiRequest<RestaurantResponse>(`/api/restaurants/${restaurantId}`, {
     method: "PUT",
-    body: data,
+    body: formData,
   });
 }
-
 export async function getBanners(restaurantId: string): Promise<BannerResponse[]> {
   return apiRequest<BannerResponse[]>(`/api/restaurants/${restaurantId}/banners`);
 }
@@ -29,10 +63,10 @@ export async function addBanner(
 ): Promise<BannerResponse[]> {
   const formData = new FormData();
   formData.append("image", image);
-  return apiRequest<BannerResponse[]>(`/api/restaurants/${restaurantId}/banners`, {
-    method: "POST",
-    body: formData,
-  });
+  return apiRequest<BannerResponse[]>(
+    `/api/restaurants/${restaurantId}/addBanner`,
+    { method: "PATCH", body: formData }
+  );
 }
 
 export async function deleteBanner(
@@ -40,20 +74,21 @@ export async function deleteBanner(
   bannerId: string
 ): Promise<BannerResponse[]> {
   return apiRequest<BannerResponse[]>(
-    `/api/restaurants/${restaurantId}/banners/${bannerId}`,
-    { method: "DELETE" }
+    `/api/restaurants/${restaurantId}/deleteBanner/${bannerId}`,
+    { method: "PATCH" }
   );
 }
 
-
-export async function uploadLogo(
+export async function updateBannerVisibility(
   restaurantId: string,
-  image: File
-): Promise<RestaurantResponse> {
-  const formData = new FormData();
-  formData.append("image", image);
-  return apiRequest<RestaurantResponse>(
-    `/api/restaurants/${restaurantId}/logo`,
-    { method: "POST", body: formData }
+  bannerId: string,
+  visible: boolean
+): Promise<BannerResponse[]> {
+  return apiRequest<BannerResponse[]>(
+    `/api/restaurants/${restaurantId}/updateBanner`,
+    {
+      method: "PATCH",
+      body: { id: bannerId, visible },
+    }
   );
 }

@@ -1,28 +1,24 @@
-interface InputProps {
-  value: string;
-  readOnly?: boolean;
-  placeholder?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-function Input({ value, readOnly, placeholder, onChange, error }: InputProps) {
+//if u want to add a custom one just add the className and the props you want to use 
+function Input({ error, ...props }: InputProps) {
   return (
     <input
-      value={value}
-      readOnly={readOnly}
-      placeholder={placeholder}
-      onChange={onChange}
+      {...props}
       className={`
         w-full h-12 px-4 rounded-xl
         bg-card-bg border
         text-base text-text-800
         focus:outline-none
-        shadow-[var(--shadow-card)]
+        shadow-(--shadow-card)
         transition-all duration-200
-        ${error
-          ? "border-error focus:border-error"
-          : "border-primary-200 focus:border-primary-500"
+        ${
+          error
+            ? "border-error focus:border-error"
+            : "border-primary-200 focus:border-primary-500"
         }
       `}
     />

@@ -6,23 +6,28 @@ interface ButtonProps {
   onClick?: () => void;
   disabled?: boolean;
   fullWidth?: boolean;
-   className?: string;
+  className?: string;
+  variant?: "primary" | "secondary";
 }
 
-function Button({ label, icon: Icon, onClick, disabled, fullWidth, className }: ButtonProps) {
+function Button({ label, icon: Icon, onClick, disabled, fullWidth, className, variant = "primary" }: ButtonProps) {
+  const base = `
+    flex items-center justify-center gap-3 px-3 py-4 rounded-lg
+    h-12 ${fullWidth ? "w-full" : "w-auto"}
+    text-base font-medium transition-all duration-200
+    disabled:opacity-50 disabled:cursor-not-allowed
+  `;
+
+  const variants = {
+    primary: "text-cream-500 bg-primary-700 hover:bg-primary-700/90 active:bg-gold-600",
+    secondary: "text-text-600 bg-transparent border border-primary-300 hover:bg-primary-100",
+  };
+
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`
-        flex items-center justify-center gap-3 px-3 py-4 rounded-lg
-        h-12 ${fullWidth ? "w-full" : "w-auto"} ${className} 
-        text-base font-medium text-cream-500 
-        bg-primary-700 hover:bg-primary-700/90 active:bg-gold-600
-        transition-all duration-200
-        shadow-var(--shadow-card)
-        disabled:opacity-50 disabled:cursor-not-allowed
-      `}
+      className={`${base} ${variants[variant]} ${className ?? ""}`}
     >
       {Icon && <Icon size={18} className="text-beige-600" />}
       {label}

@@ -8,15 +8,25 @@ interface PhoneNumberItemProps {
   onDelete?: () => void;
 }
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  return digits.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+}
+
 function PhoneNumberItem({ value, isEditing, onChange, onDelete }: PhoneNumberItemProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    onChange?.(formatted);
+  };
+
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1">
         <Input
           value={value}
           readOnly={!isEditing}
-          placeholder="e.g. 05 58 76 58 96"
-          onChange={(e) => onChange?.(e.target.value)}
+          placeholder="05 45 78 52 54"
+          onChange={handleChange}
         />
       </div>
       {isEditing && onDelete && (

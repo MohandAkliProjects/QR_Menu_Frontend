@@ -84,6 +84,7 @@ export interface FullMenuResponse {
 export interface RestaurantResponse {
   id: string;
   name: string;
+  slug: string;
   emailAddress: string;
   phones: string[];
   subscriptionEndDate?: string;

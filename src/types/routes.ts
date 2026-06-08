@@ -30,6 +30,9 @@ export const ROUTES = {
     menuPreview: "/dashboard/menu",
   },
 
+
+  qrRedirect: (restaurantId: string) => `/r/${restaurantId}` as const,
+  publicMenu: (slug: string) => `/menu/${slug}` as const,
   /** Customer-facing menu (scan QR → opens this URL) */
-  publicMenu: (menuId: string) => `/menu/${menuId}` as const,
+ // publicMenu: (menuId: string) => `/menu/${menuId}` as const,
 } as const;

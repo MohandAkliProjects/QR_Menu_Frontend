@@ -38,42 +38,58 @@ function BannersPage() {
 
   const isLimitReached = banners.length >= MAX_BANNERS;
 
-  const loadBanners = useCallback(async () => {
+  const loadBanners = useCallback(async (signal?: { cancelled: boolean }) => {
     if (!restaurantId) {
-      setError("Restaurant session is missing.");
-      setLoading(false);
+      if (!signal?.cancelled) {
+        setError("Restaurant session is missing.");
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    if (!signal?.cancelled) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       const data = await restaurantService.getBanners(restaurantId);
-      setBanners(
-        data.map((banner) => ({
-          id: banner.id,
-          src: banner.imageUrl,
-          visible: true,
-        }))
-      );
+      if (!signal?.cancelled) {
+        setBanners(
+          (data.banners ?? []).map((banner) => ({
+            id: banner.id,
+            src: banner.imageUrl,
+            visible: banner.visible,
+          }))
+        );
+      }
     } catch (err) {
-      const message = getErrorMessage(err, "Could not load banners.");
-      setError(message);
-      showToast("error", "Load Failed", message);
+      if (!signal?.cancelled) {
+        const message = getErrorMessage(err, "Could not load banners.");
+        setError(message);
+        showToast("error", "Load Failed", message);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.cancelled) setLoading(false);
     }
   }, [restaurantId, showToast]);
 
   useEffect(() => {
-    loadBanners();
+    const signal = { cancelled: false };
+
+    async function run() {
+      await loadBanners(signal);
+    }
+
+    run();
+    return () => {
+      signal.cancelled = true;
+    };
   }, [loadBanners]);
 
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
     if (!selected) return;
-
     setPendingFile(selected);
     setPreview(URL.createObjectURL(selected));
   }
@@ -91,10 +107,10 @@ function BannersPage() {
     try {
       const updated = await restaurantService.addBanner(restaurantId, pendingFile);
       setBanners(
-        updated.map((banner) => ({
+        (updated.banners ?? []).map((banner) => ({
           id: banner.id,
           src: banner.imageUrl,
-          visible: true,
+          visible: banner.visible,
         }))
       );
       handleDeletePreview();
@@ -112,10 +128,10 @@ function BannersPage() {
     try {
       const updated = await restaurantService.deleteBanner(restaurantId, id);
       setBanners(
-        updated.map((banner) => ({
+        (updated.banners ?? []).map((banner) => ({
           id: banner.id,
           src: banner.imageUrl,
-          visible: true,
+          visible: banner.visible,
         }))
       );
       showToast("success", "Banner Deleted", "Banner has been removed.");
@@ -124,12 +140,36 @@ function BannersPage() {
     }
   }
 
-  function handleToggleVisibility(id: string) {
+  async function handleToggleVisibility(id: string) {
+    if (!restaurantId) return;
+    const banner = banners.find((b) => b.id === id);
+    if (!banner) return;
+
+    const newVisible = !banner.visible;
+
     setBanners((prev) =>
-      prev.map((banner) =>
-        banner.id === id ? { ...banner, visible: !banner.visible } : banner
-      )
+      prev.map((b) => (b.id === id ? { ...b, visible: newVisible } : b))
     );
+
+    try {
+      const updated = await restaurantService.updateBannerVisibility(
+        restaurantId,
+        id,
+        newVisible
+      );
+      setBanners(
+        (updated.banners ?? []).map((b) => ({
+          id: b.id,
+          src: b.imageUrl,
+          visible: b.visible,
+        }))
+      );
+    } catch (err) {
+      setBanners((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, visible: !newVisible } : b))
+      );
+      showToast("error", "Update Failed", getErrorMessage(err));
+    }
   }
 
   return (
@@ -142,7 +182,7 @@ function BannersPage() {
         {loading ? (
           <PageLoadingState message="Loading banners..." />
         ) : error ? (
-          <PageErrorState message={error} onRetry={loadBanners} />
+          <PageErrorState message={error} onRetry={() => loadBanners()} />
         ) : (
           <>
             <div className="flex flex-col gap-4 w-full">
@@ -165,25 +205,22 @@ function BannersPage() {
                   <div
                     onClick={() => !isLimitReached && inputRef.current?.click()}
                     className={`
-          flex flex-col items-center justify-center gap-4
-          w-full max-w-120
-          h-80
-          border-2 border-dashed rounded-2xl
-          transition-all duration-200
-          ${
-            isLimitReached
-              ? "border-gold-500 cursor-not-allowed opacity-60"
-              : "border-primary-400 cursor-pointer hover:border-primary-600 hover:bg-primary-50"
-          }
-        `}
+                      flex flex-col items-center justify-center gap-4
+                      w-full max-w-120
+                      h-80
+                      border-2 border-dashed rounded-2xl
+                      transition-all duration-200
+                      ${
+                        isLimitReached
+                          ? "border-gold-500 cursor-not-allowed opacity-60"
+                          : "border-primary-400 cursor-pointer hover:border-primary-600 hover:bg-primary-50"
+                      }
+                    `}
                   >
                     <Upload
                       size={56}
-                      className={
-                        isLimitReached ? "text-gold-500" : "text-primary-400"
-                      }
+                      className={isLimitReached ? "text-gold-500" : "text-primary-400"}
                     />
-
                     <p
                       className={`text-base font-medium ${
                         isLimitReached ? "text-gold-500" : "text-primary-400"
@@ -201,7 +238,6 @@ function BannersPage() {
                       alt="Banner preview"
                       className="w-full max-h-75 object-cover rounded-2xl"
                     />
-
                     <div className="flex gap-4 w-full">
                       <Button
                         label="Delete"
@@ -209,7 +245,6 @@ function BannersPage() {
                         onClick={handleDeletePreview}
                         className="flex-1 bg-transparent! border! border-error! text-error! hover:bg-error/10!"
                       />
-
                       <Button
                         label={uploading ? "Uploading..." : "Confirm"}
                         icon={Check}

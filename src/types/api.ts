@@ -6,7 +6,6 @@ import type {
   TypeOfView,
 } from "./enums";
 
-// ─── Shared translation shapes (backend models) ─────────────────────────────
 
 export interface DishTranslation {
   name: string;
@@ -23,7 +22,6 @@ export interface MenuTranslation {
 
 export type TranslationsMap<T> = Partial<Record<Language, T>>;
 
-// ─── API responses (what your backend returns) ──────────────────────────────
 
 export interface AuthResponse {
   token: string;
@@ -35,8 +33,14 @@ export interface AuthResponse {
 export interface BannerResponse {
   id: string;
   imageUrl: string;
+  visible: boolean;
 }
 
+
+export interface BannersResponse {
+  id: string;
+  banners: BannerResponse[];
+}
 export interface DishResponse {
   id: string;
   categoryId: string;
@@ -129,7 +133,6 @@ export interface LogoutResponse {
   message: string;
 }
 
-// ─── API requests (JSON body — not multipart) ───────────────────────────────
 
 export interface LoginRequest {
   email: string;

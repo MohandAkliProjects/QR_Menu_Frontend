@@ -1,6 +1,6 @@
 import { apiRequest } from "../api/client";
 import type {
-  BannerResponse,
+  BannersResponse,
   RestaurantResponse,
   RestaurantUpdateRequest,
 } from "../types";
@@ -29,19 +29,16 @@ export async function updateRestaurant(
   if (data.snapshatLink) formData.append("snapshatLink", data.snapshatLink);
   if (data.googleMapsLink) formData.append("googleMapsLink", data.googleMapsLink);
 
-  // Phones — only send if there are valid ones
   if (data.phones && data.phones.length > 0) {
     data.phones.forEach((phone) => formData.append("phones", phone));
   }
 
-  // Logo
   if (deleteLogo) {
     formData.append("deleteLogo", "true");
   } else if (logoFile) {
     formData.append("logo", logoFile);
   }
 
-  // Public image
   if (deletePublicImage) {
     formData.append("deletePublicImage", "true");
   } else if (publicImageFile) {
@@ -53,17 +50,17 @@ export async function updateRestaurant(
     body: formData,
   });
 }
-export async function getBanners(restaurantId: string): Promise<BannerResponse[]> {
-  return apiRequest<BannerResponse[]>(`/api/restaurants/${restaurantId}/banners`);
+export async function getBanners(restaurantId: string): Promise<BannersResponse> {
+  return apiRequest<BannersResponse>(`/api/restaurants/${restaurantId}/banners`);
 }
 
 export async function addBanner(
   restaurantId: string,
   image: File
-): Promise<BannerResponse[]> {
+): Promise<BannersResponse> {
   const formData = new FormData();
   formData.append("image", image);
-  return apiRequest<BannerResponse[]>(
+  return apiRequest<BannersResponse>(
     `/api/restaurants/${restaurantId}/addBanner`,
     { method: "PATCH", body: formData }
   );
@@ -72,8 +69,8 @@ export async function addBanner(
 export async function deleteBanner(
   restaurantId: string,
   bannerId: string
-): Promise<BannerResponse[]> {
-  return apiRequest<BannerResponse[]>(
+): Promise<BannersResponse> {
+  return apiRequest<BannersResponse>(
     `/api/restaurants/${restaurantId}/deleteBanner/${bannerId}`,
     { method: "PATCH" }
   );
@@ -83,8 +80,8 @@ export async function updateBannerVisibility(
   restaurantId: string,
   bannerId: string,
   visible: boolean
-): Promise<BannerResponse[]> {
-  return apiRequest<BannerResponse[]>(
+): Promise<BannersResponse> {
+  return apiRequest<BannersResponse>(
     `/api/restaurants/${restaurantId}/updateBanner`,
     {
       method: "PATCH",

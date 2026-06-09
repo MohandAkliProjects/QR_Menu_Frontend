@@ -19,6 +19,7 @@ import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
+import Notification from "../../components/shared/Notification";
 import Button from "../../components/ui/Button";
 import Pagination from "../../components/ui/Pagination";
 import Table from "../../components/ui/table/Table";
@@ -33,18 +34,15 @@ import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
 import { categoryResponseToUI, categoryUIToTranslations } from "../../lib/mappers";
 import * as categoryService from "../../services/category.service";
+import * as menuService from "../../services/menu.service";
+import type { Language } from "../../types/enums";
 
 const ITEMS_PER_PAGE = 10;
 
-const languages: LanguageConfig = {
-  showEnglish: true,
-  showFrench: true,
-  showArabic: true,
-};
-
 function CategoriesPage() {
-  const { menuId } = useAuth();
+  const { menuId, restaurantId } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [supportedLanguages, setSupportedLanguages] = useState<Language[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,30 +52,66 @@ function CategoriesPage() {
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const loadCategories = useCallback(async () => {
-    if (!menuId) {
-      setError("No menu found for this restaurant. Please create a menu first.");
-      setLoading(false);
+  const loadData = useCallback(async (signal?: { cancelled: boolean }) => {
+    if (!menuId || !restaurantId) {
+      if (!signal?.cancelled) {
+        setError("No menu found for this restaurant. Please create a menu first.");
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await categoryService.getCategoriesByMenu(menuId);
-      setCategories(data.map(categoryResponseToUI));
-    } catch (err) {
-      const message = getErrorMessage(err, "Could not load categories.");
-      setError(message);
-      showToast("error", "Load Failed", message);
-    } finally {
-      setLoading(false);
+    if (!signal?.cancelled) {
+      setLoading(true);
+      setError(null);
     }
-  }, [menuId, showToast]);
+
+    try {
+      const [categoriesData, menusData] = await Promise.all([
+        categoryService.getCategoriesByMenu(menuId),
+        menuService.getMenusByRestaurant(restaurantId),
+      ]);
+
+      if (!signal?.cancelled) {
+        const activeMenu = menusData.find((m) => m.id === menuId);
+        const langs = activeMenu
+          ? (Object.keys(activeMenu.translations).map((k) => k.toUpperCase()) as Language[])
+          : [];
+        setSupportedLanguages(langs);
+        setCategories(categoriesData.map(categoryResponseToUI));
+      }
+    } catch (err) {
+      if (!signal?.cancelled) {
+        const message = getErrorMessage(err, "Could not load categories.");
+        setError(message);
+        showToast("error", "Load Failed", message);
+      }
+    } finally {
+      if (!signal?.cancelled) setLoading(false);
+    }
+  }, [menuId, restaurantId, showToast]);
 
   useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
+    const signal = { cancelled: false };
+    async function run() {
+      await loadData(signal);
+    }
+    run();
+    return () => { signal.cancelled = true; };
+  }, [loadData]);
+
+  const languages: LanguageConfig = {
+    showEnglish: supportedLanguages.includes("EN" as Language),
+    showFrench: supportedLanguages.includes("FR" as Language),
+    showArabic: supportedLanguages.includes("AR" as Language),
+  };
+
+  const categoriesWithMissing = categories.filter((c) => {
+    if (languages.showEnglish && !c.english) return true;
+    if (languages.showFrench && !c.french) return true;
+    if (languages.showArabic && !c.arabic) return true;
+    return false;
+  });
 
   const totalPages = Math.max(1, Math.ceil(categories.length / ITEMS_PER_PAGE));
   const paginatedCategories = categories.slice(
@@ -114,35 +148,64 @@ function CategoriesPage() {
       });
       showToast("success", "Order Updated", "Category order has been saved.");
     } catch (err) {
-      await loadCategories();
+      await loadData();
       showToast("error", "Reorder Failed", getErrorMessage(err));
     }
   };
 
-  const handleConfirm = async (data: Omit<Category, "id" | "order">) => {
+  const handleConfirm = async (
+    data: Omit<Category, "id" | "order"> & { iconFile: File | null }
+  ) => {
     if (!menuId) return;
 
     try {
       if (editTarget) {
-        const updated = await categoryService.updateCategory(String(editTarget.id), {
+        const requestBody = {
           translations: categoryUIToTranslations(data),
           isVisible: data.status === "visible",
-        });
+        };
+
+        console.log(
+          "CATEGORY UPDATE:",
+          JSON.stringify(requestBody, null, 2)
+        );
+
+        const updated = await categoryService.updateCategory(
+          String(editTarget.id),
+          requestBody,
+          data.iconFile
+        );
+
         setCategories((prev) =>
           prev.map((c) =>
             c.id === editTarget.id ? categoryResponseToUI(updated) : c
           )
         );
+
         showToast("success", "Category Updated", "Category has been updated successfully.");
       } else {
-        const created = await categoryService.createCategory(menuId, {
+        const requestBody = {
           translations: categoryUIToTranslations(data),
           isVisible: data.status === "visible",
-        });
+        };
+
+        console.log(
+          "CATEGORY REQUEST:",
+          JSON.stringify(requestBody, null, 2)
+        );
+
+        const created = await categoryService.createCategory(
+          menuId,
+          requestBody,
+          data.iconFile
+        );
+
         setCategories((prev) => [...prev, categoryResponseToUI(created)]);
         setCurrentPage(1);
+
         showToast("success", "Category Added", "New category has been added successfully.");
       }
+
       setEditTarget(null);
     } catch (err) {
       showToast("error", "Save Failed", getErrorMessage(err));
@@ -150,14 +213,10 @@ function CategoriesPage() {
   };
 
   const handleDelete = (_id: UniqueIdentifier) => {
-    showToast(
-      "error",
-      "Not Available",
-      "Category deletion is not enabled on the server yet."
-    );
+    showToast("error", "Not Available", "Category deletion is not enabled on the server yet.");
   };
 
-  const handleEdit = async (category: Category) => {
+  const handleEdit = async (category: Category, iconFile: File | null) => {
     const previous = categories.find((c) => c.id === category.id);
     if (!previous) return;
 
@@ -166,7 +225,8 @@ function CategoriesPage() {
       previous.french === category.french &&
       previous.arabic === category.arabic &&
       previous.icon === category.icon &&
-      previous.status !== category.status;
+      previous.status !== category.status &&
+      !iconFile;
 
     setCategories((prev) =>
       prev.map((c) => (c.id === category.id ? category : c))
@@ -175,21 +235,25 @@ function CategoriesPage() {
     try {
       const response = onlyStatusChanged
         ? await categoryService.toggleCategoryVisible(String(category.id))
-        : await categoryService.updateCategory(String(category.id), {
-            translations: categoryUIToTranslations(category),
-            isVisible: category.status === "visible",
-          });
+        : await categoryService.updateCategory(
+            String(category.id),
+            {
+              translations: categoryUIToTranslations(category),
+              isVisible: category.status === "visible",
+            },
+            iconFile
+          );
 
       setCategories((prev) =>
-        prev.map((c) =>
-          c.id === category.id ? categoryResponseToUI(response) : c
-        )
+        prev.map((c) => (c.id === category.id ? categoryResponseToUI(response) : c))
       );
+
       showToast("success", "Category Saved", "Your changes have been saved.");
     } catch (err) {
       setCategories((prev) =>
         prev.map((c) => (c.id === category.id ? previous : c))
       );
+
       showToast("error", "Save Failed", getErrorMessage(err));
     }
   };
@@ -215,10 +279,21 @@ function CategoriesPage() {
         />
       </div>
 
+      {!loading && !error && categoriesWithMissing.length > 0 && (
+        <Notification
+          variant="warning"
+          title="Missing Translations"
+          message={`${categoriesWithMissing.length} category${
+            categoriesWithMissing.length > 1 ? "ies have" : " has"
+          } missing translations. Edit them to add all required languages.`}
+          className="mb-6"
+        />
+      )}
+
       {loading ? (
         <PageLoadingState message="Loading categories..." />
       ) : error ? (
-        <PageErrorState message={error} onRetry={loadCategories} />
+        <PageErrorState message={error} onRetry={() => loadData()} />
       ) : (
         <>
           <div className="flex-1">
@@ -264,6 +339,7 @@ function CategoriesPage() {
         }}
         onConfirm={handleConfirm}
         editData={editTarget}
+        supportedLanguages={supportedLanguages}
       />
     </div>
   );

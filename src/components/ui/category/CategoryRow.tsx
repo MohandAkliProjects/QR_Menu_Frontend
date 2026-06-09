@@ -27,7 +27,7 @@ export interface LanguageConfig {
 
 interface CategoryRowProps {
   category: Category;
-  onSave: (updated: Category) => void;
+  onSave: (updated: Category, iconFile: File | null) => void;
   onDelete: (id: UniqueIdentifier) => void;
   isLast?: boolean;
   languages: LanguageConfig;
@@ -36,6 +36,7 @@ interface CategoryRowProps {
 function CategoryRow({ category, onSave, onDelete, isLast, languages }: CategoryRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Category>(category);
+  const [iconFile, setIconFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const iconInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,10 +58,15 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setIconFile(file);
     const reader = new FileReader();
     reader.onload = () => setForm((prev) => ({ ...prev, icon: reader.result as string }));
     reader.readAsDataURL(file);
   };
+
+  const isMissingEnglish = languages.showEnglish && !form.english.trim();
+  const isMissingFrench = languages.showFrench && !form.french?.trim();
+  const isMissingArabic = languages.showArabic && !form.arabic?.trim();
 
   const handleSave = () => {
     if (!form.english.trim()) {
@@ -68,12 +74,14 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
       return;
     }
     setError("");
-    onSave(form);
+    onSave(form, iconFile);
+    setIconFile(null);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setForm(category);
+    setIconFile(null);
     setError("");
     setIsEditing(false);
   };
@@ -83,9 +91,10 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
       ...category,
       status: category.status === "visible" ? "hidden" : "visible",
     } as Category;
-    onSave(updated);
+    onSave(updated, null);
   };
 
+  const missingClass = "border-warning bg-warning/10";
   const inputClass = "w-full h-9 px-3 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500";
 
   return (
@@ -135,13 +144,13 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
             <input
               value={form.english}
               onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
-              className={`${inputClass} ${error ? "border-error" : ""}`}
+              className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
             {error && <span className="text-xs text-error text-center">{error}</span>}
           </div>
         ) : (
-          <span className="text-sm text-text-600 truncate block max-w-[140px] mx-auto">
-            {category.english}
+          <span className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.english ? `text-warning ${missingClass}` : "text-text-600"}`}>
+            {category.english || "Missing"}
           </span>
         )}
       </TableCell>
@@ -152,11 +161,11 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
           <input
             value={form.french ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, french: e.target.value }))}
-            className={inputClass}
+            className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : (
-          <span className="text-sm text-text-600 truncate block max-w-[140px] mx-auto">
-            {category.french ?? "—"}
+          <span className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.french ? `text-warning ${missingClass}` : "text-text-600"}`}>
+            {category.french || "Missing"}
           </span>
         )}
       </TableCell>
@@ -168,11 +177,11 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
             value={form.arabic ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, arabic: e.target.value }))}
             dir="rtl"
-            className={inputClass}
+            className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
         ) : (
-          <span className="text-sm text-text-600 truncate block max-w-[140px] mx-auto" dir="rtl">
-            {category.arabic ?? "—"}
+          <span className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.arabic ? `text-warning ${missingClass}` : "text-text-600"}`} dir={languages.showArabic ? "rtl" : undefined}>
+            {category.arabic || "Missing"}
           </span>
         )}
       </TableCell>
@@ -180,7 +189,7 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
       {/* Status */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge variant={category.status} />
+          <Badge variant={category.status === "visible" ? "visible" : "hidden"} />
         </div>
       </TableCell>
 

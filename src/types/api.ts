@@ -57,7 +57,7 @@ export interface CategoryResponse {
   id: string;
   menuId: string;
   iconUrl?: string;
-  isVisible: boolean;
+  visible: boolean;
   order: number;
   translations: TranslationsMap<CategoryTranslation>;
 }
@@ -66,7 +66,7 @@ export interface CategoryWithDishesResponse {
   id: string;
   iconUrl?: string;
   order: number;
-  isVisible: boolean;
+  visible: boolean;
   translations: TranslationsMap<CategoryTranslation>;
   dishes: DishResponse[];
 }
@@ -140,12 +140,12 @@ export interface LoginRequest {
 }
 
 export interface CreateCategoryRequest {
-  translations: TranslationsMap<string>;
+  translations: TranslationsMap<CategoryTranslation>;
   isVisible?: boolean;
 }
 
 export interface UpdateCategoryRequest {
-  translations?: TranslationsMap<string>;
+  translations?: TranslationsMap<CategoryTranslation>;
   isVisible: boolean;
   wantToDeleteIcon?: boolean;
 }

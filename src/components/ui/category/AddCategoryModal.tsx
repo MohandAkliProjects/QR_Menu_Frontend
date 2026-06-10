@@ -11,7 +11,11 @@ import type { Language } from "../../../types/enums";
 interface AddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (data: Omit<Category, "id" | "order"> & { iconFile: File | null }) => void;
+  onConfirm: (
+    data: Omit<Category, "id" | "order"> & {
+      iconFile: File | null;
+    }
+  ) => void;
   editData?: Category | null;
   supportedLanguages: Language[];
 }
@@ -48,30 +52,50 @@ function AddCategoryModal({
         }
       : EMPTY
   );
-  const [error, setError] = useState("");
 
-  const showEnglish = supportedLanguages.includes("EN" as Language);
-  const showFrench = supportedLanguages.includes("FR" as Language);
-  const showArabic = supportedLanguages.includes("AR" as Language);
+  const [showValidationError, setShowValidationError] =
+    useState(false);
+
+  const showEnglish =
+    supportedLanguages.includes("EN" as Language);
+
+  const showFrench =
+    supportedLanguages.includes("FR" as Language);
+
+  const showArabic =
+    supportedLanguages.includes("AR" as Language);
 
   const missingLanguages: string[] = [];
-  if (showEnglish && !form.english.trim()) missingLanguages.push("English");
-  if (showFrench && !form.french?.trim()) missingLanguages.push("French");
-  if (showArabic && !form.arabic?.trim()) missingLanguages.push("Arabic");
+
+  if (showEnglish && !form.english.trim()) {
+    missingLanguages.push("English");
+  }
+
+  if (showFrench && !form.french?.trim()) {
+    missingLanguages.push("French");
+  }
+
+  if (showArabic && !form.arabic?.trim()) {
+    missingLanguages.push("Arabic");
+  }
 
   const handleConfirm = () => {
-    if (showEnglish && !form.english.trim()) {
-      setError("English name is required.");
+    if (missingLanguages.length > 0) {
+      setShowValidationError(true);
       return;
     }
-    setError("");
+
     onConfirm(form);
     onClose();
   };
 
   return (
     <Modal
-      title={editData ? "Edit Category" : "Add New Category"}
+      title={
+        editData
+          ? "Edit Category"
+          : "Add New Category"
+      }
       isOpen={isOpen}
       onClose={onClose}
       footer={
@@ -81,8 +105,9 @@ function AddCategoryModal({
             icon={Trash2}
             onClick={onClose}
             fullWidth
-            className="!bg-transparent !border !border-error !text-error hover:!bg-error/10"
+            className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
           />
+
           <Button
             label="Confirm"
             icon={Check}
@@ -92,58 +117,95 @@ function AddCategoryModal({
         </div>
       }
     >
-      {/* Missing languages warning */}
       {missingLanguages.length > 0 && (
         <Notification
-          variant="warning"
+          variant={
+            showValidationError
+              ? "error"
+              : "warning"
+          }
           title="Missing Translations"
-          message={`Please fill in: ${missingLanguages.join(", ")}`}
+          message={`Please fill in: ${missingLanguages.join(
+            ", "
+          )}`}
         />
       )}
 
-      {/* Icon upload */}
       <div className="flex justify-center w-full">
-        <div className="w-full max-w-[420px]">
+        <div className="w-full max-w-105">
           <CategoryImageUpload
             preview={form.icon}
             onChange={(file, preview) =>
-              setForm((prev) => ({ ...prev, icon: preview, iconFile: file }))
+              setForm((prev) => ({
+                ...prev,
+                icon: preview,
+                iconFile: file,
+              }))
             }
           />
         </div>
       </div>
 
-      {/* Language fields */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {showEnglish && (
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-text-600">English</label>
+            <label className="text-sm font-medium text-text-600">
+              English
+            </label>
+
             <Input
               value={form.english}
               placeholder="name"
-              onChange={(e) => setForm((prev) => ({ ...prev, english: e.target.value }))}
-              error={error}
+              onChange={(e) => {
+                setShowValidationError(false);
+
+                setForm((prev) => ({
+                  ...prev,
+                  english: e.target.value,
+                }));
+              }}
             />
-            {error && <span className="text-xs text-error">{error}</span>}
           </div>
         )}
+
         {showFrench && (
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-text-600">Français</label>
+            <label className="text-sm font-medium text-text-600">
+              Français
+            </label>
+
             <Input
               value={form.french ?? ""}
               placeholder="name"
-              onChange={(e) => setForm((prev) => ({ ...prev, french: e.target.value }))}
+              onChange={(e) => {
+                setShowValidationError(false);
+
+                setForm((prev) => ({
+                  ...prev,
+                  french: e.target.value,
+                }));
+              }}
             />
           </div>
         )}
+
         {showArabic && (
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-text-600">Arabic</label>
+            <label className="text-sm font-medium text-text-600">
+              Arabic
+            </label>
+
             <Input
               value={form.arabic ?? ""}
               placeholder="name"
-              onChange={(e) => setForm((prev) => ({ ...prev, arabic: e.target.value }))}
+              onChange={(e) => {
+                setShowValidationError(false);
+
+                setForm((prev) => ({
+                  ...prev,
+                  arabic: e.target.value,
+                }));
+              }}
             />
           </div>
         )}

@@ -34,7 +34,6 @@ import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
 import { categoryResponseToUI, categoryUIToTranslations } from "../../lib/mappers";
 import * as categoryService from "../../services/category.service";
-import * as menuService from "../../services/menu.service";
 import type { Language } from "../../types/enums";
 
 const ITEMS_PER_PAGE = 10;
@@ -67,16 +66,10 @@ function CategoriesPage() {
     }
 
     try {
-      const [categoriesData, menusData] = await Promise.all([
-        categoryService.getCategoriesByMenu(menuId),
-        menuService.getMenusByRestaurant(restaurantId),
-      ]);
+      const { categories: categoriesData, supportedLanguages: langs } =
+        await categoryService.loadCategoriesPageData(restaurantId, menuId);
 
       if (!signal?.cancelled) {
-        const activeMenu = menusData.find((m) => m.id === menuId);
-        const langs = activeMenu
-          ? (Object.keys(activeMenu.translations).map((k) => k.toUpperCase()) as Language[])
-          : [];
         setSupportedLanguages(langs);
         setCategories(categoriesData.map(categoryResponseToUI));
       }
@@ -93,9 +86,7 @@ function CategoriesPage() {
 
   useEffect(() => {
     const signal = { cancelled: false };
-    async function run() {
-      await loadData(signal);
-    }
+    async function run() { await loadData(signal); }
     run();
     return () => { signal.cancelled = true; };
   }, [loadData]);
@@ -129,6 +120,7 @@ function CategoriesPage() {
     { key: "actions", label: "Actions", center: true, width: "min-w-[140px]" },
   ];
 
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !menuId) return;
@@ -153,6 +145,7 @@ function CategoriesPage() {
     }
   };
 
+
   const handleConfirm = async (
     data: Omit<Category, "id" | "order"> & { iconFile: File | null }
   ) => {
@@ -160,49 +153,29 @@ function CategoriesPage() {
 
     try {
       if (editTarget) {
-        const requestBody = {
-          translations: categoryUIToTranslations(data),
-          isVisible: data.status === "visible",
-        };
-
-        console.log(
-          "CATEGORY UPDATE:",
-          JSON.stringify(requestBody, null, 2)
-        );
-
         const updated = await categoryService.updateCategory(
           String(editTarget.id),
-          requestBody,
+          {
+            translations: categoryUIToTranslations(data),
+            isVisible: data.status === "visible",
+          },
           data.iconFile
         );
-
         setCategories((prev) =>
-          prev.map((c) =>
-            c.id === editTarget.id ? categoryResponseToUI(updated) : c
-          )
+          prev.map((c) => (c.id === editTarget.id ? categoryResponseToUI(updated) : c))
         );
-
         showToast("success", "Category Updated", "Category has been updated successfully.");
       } else {
-        const requestBody = {
-          translations: categoryUIToTranslations(data),
-          isVisible: data.status === "visible",
-        };
-
-        console.log(
-          "CATEGORY REQUEST:",
-          JSON.stringify(requestBody, null, 2)
-        );
-
         const created = await categoryService.createCategory(
           menuId,
-          requestBody,
+          {
+            translations: categoryUIToTranslations(data),
+            isVisible: data.status === "visible",
+          },
           data.iconFile
         );
-
         setCategories((prev) => [...prev, categoryResponseToUI(created)]);
         setCurrentPage(1);
-
         showToast("success", "Category Added", "New category has been added successfully.");
       }
 
@@ -212,9 +185,6 @@ function CategoriesPage() {
     }
   };
 
-  const handleDelete = (_id: UniqueIdentifier) => {
-    showToast("error", "Not Available", "Category deletion is not enabled on the server yet.");
-  };
 
   const handleEdit = async (category: Category, iconFile: File | null) => {
     const previous = categories.find((c) => c.id === category.id);
@@ -247,14 +217,26 @@ function CategoriesPage() {
       setCategories((prev) =>
         prev.map((c) => (c.id === category.id ? categoryResponseToUI(response) : c))
       );
-
       showToast("success", "Category Saved", "Your changes have been saved.");
     } catch (err) {
       setCategories((prev) =>
         prev.map((c) => (c.id === category.id ? previous : c))
       );
-
       showToast("error", "Save Failed", getErrorMessage(err));
+    }
+  };
+
+
+  const handleDelete = async (id: UniqueIdentifier) => {
+    const previous = [...categories];
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+
+    try {
+      await categoryService.deleteCategory(String(id));
+      showToast("success", "Category Deleted", "Category has been removed.");
+    } catch (err) {
+      setCategories(previous);
+      showToast("error", "Delete Failed", getErrorMessage(err));
     }
   };
 
@@ -283,8 +265,8 @@ function CategoriesPage() {
         <Notification
           variant="warning"
           title="Missing Translations"
-          message={`${categoriesWithMissing.length} category${
-            categoriesWithMissing.length > 1 ? "ies have" : " has"
+          message={`${categoriesWithMissing.length} categor${
+            categoriesWithMissing.length > 1 ? "ies have" : "y has"
           } missing translations. Edit them to add all required languages.`}
           className="mb-6"
         />

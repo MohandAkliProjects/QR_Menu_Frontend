@@ -3,11 +3,12 @@ import type {
   CategoryWithDishesResponse,
   DishResponse,
   DishTranslation,
+  MenuResponse,
   RestaurantResponse,
   RestaurantUpdateRequest,
   TranslationsMap,
 } from "../types/api";
-import type { Language } from "../types/enums";
+import type { Devise, Language } from "../types/enums";
 import type { CategoryUI, DishUI } from "../types/ui";
 
 function getTranslationName(
@@ -20,7 +21,7 @@ function getTranslationName(
 }
 
 export function categoryResponseToUI(category: CategoryResponse): CategoryUI {
-   console.log("MAPPING CATEGORY:", category);
+  const isVisible = category.isVisible ?? category.visible ?? true;
 
   return {
     id: category.id,
@@ -29,7 +30,7 @@ export function categoryResponseToUI(category: CategoryResponse): CategoryUI {
     english: getTranslationName(category.translations, "EN") ?? "",
     french: getTranslationName(category.translations, "FR"),
     arabic: getTranslationName(category.translations, "AR"),
-    status: category.visible ? "visible" : "hidden",
+    status: isVisible ? "visible" : "hidden",
   };
 }
 
@@ -54,6 +55,8 @@ export function dishResponseToUI(dish: DishResponse): DishUI {
 export function categoryWithDishesToUI(
   category: CategoryWithDishesResponse
 ): { category: CategoryUI; dishes: DishUI[] } {
+  const isVisible = category.isVisible ?? category.visible ?? true;
+
   return {
     category: {
       id: category.id,
@@ -62,7 +65,7 @@ export function categoryWithDishesToUI(
       english: getTranslationName(category.translations, "EN") ?? "",
       french: getTranslationName(category.translations, "FR"),
       arabic: getTranslationName(category.translations, "AR"),
-      status: category.visible ? "visible" : "hidden",
+      status: isVisible ? "visible" : "hidden",
     },
     dishes: category.dishes.map(dishResponseToUI),
   };
@@ -110,6 +113,48 @@ export function dishUIToTranslations(
     };
   }
   return translations;
+}
+
+function getMenuTranslationTitle(
+  translations: MenuResponse["translations"],
+  lang: string
+): string | undefined {
+  const upper = lang.toUpperCase() as Language;
+  const lower = lang.toLowerCase() as Language;
+  return translations[upper]?.title ?? translations[lower]?.title;
+}
+
+export interface MenuFormState {
+  english: string;
+  french: string;
+  arabic: string;
+  devise: Devise;
+}
+
+export function menuResponseToForm(menu: MenuResponse): MenuFormState {
+  return {
+    english: getMenuTranslationTitle(menu.translations, "EN") ?? "",
+    french: getMenuTranslationTitle(menu.translations, "FR") ?? "",
+    arabic: getMenuTranslationTitle(menu.translations, "AR") ?? "",
+    devise: menu.devise,
+  };
+}
+
+
+export function menuFormToUpdateRequest(
+  form: MenuFormState,
+  supportedLanguages: string[]
+) {
+  const translations: Record<string, string> = {};
+
+  if (supportedLanguages.includes("EN") && form.english.trim())
+    translations.en = form.english.trim();
+  if (supportedLanguages.includes("FR") && form.french.trim())
+    translations.fr = form.french.trim();
+  if (supportedLanguages.includes("AR") && form.arabic.trim())
+    translations.ar = form.arabic.trim();
+
+  return { translations, devise: form.devise };
 }
 
 export function restaurantResponseToForm(restaurant: RestaurantResponse) {

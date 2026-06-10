@@ -1,12 +1,21 @@
 import { apiRequest } from "../api/client";
 import type {
   BannersResponse,
+  RestaurantDashboardStatsResponse,
   RestaurantResponse,
   RestaurantUpdateRequest,
 } from "../types";
 
 export async function getRestaurant(restaurantId: string): Promise<RestaurantResponse> {
   return apiRequest<RestaurantResponse>(`/api/restaurants/${restaurantId}`);
+}
+
+export async function getDashboardStats(
+  restaurantId: string
+): Promise<RestaurantDashboardStatsResponse> {
+  return apiRequest<RestaurantDashboardStatsResponse>(
+    `/api/restaurants/${restaurantId}/dashboard`
+  );
 }
 
 export async function updateRestaurant(

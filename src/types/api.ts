@@ -30,17 +30,19 @@ export interface AuthResponse {
   restaurantId: string;
 }
 
+
 export interface BannerResponse {
   id: string;
   imageUrl: string;
   visible: boolean;
 }
 
-
 export interface BannersResponse {
   id: string;
   banners: BannerResponse[];
 }
+
+
 export interface DishResponse {
   id: string;
   categoryId: string;
@@ -53,10 +55,13 @@ export interface DishResponse {
   translations: TranslationsMap<DishTranslation>;
 }
 
+
 export interface CategoryResponse {
   id: string;
   menuId: string;
   iconUrl?: string;
+  isVisible: boolean;
+  /** @deprecated */
   visible: boolean;
   order: number;
   translations: TranslationsMap<CategoryTranslation>;
@@ -66,10 +71,13 @@ export interface CategoryWithDishesResponse {
   id: string;
   iconUrl?: string;
   order: number;
+  isVisible: boolean;
+    /** @deprecated */
   visible: boolean;
   translations: TranslationsMap<CategoryTranslation>;
   dishes: DishResponse[];
 }
+
 
 export interface MenuResponse {
   id: string;
@@ -84,6 +92,19 @@ export interface FullMenuResponse {
   devise: Devise;
   categories: CategoryWithDishesResponse[];
 }
+
+export interface MenuWithCategoriesResponse {
+  id: string;
+  translations: TranslationsMap<MenuTranslation>;
+  devise: Devise;
+  categories: CategoryResponse[];
+}
+
+
+export interface AllCategoriesResponse {
+  menus: MenuWithCategoriesResponse[];
+}
+
 
 export interface RestaurantResponse {
   id: string;
@@ -107,6 +128,7 @@ export interface RestaurantResponse {
   state: RestaurantState;
 }
 
+
 export interface MenuView {
   typeOfView: TypeOfView;
   viewedAt: string;
@@ -120,6 +142,7 @@ export interface RestaurantDashboardStatsResponse {
   totalDishes: number;
   views: MenuView[];
 }
+
 
 export interface ApiError {
   timestamp: string;
@@ -140,12 +163,12 @@ export interface LoginRequest {
 }
 
 export interface CreateCategoryRequest {
-  translations: TranslationsMap<CategoryTranslation>;
+  translations: TranslationsMap<string>;
   isVisible?: boolean;
 }
 
 export interface UpdateCategoryRequest {
-  translations?: TranslationsMap<CategoryTranslation>;
+  translations?: TranslationsMap<string>;
   isVisible: boolean;
   wantToDeleteIcon?: boolean;
 }

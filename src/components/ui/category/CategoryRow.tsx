@@ -1,7 +1,12 @@
 import { useState, useRef } from "react";
 import {
-  Eye, EyeOff, Pencil, Trash2, Save,
-  Upload, Image as ImageIcon,
+  Eye,
+  EyeOff,
+  Pencil,
+  Trash2,
+  Save,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
@@ -33,7 +38,13 @@ interface CategoryRowProps {
   languages: LanguageConfig;
 }
 
-function CategoryRow({ category, onSave, onDelete, isLast, languages }: CategoryRowProps) {
+function CategoryRow({
+  category,
+  onSave,
+  onDelete,
+  isLast,
+  languages,
+}: CategoryRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Category>(category);
   const [iconFile, setIconFile] = useState<File | null>(null);
@@ -60,25 +71,47 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
     if (!file) return;
     setIconFile(file);
     const reader = new FileReader();
-    reader.onload = () => setForm((prev) => ({ ...prev, icon: reader.result as string }));
+    reader.onload = () =>
+      setForm((prev) => ({ ...prev, icon: reader.result as string }));
     reader.readAsDataURL(file);
   };
 
-  const isMissingEnglish = languages.showEnglish && !form.english.trim();
-  const isMissingFrench = languages.showFrench && !form.french?.trim();
-  const isMissingArabic = languages.showArabic && !form.arabic?.trim();
+  const isMissingEnglish =
+    languages.showEnglish && form.english.trim().length < 3;
+  const isMissingFrench =
+    languages.showFrench && (form.french?.trim().length ?? 0) < 3;
+  const isMissingArabic =
+    languages.showArabic && (form.arabic?.trim().length ?? 0) < 3;
 
   const handleSave = () => {
-    if (!form.english.trim()) {
-      setError("English name is required.");
+    if (languages.showEnglish && form.english.trim().length < 3) {
+      setError("English name must be at least 3 characters.");
       return;
     }
+    if (languages.showFrench && (form.french?.trim().length ?? 0) < 3) {
+      setError("French name must be at least 3 characters.");
+      return;
+    }
+    if (languages.showArabic && (form.arabic?.trim().length ?? 0) < 3) {
+      setError("Arabic name must be at least 3 characters.");
+      return;
+    }
+
+    const hasAny =
+      (languages.showEnglish && form.english.trim().length >= 3) ||
+      (languages.showFrench && (form.french?.trim().length ?? 0) >= 3) ||
+      (languages.showArabic && (form.arabic?.trim().length ?? 0) >= 3);
+
+    if (!hasAny) {
+      setError("At least one translation is required.");
+      return;
+    }
+
     setError("");
     onSave(form, iconFile);
     setIconFile(null);
     setIsEditing(false);
   };
-
   const handleCancel = () => {
     setForm(category);
     setIconFile(null);
@@ -95,7 +128,8 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
   };
 
   const missingClass = "border-warning bg-warning/10";
-  const inputClass = "w-full h-9 px-3 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500";
+  const inputClass =
+    "w-full h-9 px-3 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500";
 
   return (
     <tr
@@ -125,7 +159,11 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
           {form.icon ? (
-            <img src={form.icon} alt="" className="w-full h-full object-cover" />
+            <img
+              src={form.icon}
+              alt=""
+              className="w-full h-full object-cover"
+            />
           ) : isEditing ? (
             <Upload size={16} className="text-text-400" />
           ) : (
@@ -133,7 +171,13 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
           )}
         </div>
         {isEditing && (
-          <input ref={iconInputRef} type="file" accept="image/*" className="hidden" onChange={handleIconChange} />
+          <input
+            ref={iconInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleIconChange}
+          />
         )}
       </TableCell>
 
@@ -143,13 +187,19 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
           <div className="flex flex-col gap-1">
             <input
               value={form.english}
-              onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, english: e.target.value }))
+              }
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
-            {error && <span className="text-xs text-error text-center">{error}</span>}
+            {error && (
+              <span className="text-xs text-error text-center">{error}</span>
+            )}
           </div>
         ) : (
-          <span className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.english ? `text-warning ${missingClass}` : "text-text-600"}`}>
+          <span
+            className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.english ? `text-warning ${missingClass}` : "text-text-600"}`}
+          >
             {category.english || "Missing"}
           </span>
         )}
@@ -164,7 +214,9 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : (
-          <span className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.french ? `text-warning ${missingClass}` : "text-text-600"}`}>
+          <span
+            className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.french ? `text-warning ${missingClass}` : "text-text-600"}`}
+          >
             {category.french || "Missing"}
           </span>
         )}
@@ -180,7 +232,10 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
         ) : (
-          <span className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.arabic ? `text-warning ${missingClass}` : "text-text-600"}`} dir={languages.showArabic ? "rtl" : undefined}>
+          <span
+            className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.arabic ? `text-warning ${missingClass}` : "text-text-600"}`}
+            dir={languages.showArabic ? "rtl" : undefined}
+          >
             {category.arabic || "Missing"}
           </span>
         )}
@@ -189,7 +244,9 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
       {/* Status */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge variant={category.status === "visible" ? "visible" : "hidden"} />
+          <Badge
+            variant={category.status === "visible" ? "visible" : "hidden"}
+          />
         </div>
       </TableCell>
 
@@ -217,7 +274,11 @@ function CategoryRow({ category, onSave, onDelete, isLast, languages }: Category
               onClick={handleToggleStatus}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
             >
-              {category.status === "visible" ? <Eye size={17} /> : <EyeOff size={17} />}
+              {category.status === "visible" ? (
+                <Eye size={17} />
+              ) : (
+                <EyeOff size={17} />
+              )}
             </button>
             <button
               onClick={() => setIsEditing(true)}

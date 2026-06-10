@@ -57,7 +57,10 @@ function writeStoredAuth(auth: StoredAuth | null) {
   localStorage.setItem("auth_token", auth.token);
 }
 
-async function resolveMenuId(restaurantId: string, currentMenuId: string | null) {
+async function resolveMenuId(
+  restaurantId: string,
+  currentMenuId: string | null,
+) {
   const restaurant = await restaurantService.getRestaurant(restaurantId);
   if (restaurant.defaultMenuId) return restaurant.defaultMenuId;
 
@@ -69,7 +72,9 @@ async function resolveMenuId(restaurantId: string, currentMenuId: string | null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<StoredAuth | null>(readStoredAuth);
-  const [isBootstrapping, setIsBootstrapping] = useState(Boolean(readStoredAuth()));
+  const [isBootstrapping, setIsBootstrapping] = useState(
+    Boolean(readStoredAuth()),
+  );
 
   const refreshSession = useCallback(async () => {
     if (!auth?.token || !auth.restaurantId) return;
@@ -82,12 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!auth?.token) {
-      setIsBootstrapping(false);
       return;
     }
 
     let cancelled = false;
+
     (async () => {
+      if (!auth?.token) {
+        if (!cancelled) setIsBootstrapping(false);
+        return;
+      }
+
       try {
         const menuId = await resolveMenuId(auth.restaurantId, auth.menuId);
         if (cancelled) return;
@@ -125,7 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       menuId: null,
     };
 
-    // Save token before follow-up API calls (getRestaurant, getMenus)
     localStorage.setItem("auth_token", response.token);
 
     const menuId = await resolveMenuId(response.restaurantId, null);
@@ -157,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       refreshSession,
     }),
-    [auth, isBootstrapping, login, logout, refreshSession]
+    [auth, isBootstrapping, login, logout, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -168,4 +177,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
-

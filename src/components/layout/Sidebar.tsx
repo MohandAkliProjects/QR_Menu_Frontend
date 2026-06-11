@@ -30,16 +30,20 @@ function Sidebar() {
     await logout();
     navigate("/login");
   };
+
   return (
-    <aside className="w-70 min-h-screen bg-primary-900 flex flex-col gap-6 px-5 py-6 rounded-r-xl">
-      
+    <aside className="w-64 h-full bg-primary-900 flex flex-col px-4 py-6 rounded-r-xl">
+
       {/* Logo */}
-      <div className="flex flex-col items-center mb-8">
-        <img src={logo} alt="Spectral QR" className="w-60" />
+      <div className="flex flex-col items-center flex-shrink-0 py-4">
+        <img src={logo} alt="Spectral QR" className="w-48" />
       </div>
 
+      {/* Divider */}
+      <div className="flex-shrink-0 h-px bg-primary-700 my-4" />
+
       {/* Nav Links */}
-      <nav className="flex flex-col gap-3 flex-1">
+      <nav className="flex flex-col gap-2.5 flex-1 pt-2">
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -47,28 +51,28 @@ function Sidebar() {
             end={end}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3.5 rounded-[10px] no-underline
-              font-sans text-base  text-cream-500 transition-all duration-200
+              font-sans text-base text-cream-500 transition-all duration-200
               ${isActive
                 ? "bg-gold-600"
                 : "bg-primary-700 hover:bg-primary-700/70 active:bg-gold-600"
               }`
             }
           >
-            <Icon  className="w-6 h-6 text-beige-600" />
+            <Icon className="w-5 h-5 text-beige-600 shrink-0" />
             {label}
           </NavLink>
         ))}
       </nav>
 
       {/* Logout */}
-     <button
+      <button
   onClick={handleLogout}
   className="flex items-center gap-3 px-4 py-3.5 rounded-lg border border-danger-red
     bg-transparent text-danger-red font-sans text-base
     cursor-pointer w-full transition-all duration-200
-    hover:bg-danger-red/10 active:bg-danger-red/20"
+    hover:bg-danger-red/10 active:bg-danger-red/20 mt-4 mb-2"
 >
-  <LogoutIcon className="w-6 h-6 text-danger-red" />
+  <LogoutIcon className="w-5 h-5 text-danger-red shrink-0" />
   Log out
 </button>
     </aside>

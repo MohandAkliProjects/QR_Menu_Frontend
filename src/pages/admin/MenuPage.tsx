@@ -115,7 +115,6 @@ function MenuPage() {
 
   const menuKey = ["menu", restaurantId, menuId] as const;
 
-  // ── Queries ────────────────────────────────────────────────────────────
 
   const {
     data: menuData,
@@ -137,7 +136,6 @@ function MenuPage() {
     staleTime: Infinity,
   });
 
-  // ── Derived server state ───────────────────────────────────────────────
 
   const serverForm = menuData ? menuResponseToForm(menuData) : null;
 
@@ -156,7 +154,6 @@ const dishCount = menuData?.totalDishes ?? 0;
   const activeForm = isEditing ? form : serverForm;
   const activeLangs = isEditing ? supportedLanguages : serverLanguages;
 
-  // ── Mutations ──────────────────────────────────────────────────────────
 
   const saveMutation = useMutation({
     mutationFn: (f: MenuFormState) =>
@@ -185,7 +182,6 @@ const dishCount = menuData?.totalDishes ?? 0;
     onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
   });
 
-  // ── Handlers ───────────────────────────────────────────────────────────
 
   const handleEdit = () => {
     setErrors({});
@@ -225,7 +221,6 @@ const dishCount = menuData?.totalDishes ?? 0;
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  // ── Derived UI ─────────────────────────────────────────────────────────
 
   const availableToAdd = ALL_LANGUAGES.filter((l) => !activeLangs.includes(l));
 
@@ -252,7 +247,6 @@ const isError = menuIsError;
         ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
 
-  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-6 p-6 w-full pb-10">

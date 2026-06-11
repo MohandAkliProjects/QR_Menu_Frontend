@@ -249,7 +249,7 @@ function CategoriesPage() {
     : null;
 
   return (
-    <div className="flex flex-col min-h-full p-6 sm:p-8 lg:p-10 w-full">
+    <div className="flex flex-col  p-6 sm:p-8 lg:p-10 w-full">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">

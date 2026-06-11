@@ -4,7 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
 import {
-  CategoriesIcon, DishesIcon, EyeIcon, HeartIcon, MenuIcon,
+  CategoriesIcon,
+  DishesIcon,
+  EyeIcon,
+  HeartIcon,
+  MenuIcon,
 } from "../../assets/icons";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
@@ -29,36 +33,30 @@ function OverviewPage() {
   const { restaurantId, email } = useAuth();
   //const { toasts, showToast, removeToast } = useToast();
 
-const {
-  data,
-  isLoading,
-  isError,
-  error,
-  refetch,
-} = useQuery({
-  queryKey: ["overview", restaurantId],
-  queryFn: () => restaurantService.getDashboardStats(restaurantId!),
-  enabled: !!restaurantId,
-  staleTime: 1000 * 60,
-});
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["overview", restaurantId],
+    queryFn: () => restaurantService.getDashboardStats(restaurantId!),
+    enabled: !!restaurantId,
+    staleTime: 1000 * 60,
+  });
 
   const subscriptionBanner = useMemo(
     () => resolveSubscriptionBanner(data?.subscriptionEndDate),
-    [data?.subscriptionEndDate]
+    [data?.subscriptionEndDate],
   );
 
   const formattedExpiryDate = formatDisplayDate(data?.subscriptionEndDate);
-const restaurantName = data?.name ?? "";
+  const restaurantName = data?.name ?? "";
   const welcomeName = restaurantName || email?.split("@")[0] || "there";
 
   const viewsSeries = useMemo(
     () => buildMonthlyViewSeries(data?.views ?? []),
-    [data?.views]
+    [data?.views],
   );
 
   const viewsTrend = useMemo(
     () => calculateViewsTrend(data?.views ?? []),
-    [data?.views]
+    [data?.views],
   );
 
   const likesSeries = useMemo(() => {
@@ -72,29 +70,36 @@ const restaurantName = data?.name ?? "";
   }, [data?.totalLikes]);
 
   return (
-    <div className="flex flex-col min-h-full p-6 sm:p-8 lg:p-10 w-full">
+    <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
+      {!isLoading &&
+        !isError &&
+        subscriptionBanner === "warning" &&
+        formattedExpiryDate && (
+          <Notification
+            variant="warning"
+            title="Subscription Expiring Soon"
+            message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew your plan to keep all premium features active.`}
+            className="mb-6"
+          />
+        )}
 
-      {!isLoading && !isError && subscriptionBanner === "warning" && formattedExpiryDate && (
-        <Notification
-          variant="warning"
-          title="Subscription Expiring Soon"
-          message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew your plan to keep all premium features active.`}
-          className="mb-6"
-        />
-      )}
-
-      {!isLoading && !isError && subscriptionBanner === "success" && formattedExpiryDate && (
-        <Notification
-          variant="success"
-          title="Subscription Renewed Successfully"
-          message={`Your Business Pro plan has been renewed successfully and will remain active until ${formattedExpiryDate}.`}
-          className="mb-6"
-        />
-      )}
+      {!isLoading &&
+        !isError &&
+        subscriptionBanner === "success" &&
+        formattedExpiryDate && (
+          <Notification
+            variant="success"
+            title="Subscription Renewed Successfully"
+            message={`Your Business Pro plan has been renewed successfully and will remain active until ${formattedExpiryDate}.`}
+            className="mb-6"
+          />
+        )}
 
       <div className="mb-8">
         <PageHeader title="OverView" />
-        <p className="text-base text-text-400 mt-1">Welcome back, {welcomeName}</p>
+        <p className="text-base text-text-400 mt-1">
+          Welcome back, {welcomeName}
+        </p>
       </div>
 
       {isLoading ? (

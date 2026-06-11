@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Lock, LogIn } from "lucide-react";
+import { Mail, Lock, LogIn, Eye, EyeOff } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -39,6 +39,7 @@ function LoginPage() {
   const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
@@ -101,14 +102,25 @@ function LoginPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-600">Password</label>
-            <IconInput
-              icon={Lock}
-              type="password"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={field("password")}
-              error={errors.password}
-            />
+            <div className="relative">
+              <IconInput
+  icon={Lock}
+  type={showPassword ? "text" : "password"}
+  placeholder="Enter your password"
+  value={form.password}
+  onChange={field("password")}
+  error={errors.password}
+  className="[&::-webkit-credentials-auto-fill-button]:hidden [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
+/>
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-400 hover:text-text-600 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
         </div>
 

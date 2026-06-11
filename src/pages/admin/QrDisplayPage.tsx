@@ -70,7 +70,7 @@ function QrDisplayPage() {
   }
 
   return (
-    <div className="w-full min-h-screen p-6 sm:p-8 lg:p-12">
+    <div className="w-full  p-6 sm:p-8 lg:p-12">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="w-full flex flex-col gap-8">

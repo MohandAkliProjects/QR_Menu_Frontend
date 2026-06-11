@@ -114,7 +114,7 @@ function AddDishModal({
             icon={Trash2}
             onClick={handleCancel}
             fullWidth
-            className="!bg-transparent !border !border-error !text-error hover:!bg-error/10"
+            className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
           />
           <Button
             label="Confirm"

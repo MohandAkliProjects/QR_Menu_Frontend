@@ -13,7 +13,7 @@ function StatCard({ label, value, icon, trend, className = "" }: StatCardProps) 
 
   return (
     <div
-      className={`rounded-2xl px-5 py-4 min-h-[112px] flex flex-col justify-between shadow-[var(--shadow-card)] ${className}`}
+      className={`rounded-2xl px-5 py-4 min-h-28 flex flex-col justify-between shadow-(--shadow-card) ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">

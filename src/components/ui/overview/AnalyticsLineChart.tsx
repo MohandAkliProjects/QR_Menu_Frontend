@@ -41,7 +41,7 @@ function AnalyticsLineChart({
   const secondaryPath = buildPath(secondaryValues, width, height, maxValue);
 
   return (
-    <div className="rounded-2xl bg-[#222222] p-5 flex flex-col gap-4 min-h-[260px]">
+    <div className="rounded-2xl bg-[#222222] p-5 flex flex-col gap-4 min-h-65">
       <h3 className="text-base font-semibold text-white">{title}</h3>
 
       {hasData ? (
@@ -49,7 +49,7 @@ function AnalyticsLineChart({
           <div className="relative flex-1">
             <svg
               viewBox={`0 0 ${width} ${height}`}
-              className="w-full h-[140px]"
+              className="w-full h-35"
               preserveAspectRatio="none"
               role="img"
               aria-label={`${title} chart`}

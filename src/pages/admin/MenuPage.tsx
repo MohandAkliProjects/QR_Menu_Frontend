@@ -8,11 +8,11 @@ import {
   Plus,
   X,
   Edit2,
+  LayoutGrid,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
-import { CategoriesIcon, DishesIcon } from "../../assets/icons";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -36,19 +36,8 @@ import { ROUTES } from "../../types/routes";
 import type { Devise } from "../../types/enums";
 import * as restaurantService from "../../services/restaurant.service";
 
-// ── Constants ──────────────────────────────────────────────────────────────
-
 const DEVISE_OPTIONS: Devise[] = [
-  "eur",
-  "usd",
-  "gbp",
-  "dzd",
-  "sar",
-  "aed",
-  "try",
-  "cad",
-  "chf",
-  "cny",
+  "eur","usd","gbp","dzd","sar","aed","try","cad","chf","cny",
 ];
 
 const ALL_LANGUAGES = ["EN", "FR", "AR"] as const;
@@ -72,8 +61,6 @@ const LANGUAGE_FIELD: Record<SupportedLang, "english" | "french" | "arabic"> = {
   AR: "arabic",
 };
 
-// ── Validation ─────────────────────────────────────────────────────────────
-
 interface MenuFormErrors {
   english?: string;
   french?: string;
@@ -96,8 +83,6 @@ function validateMenuForm(
   return errors;
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
-
 function MenuPage() {
   const { restaurantId, menuId } = useAuth();
   const queryClient = useQueryClient();
@@ -106,15 +91,12 @@ function MenuPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<MenuFormState | null>(null);
   const [initialForm, setInitialForm] = useState<MenuFormState | null>(null);
-  const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>(
-    [],
-  );
+  const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>([]);
   const [initialLanguages, setInitialLanguages] = useState<SupportedLang[]>([]);
   const [errors, setErrors] = useState<MenuFormErrors>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const menuKey = ["menu", restaurantId, menuId] as const;
-
 
   const {
     data: menuData,
@@ -136,7 +118,6 @@ function MenuPage() {
     staleTime: Infinity,
   });
 
-
   const serverForm = menuData ? menuResponseToForm(menuData) : null;
 
   const serverLanguages = useMemo<SupportedLang[]>(() => {
@@ -148,12 +129,11 @@ function MenuPage() {
       );
   }, [menuData]);
 
-const categoryCount = menuData?.totalCategories ?? 0;
-const dishCount = menuData?.totalDishes ?? 0;
+  const categoryCount = menuData?.totalCategories ?? 0;
+  const dishCount = menuData?.totalDishes ?? 0;
 
   const activeForm = isEditing ? form : serverForm;
   const activeLangs = isEditing ? supportedLanguages : serverLanguages;
-
 
   const saveMutation = useMutation({
     mutationFn: (f: MenuFormState) =>
@@ -182,7 +162,6 @@ const dishCount = menuData?.totalDishes ?? 0;
     onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
   });
 
-
   const handleEdit = () => {
     setErrors({});
     setForm(serverForm);
@@ -204,11 +183,7 @@ const dishCount = menuData?.totalDishes ?? 0;
     const validationErrors = validateMenuForm(activeForm, activeLangs);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
-      showToast(
-        "error",
-        "Validation Error",
-        "Please fill in all required fields.",
-      );
+      showToast("error", "Validation Error", "Please fill in all required fields.");
       return;
     }
     saveMutation.mutate(activeForm);
@@ -221,7 +196,6 @@ const dishCount = menuData?.totalDishes ?? 0;
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-
   const availableToAdd = ALL_LANGUAGES.filter((l) => !activeLangs.includes(l));
 
   const previewUrl = useMemo(
@@ -232,8 +206,8 @@ const dishCount = menuData?.totalDishes ?? 0;
     [restaurantData],
   );
 
-const isLoading = menuLoading;
-const isError = menuIsError;
+  const isLoading = menuLoading;
+  const isError = menuIsError;
 
   const noMenuError =
     !restaurantId || !menuId
@@ -246,7 +220,6 @@ const isError = menuIsError;
       : activeLangs.length === 2
         ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
-
 
   return (
     <div className="flex flex-col gap-6 p-6 w-full pb-10">
@@ -264,11 +237,9 @@ const isError = menuIsError;
             <Button
               label="Preview"
               icon={ExternalLink}
-              onClick={() =>
-                window.open(previewUrl, "_blank", "noopener,noreferrer")
-              }
+              onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
               disabled={isLoading || isError}
-              className="!bg-transparent !border !border-primary-400 !text-primary-700 hover:!bg-primary-50"
+              className="bg-transparent! border! border-primary-400! text-primary-700! hover:bg-primary-50!"
             />
           )}
 
@@ -276,11 +247,7 @@ const isError = menuIsError;
             <Button label="Edit" icon={Edit2} onClick={handleEdit} />
           ) : (
             <>
-              <Button
-                label="Cancel"
-                variant="secondary"
-                onClick={handleCancel}
-              />
+              <Button label="Cancel" variant="secondary" onClick={handleCancel} />
               <Button
                 label={saveMutation.isPending ? "Saving..." : "Save Changes"}
                 icon={Save}
@@ -357,27 +324,20 @@ const isError = menuIsError;
                           </button>
                         )}
                       </div>
-
                       <Input
                         value={activeForm[field] ?? ""}
                         disabled={!isEditing}
                         placeholder={LANGUAGE_PLACEHOLDERS[lang]}
                         dir={lang === "AR" ? "rtl" : undefined}
                         onChange={(e) => {
-                          setErrors((prev) => ({
-                            ...prev,
-                            [field]: undefined,
-                          }));
+                          setErrors((prev) => ({ ...prev, [field]: undefined }));
                           setForm((prev) =>
                             prev ? { ...prev, [field]: e.target.value } : prev,
                           );
                         }}
                       />
-
                       {errors[field] && (
-                        <span className="text-xs text-error">
-                          {errors[field]}
-                        </span>
+                        <span className="text-xs text-error">{errors[field]}</span>
                       )}
                     </div>
                   );
@@ -391,7 +351,7 @@ const isError = menuIsError;
                 title="Currency"
                 description="The currency shown to customers on your public menu"
               />
-              <div className="max-w-[200px]">
+              <div className="max-w-50">
                 <SelectDropdown
                   value={activeForm.devise.toUpperCase()}
                   options={DEVISE_OPTIONS.map((d) => d.toUpperCase())}
@@ -399,16 +359,12 @@ const isError = menuIsError;
                   onChange={(value) => {
                     setErrors((prev) => ({ ...prev, devise: undefined }));
                     setForm((prev) =>
-                      prev
-                        ? { ...prev, devise: value.toLowerCase() as Devise }
-                        : prev,
+                      prev ? { ...prev, devise: value.toLowerCase() as Devise } : prev,
                     );
                   }}
                 />
                 {errors.devise && (
-                  <span className="text-xs text-error mt-1 block">
-                    {errors.devise}
-                  </span>
+                  <span className="text-xs text-error mt-1 block">{errors.devise}</span>
                 )}
               </div>
             </Card>
@@ -421,7 +377,7 @@ const isError = menuIsError;
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-primary-50 px-4 py-3">
                   <div className="flex items-center gap-2 text-primary-700 mb-1">
-                    <CategoriesIcon className="w-4 h-4" />
+                    <LayoutGrid className="w-4 h-4" />
                     <span className="text-sm">Categories</span>
                   </div>
                   <span className="text-2xl font-semibold text-dark-800">
@@ -430,7 +386,7 @@ const isError = menuIsError;
                 </div>
                 <div className="rounded-xl bg-beige-100 px-4 py-3">
                   <div className="flex items-center gap-2 text-primary-700 mb-1">
-                    <DishesIcon className="w-4 h-4" />
+                    <UtensilsCrossed className="w-4 h-4" />
                     <span className="text-sm">Dishes</span>
                   </div>
                   <span className="text-2xl font-semibold text-dark-800">
@@ -450,7 +406,7 @@ const isError = menuIsError;
                 label="Delete Menu"
                 icon={Trash2}
                 onClick={() => setShowDeleteModal(true)}
-                className="!bg-transparent !border !border-error !text-error hover:!bg-error/10"
+                className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
               />
             </Card>
           </div>
@@ -463,18 +419,14 @@ const isError = menuIsError;
         onClose={() => setShowDeleteModal(false)}
         footer={
           <div className="flex gap-4 w-full">
-            <Button
-              label="Cancel"
-              onClick={() => setShowDeleteModal(false)}
-              fullWidth
-            />
+            <Button label="Cancel" onClick={() => setShowDeleteModal(false)} fullWidth />
             <Button
               label={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
               icon={Trash2}
               onClick={() => deleteMutation.mutate()}
               disabled={deleteMutation.isPending}
               fullWidth
-              className="!bg-error !border-error"
+              className="bg-error! border-error!"
             />
           </div>
         }

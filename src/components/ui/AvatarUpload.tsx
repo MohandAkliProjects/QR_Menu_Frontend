@@ -12,7 +12,6 @@ function AvatarUpload({ isEditing, initialUrl, onFileSelected, onDelete }: Avata
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Use local preview if user selected a file, otherwise fall back to initialUrl
   const preview = localPreview ?? initialUrl ?? null;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

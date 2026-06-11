@@ -78,7 +78,6 @@ function CategoriesPage() {
     showArabic: supportedLanguages.includes("AR" as Language),
   };
 
-  // ── Mutations ────────────────────────────────────────────────────────────
 
   const createMutation = useMutation({
     mutationFn: ({
@@ -146,7 +145,6 @@ function CategoriesPage() {
     },
   });
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -219,7 +217,6 @@ function CategoriesPage() {
     deleteMutation.mutate(String(id));
   };
 
-  // ── Derived ───────────────────────────────────────────────────────────────
 
   const categoriesWithMissing = categories.filter((c) => {
     if (languages.showEnglish && !c.english) return true;

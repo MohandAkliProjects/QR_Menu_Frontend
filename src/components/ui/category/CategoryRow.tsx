@@ -198,7 +198,7 @@ function CategoryRow({
           </div>
         ) : (
           <span
-            className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.english ? `text-warning ${missingClass}` : "text-text-600"}`}
+            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${!category.english ? `text-warning ${missingClass}` : "text-text-600"}`}
           >
             {category.english || "Missing"}
           </span>
@@ -215,7 +215,7 @@ function CategoryRow({
           />
         ) : (
           <span
-            className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.french ? `text-warning ${missingClass}` : "text-text-600"}`}
+            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${!category.french ? `text-warning ${missingClass}` : "text-text-600"}`}
           >
             {category.french || "Missing"}
           </span>
@@ -233,7 +233,7 @@ function CategoryRow({
           />
         ) : (
           <span
-            className={`text-sm truncate block max-w-[140px] mx-auto px-2 py-1 rounded-lg ${!category.arabic ? `text-warning ${missingClass}` : "text-text-600"}`}
+            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${!category.arabic ? `text-warning ${missingClass}` : "text-text-600"}`}
             dir={languages.showArabic ? "rtl" : undefined}
           >
             {category.arabic || "Missing"}

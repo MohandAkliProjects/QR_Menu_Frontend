@@ -3,7 +3,6 @@ interface InputProps
   error?: string;
 }
 
-//if u want to add a custom one just add the className and the props you want to use 
 function Input({ error, ...props }: InputProps) {
   return (
     <input

@@ -43,8 +43,8 @@ function LoginPage() {
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
-  const field = (key: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+  const field =
+    (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
       setErrors((prev) => ({ ...prev, [key]: undefined, general: undefined }));
     };
@@ -61,7 +61,9 @@ function LoginPage() {
       await login(form.email, form.password);
       navigate("/dashboard");
     } catch (error) {
-      setErrors({ general: getErrorMessage(error, "Invalid email or password.") });
+      setErrors({
+        general: getErrorMessage(error, "Invalid email or password."),
+      });
     } finally {
       setLoading(false);
     }
@@ -79,7 +81,9 @@ function LoginPage() {
       </div>
 
       <Card className="w-full max-w-md flex flex-col gap-6">
-        <h2 className="text-xl font-bold text-dark-700 text-center">Welcome Back</h2>
+        <h2 className="text-xl font-bold text-dark-700 text-center">
+          Welcome Back
+        </h2>
 
         {errors.general && (
           <div className="px-4 py-3 rounded-xl bg-error-bg border border-error text-sm text-error">
@@ -101,17 +105,19 @@ function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-600">Password</label>
+            <label className="text-sm font-medium text-text-600">
+              Password
+            </label>
             <div className="relative">
               <IconInput
-  icon={Lock}
-  type={showPassword ? "text" : "password"}
-  placeholder="Enter your password"
-  value={form.password}
-  onChange={field("password")}
-  error={errors.password}
-  className="[&::-webkit-credentials-auto-fill-button]:hidden [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
-/>
+                icon={Lock}
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={form.password}
+                onChange={field("password")}
+                error={errors.password}
+                className="[&::-webkit-credentials-auto-fill-button]:hidden [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
+              />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}

@@ -9,15 +9,13 @@ import InformationPage from "./pages/admin/InformationPage";
 import BannersPage from "./pages/admin/BannersPage";
 import QrDisplayPage from "./pages/admin/QrDisplayPage";
 import MenuPage from "./pages/admin/MenuPage";
-import PublicMenuPage from "./pages/public/PublicMenuPage";
+
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/menu/:menuId" element={<PublicMenuPage />} />
-
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<OverviewPage />} />

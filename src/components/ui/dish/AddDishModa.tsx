@@ -6,6 +6,7 @@ import CategoryImageUpload from "../category/CategoryImageUpload";
 import { Trash2, Check } from "lucide-react";
 import type { Dish } from "../../../types/dish";
 import type { UniqueIdentifier } from "@dnd-kit/core";
+import type { Language } from "../../../types/enums";
 
 interface Category {
   id: UniqueIdentifier;
@@ -18,6 +19,7 @@ interface AddDishModalProps {
   onConfirm: (data: Omit<Dish, "id" | "order" | "likes">) => void;
   editData?: Dish | null;
   categories: Category[];
+  supportedLanguages: Language[];
 }
 
 type FormState = Omit<Dish, "id" | "order" | "likes">;
@@ -34,7 +36,18 @@ const EMPTY: FormState = {
   categoryId: "",
 };
 
-function AddDishModal({ isOpen, onClose, onConfirm, editData, categories }: AddDishModalProps) {
+function AddDishModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  editData,
+  categories,
+  supportedLanguages,
+}: AddDishModalProps) {
+  const showEnglish = supportedLanguages.includes("EN" as Language);
+  const showFrench = supportedLanguages.includes("FR" as Language);
+  const showArabic = supportedLanguages.includes("AR" as Language);
+
   const [form, setForm] = useState<FormState>(
     editData
       ? {
@@ -48,15 +61,24 @@ function AddDishModal({ isOpen, onClose, onConfirm, editData, categories }: AddD
           status: editData.status,
           categoryId: editData.categoryId,
         }
-      : EMPTY
+      : { ...EMPTY, categoryId: categories[0] ? String(categories[0].id) : "" }
   );
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 
   const validate = () => {
     const newErrors: Partial<Record<keyof FormState, string>> = {};
-    if (!form.english.trim()) newErrors.english = "English name is required.";
-    if (!form.price || form.price <= 0) newErrors.price = "Price must be greater than 0.";
-    if (!form.categoryId) newErrors.categoryId = "Please select a category.";
+
+    if (showEnglish && !form.english.trim())
+      newErrors.english = "English name is required.";
+    if (showFrench && !form.french?.trim())
+      newErrors.french = "French name is required.";
+    if (showArabic && !form.arabic?.trim())
+      newErrors.arabic = "Arabic name is required.";
+    if (!form.price || form.price <= 0)
+      newErrors.price = "Price must be greater than 0.";
+    if (!form.categoryId)
+      newErrors.categoryId = "Please select a category.";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -71,6 +93,14 @@ function AddDishModal({ isOpen, onClose, onConfirm, editData, categories }: AddD
     setErrors({});
     onClose();
   };
+
+  const languageCount = [showEnglish, showFrench, showArabic].filter(Boolean).length;
+  const gridCols =
+    languageCount === 3
+      ? "grid-cols-1 sm:grid-cols-3"
+      : languageCount === 2
+      ? "grid-cols-1 sm:grid-cols-2"
+      : "grid-cols-1";
 
   return (
     <Modal
@@ -87,7 +117,7 @@ function AddDishModal({ isOpen, onClose, onConfirm, editData, categories }: AddD
             className="!bg-transparent !border !border-error !text-error hover:!bg-error/10"
           />
           <Button
-            label="Confirme"
+            label="Confirm"
             icon={Check}
             onClick={handleConfirm}
             fullWidth
@@ -99,84 +129,136 @@ function AddDishModal({ isOpen, onClose, onConfirm, editData, categories }: AddD
       <div className="w-full">
         <CategoryImageUpload
           preview={form.image}
-          onChange={(_, preview) => setForm((prev) => ({ ...prev, image: preview }))}
+          onChange={(_, preview) =>
+            setForm((prev) => ({ ...prev, image: preview }))
+          }
         />
       </div>
 
-      {/* Name Fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-text-600">English</label>
-          <Input
-            value={form.english}
-            placeholder="name"
-            onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
-            error={errors.english}
-          />
-          {errors.english && <span className="text-xs text-error">{errors.english}</span>}
+      {/* Name Fields — only show languages the menu supports */}
+      {languageCount > 0 && (
+        <div className={`grid ${gridCols} gap-4`}>
+          {showEnglish && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-600">
+                English <span className="text-error">*</span>
+              </label>
+              <Input
+                value={form.english}
+                placeholder="Dish name"
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, english: e.target.value }))
+                }
+                error={errors.english}
+              />
+              {errors.english && (
+                <span className="text-xs text-error">{errors.english}</span>
+              )}
+            </div>
+          )}
+          {showFrench && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-600">
+                Français <span className="text-error">*</span>
+              </label>
+              <Input
+                value={form.french ?? ""}
+                placeholder="Nom du plat"
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, french: e.target.value }))
+                }
+                error={errors.french}
+              />
+              {errors.french && (
+                <span className="text-xs text-error">{errors.french}</span>
+              )}
+            </div>
+          )}
+          {showArabic && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-text-600">
+                العربية <span className="text-error">*</span>
+              </label>
+              <Input
+                value={form.arabic ?? ""}
+                placeholder="اسم الطبق"
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, arabic: e.target.value }))
+                }
+                error={errors.arabic}
+              />
+              {errors.arabic && (
+                <span className="text-xs text-error">{errors.arabic}</span>
+              )}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-text-600">Francais</label>
-          <Input
-            value={form.french ?? ""}
-            placeholder="name"
-            onChange={(e) => setForm((p) => ({ ...p, french: e.target.value }))}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-text-600">Arabic</label>
-          <Input
-            value={form.arabic ?? ""}
-            placeholder="name"
-            onChange={(e) => setForm((p) => ({ ...p, arabic: e.target.value }))}
-          />
-        </div>
-      </div>
+      )}
 
       {/* Price + Category */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-text-600">Price</label>
+          <label className="text-sm font-medium text-text-600">
+            Price <span className="text-error">*</span>
+          </label>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-400">$</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-400">
+              $
+            </span>
             <input
               type="number"
+              min={0}
+              step="0.01"
               value={form.price}
-              placeholder="0"
-              onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))}
+              placeholder="0.00"
+              onChange={(e) =>
+                setForm((p) => ({ ...p, price: Number(e.target.value) }))
+              }
               className={`
                 w-full h-12 pl-8 pr-4 rounded-xl
                 bg-card-bg border text-base text-text-800
                 focus:outline-none transition-all duration-200
-                shadow-[var(--shadow-card)]
-                ${errors.price ? "border-error" : "border-primary-200 focus:border-primary-500"}
+                shadow-(--shadow-card)
+                ${errors.price
+                  ? "border-error"
+                  : "border-primary-200 focus:border-primary-500"}
               `}
             />
           </div>
-          {errors.price && <span className="text-xs text-error">{errors.price}</span>}
+          {errors.price && (
+            <span className="text-xs text-error">{errors.price}</span>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-text-600">Categorie</label>
+          <label className="text-sm font-medium text-text-600">
+            Category <span className="text-error">*</span>
+          </label>
           <select
             value={String(form.categoryId)}
-            onChange={(e) => setForm((p) => ({ ...p, categoryId: Number(e.target.value) }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, categoryId: e.target.value }))
+            }
             className={`
               w-full h-12 px-4 rounded-xl
               bg-card-bg border text-base text-text-800
               focus:outline-none transition-all duration-200
-              shadow-[var(--shadow-card)]
-              ${errors.categoryId ? "border-error" : "border-primary-200 focus:border-primary-500"}
+              shadow-(--shadow-card)
+              ${errors.categoryId
+                ? "border-error"
+                : "border-primary-200 focus:border-primary-500"}
             `}
           >
-            <option value="">name of categorie</option>
+            <option value="">Select a category</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={String(cat.id)}>
+              <option key={String(cat.id)} value={String(cat.id)}>
                 {cat.label}
               </option>
             ))}
           </select>
-          {errors.categoryId && <span className="text-xs text-error">{errors.categoryId}</span>}
+          {errors.categoryId && (
+            <span className="text-xs text-error">{errors.categoryId}</span>
+          )}
         </div>
       </div>
 
@@ -185,19 +267,68 @@ function AddDishModal({ isOpen, onClose, onConfirm, editData, categories }: AddD
         <label className="text-sm font-medium text-text-600">Description</label>
         <textarea
           value={form.description ?? ""}
-          placeholder="Add description of dish"
-          onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+          placeholder="Add a description for this dish (optional)"
+          onChange={(e) =>
+            setForm((p) => ({ ...p, description: e.target.value }))
+          }
           rows={3}
           className="
             w-full px-4 py-3 rounded-xl
             bg-card-bg border border-primary-200
             text-base text-text-800
             focus:outline-none focus:border-primary-500
-            shadow-[var(--shadow-card)]
+            shadow-(--shadow-card)
             transition-all duration-200
             resize-none
           "
         />
+      </div>
+
+      {/* Availability + Visibility */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-text-600">Availability</label>
+          <select
+            value={form.available}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                available: e.target.value as "available" | "unavailable",
+              }))
+            }
+            className="
+              w-full h-12 px-4 rounded-xl
+              bg-card-bg border border-primary-200 text-base text-text-800
+              focus:outline-none focus:border-primary-500
+              shadow-(--shadow-card) transition-all duration-200
+            "
+          >
+            <option value="available">Available</option>
+            <option value="unavailable">Unavailable</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-text-600">Visibility</label>
+          <select
+            value={form.status}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                status: e.target.value as "visible" | "hidden",
+              }))
+            }
+            className="
+              w-full h-12 px-4 rounded-xl
+              bg-card-bg border border-primary-200 text-base text-text-800
+              focus:outline-none focus:border-primary-500
+              shadow-(--shadow-card) transition-all duration-200
+            "
+          >
+            <option value="visible">Visible</option>
+            <option value="hidden">Hidden</option>
+          </select>
+        </div>
       </div>
     </Modal>
   );

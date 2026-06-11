@@ -82,7 +82,7 @@ export interface CategoryWithDishesResponse {
 export interface MenuResponse {
   id: string;
   restaurantId: string;
-  devise: string;
+  devise: Devise;
   translations: Record<string, { title: string }>;
   totalCategories: number;
   totalDishes: number;

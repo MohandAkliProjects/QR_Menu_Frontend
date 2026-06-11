@@ -13,7 +13,7 @@ interface TableProps {
 
 function Table({ columns, children }: TableProps) {
   return (
-    <div className="w-full rounded-2xl overflow-hidden border border-beige-400 shadow-[var(--shadow-card)]">
+    <div className="w-full rounded-2xl overflow-hidden border border-beige-400 shadow-(--shadow-card)">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>

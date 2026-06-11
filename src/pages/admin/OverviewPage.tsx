@@ -1,15 +1,8 @@
 import { useMemo } from "react";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, BookOpen, LayoutGrid, UtensilsCrossed, Eye, Heart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
-import {
-  CategoriesIcon,
-  DishesIcon,
-  EyeIcon,
-  HeartIcon,
-  MenuIcon,
-} from "../../assets/icons";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -17,9 +10,7 @@ import Notification from "../../components/shared/Notification";
 import SectionHeader from "../../components/shared/SectionHeader";
 import AnalyticsLineChart from "../../components/ui/overview/AnalyticsLineChart";
 import StatCard from "../../components/ui/overview/StatCard";
-//import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
-//import useToast from "../../hooks/useToast";
 import {
   buildMonthlyViewSeries,
   calculateViewsTrend,
@@ -31,7 +22,6 @@ import * as restaurantService from "../../services/restaurant.service";
 
 function OverviewPage() {
   const { restaurantId, email } = useAuth();
-  //const { toasts, showToast, removeToast } = useToast();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["overview", restaurantId],
@@ -71,35 +61,27 @@ function OverviewPage() {
 
   return (
     <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
-      {!isLoading &&
-        !isError &&
-        subscriptionBanner === "warning" &&
-        formattedExpiryDate && (
-          <Notification
-            variant="warning"
-            title="Subscription Expiring Soon"
-            message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew your plan to keep all premium features active.`}
-            className="mb-6"
-          />
-        )}
+      {!isLoading && !isError && subscriptionBanner === "warning" && formattedExpiryDate && (
+        <Notification
+          variant="warning"
+          title="Subscription Expiring Soon"
+          message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew your plan to keep all premium features active.`}
+          className="mb-6"
+        />
+      )}
 
-      {!isLoading &&
-        !isError &&
-        subscriptionBanner === "success" &&
-        formattedExpiryDate && (
-          <Notification
-            variant="success"
-            title="Subscription Renewed Successfully"
-            message={`Your Business Pro plan has been renewed successfully and will remain active until ${formattedExpiryDate}.`}
-            className="mb-6"
-          />
-        )}
+      {!isLoading && !isError && subscriptionBanner === "success" && formattedExpiryDate && (
+        <Notification
+          variant="success"
+          title="Subscription Renewed Successfully"
+          message={`Your Business Pro plan has been renewed successfully and will remain active until ${formattedExpiryDate}.`}
+          className="mb-6"
+        />
+      )}
 
       <div className="mb-8">
         <PageHeader title="OverView" />
-        <p className="text-base text-text-400 mt-1">
-          Welcome back, {welcomeName}
-        </p>
+        <p className="text-base text-text-400 mt-1">Welcome back, {welcomeName}</p>
       </div>
 
       {isLoading ? (
@@ -121,32 +103,32 @@ function OverviewPage() {
               <StatCard
                 label="Menu"
                 value={formatStatNumber(data?.totalMenus ?? 0)}
-                icon={<MenuIcon className="w-5 h-5 text-primary-700" />}
+                icon={<BookOpen className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-200"
               />
               <StatCard
                 label="Categories"
                 value={formatStatNumber(data?.totalCategories ?? 0)}
-                icon={<CategoriesIcon className="w-5 h-5 text-primary-700" />}
+                icon={<LayoutGrid className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-100"
               />
               <StatCard
                 label="Dishes"
                 value={formatStatNumber(data?.totalDishes ?? 0)}
-                icon={<DishesIcon className="w-5 h-5 text-primary-700" />}
+                icon={<UtensilsCrossed className="w-5 h-5 text-primary-700" />}
                 className="bg-primary-100"
               />
               <StatCard
                 label="Views"
                 value={formatStatNumber(data?.views.length ?? 0)}
-                icon={<EyeIcon className="w-5 h-5 text-primary-700" />}
+                icon={<Eye className="w-5 h-5 text-primary-700" />}
                 trend={viewsTrend}
                 className="bg-beige-200"
               />
               <StatCard
                 label="Likes"
                 value={formatStatNumber(data?.totalLikes ?? 0)}
-                icon={<HeartIcon className="w-5 h-5 text-primary-700" />}
+                icon={<Heart className="w-5 h-5 text-primary-700" />}
                 className="bg-primary-200"
               />
             </div>

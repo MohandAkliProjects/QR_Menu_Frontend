@@ -104,9 +104,6 @@ function InformationPage() {
     staleTime: Infinity,
   });
 
-  // We populate the form separately using onSuccess equivalent:
-  // Since we need to set local form state from server data,
-  // we use a separate query with a callback pattern
   useQuery({
     queryKey: restaurantKey,
     queryFn: () => restaurantService.getRestaurant(restaurantId!),
@@ -126,8 +123,6 @@ function InformationPage() {
     },
   });
 
-  // Better pattern: single query, populate form via a ref-tracked initializer
-  // Let me restructure this cleanly:
 
   const { data: restaurantData } = useQuery({
     queryKey: restaurantKey,
@@ -136,8 +131,6 @@ function InformationPage() {
     staleTime: Infinity,
   });
 
-  // Sync server data into local form when not editing
-  // We do this via derived state: if not editing, form mirrors server data
   const serverForm: RestaurantForm | null = restaurantData
     ? (() => {
         const mapped = restaurantResponseToForm(restaurantData);
@@ -153,7 +146,6 @@ function InformationPage() {
       })()
     : null;
 
-  // Active form: local edits while editing, server data otherwise
   const activeForm = isEditing ? form : serverForm;
 
   const saveMutation = useMutation({

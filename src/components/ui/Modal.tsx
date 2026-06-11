@@ -10,7 +10,7 @@ interface ModalProps {
 }
 
 function Modal({ title, isOpen, onClose, children, footer }: ModalProps) {
-  // close on Escape key
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();

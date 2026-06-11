@@ -1,7 +1,13 @@
 import { useState, useRef } from "react";
 import {
-  Eye, EyeOff, Pencil, Trash2, Save,
-  Upload, Image as ImageIcon, Heart,
+  Eye,
+  EyeOff,
+  Pencil,
+  Trash2,
+  Save,
+  Upload,
+  Image as ImageIcon,
+  Heart,
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
@@ -44,13 +50,29 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setForm((prev) => ({ ...prev, image: reader.result as string }));
+    reader.onload = () =>
+      setForm((prev) => ({ ...prev, image: reader.result as string }));
     reader.readAsDataURL(file);
   };
 
+  const isMissingEnglish =
+    languages.showEnglish && (form.english?.trim().length ?? 0) < 1;
+  const isMissingFrench =
+    languages.showFrench && (form.french?.trim().length ?? 0) < 1;
+  const isMissingArabic =
+    languages.showArabic && (form.arabic?.trim().length ?? 0) < 1;
+
   const handleSave = () => {
-    if (!form.english.trim()) {
+    if (languages.showEnglish && (form.english?.trim().length ?? 0) < 1) {
       setError("English name is required.");
+      return;
+    }
+    if (languages.showFrench && (form.french?.trim().length ?? 0) < 1) {
+      setError("French name is required.");
+      return;
+    }
+    if (languages.showArabic && (form.arabic?.trim().length ?? 0) < 1) {
+      setError("Arabic name is required.");
       return;
     }
     setError("");
@@ -65,22 +87,22 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
   };
 
   const handleToggleStatus = () => {
-    const updated = {
+    onSave({
       ...dish,
       status: dish.status === "visible" ? "hidden" : "visible",
-    } as Dish;
-    onSave(updated);
+    } as Dish);
   };
 
   const handleToggleAvailable = () => {
-    const updated = {
+    onSave({
       ...dish,
       available: dish.available === "available" ? "unavailable" : "available",
-    } as Dish;
-    onSave(updated);
+    } as Dish);
   };
 
-  const inputClass = "w-full h-9 px-3 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500";
+  const missingClass = "border-warning bg-warning/10";
+  const inputClass =
+    "w-full h-9 px-3 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500";
 
   return (
     <tr
@@ -118,7 +140,13 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
           )}
         </div>
         {isEditing && (
-          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
         )}
       </TableCell>
 
@@ -129,13 +157,19 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             <input
               value={form.english}
               onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
-              className={`${inputClass} ${error ? "border-error" : ""}`}
+              className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
-            {error && <span className="text-xs text-error text-center">{error}</span>}
+            {error && (
+              <span className="text-xs text-error text-center">{error}</span>
+            )}
           </div>
         ) : (
-          <span className="text-sm text-text-600 truncate block max-w-[140px] mx-auto">
-            {dish.english}
+          <span
+            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${
+              !dish.english ? `text-warning ${missingClass}` : "text-text-600"
+            }`}
+          >
+            {dish.english || "Missing"}
           </span>
         )}
       </TableCell>
@@ -146,11 +180,15 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
           <input
             value={form.french ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, french: e.target.value }))}
-            className={inputClass}
+            className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : (
-          <span className="text-sm text-text-600 truncate block max-w-[140px] mx-auto">
-            {dish.french ?? "—"}
+          <span
+            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${
+              !dish.french ? `text-warning ${missingClass}` : "text-text-600"
+            }`}
+          >
+            {dish.french || "Missing"}
           </span>
         )}
       </TableCell>
@@ -162,44 +200,42 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             value={form.arabic ?? ""}
             onChange={(e) => setForm((p) => ({ ...p, arabic: e.target.value }))}
             dir="rtl"
-            className={inputClass}
+            className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
         ) : (
-          <span className="text-sm text-text-600 truncate block max-w-[140px] mx-auto" dir="rtl">
-            {dish.arabic ?? "—"}
+          <span
+            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${
+              !dish.arabic ? `text-warning ${missingClass}` : "text-text-600"
+            }`}
+            dir={languages.showArabic ? "rtl" : undefined}
+          >
+            {dish.arabic || "Missing"}
           </span>
         )}
       </TableCell>
 
-
-{/* Description */}
-<TableCell>
-  {isEditing ? (
-    <textarea
-      value={form.description ?? ""}
-      onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-      rows={2}
-      className="
-        w-full px-3 py-2 rounded-lg border border-beige-400
-        text-sm text-dark-700 bg-cream-200
-        focus:outline-none focus:border-primary-500
-        resize-none overflow-y-auto max-h-[80px]
-      "
-    />
-  ) : (
-    <div className="max-w-[180px] mx-auto">
-      <p className="
-        text-sm text-text-600 text-center
-        overflow-y-auto
-        max-h-[48px]
-        leading-6
-        break-words
-      ">
-        {dish.description || "—"}
-      </p>
-    </div>
-  )}
-</TableCell>
+      {/* Description */}
+      <TableCell>
+        {isEditing ? (
+          <textarea
+            value={form.description ?? ""}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            rows={2}
+            className="
+              w-full px-3 py-2 rounded-lg border border-beige-400
+              text-sm text-dark-700 bg-cream-200
+              focus:outline-none focus:border-primary-500
+              resize-none overflow-y-auto max-h-20
+            "
+          />
+        ) : (
+          <div className="max-w-35 mx-auto">
+            <p className="text-sm text-text-600 text-center overflow-y-auto max-h-12 leading-6 wrap-break-words">
+              {dish.description || "—"}
+            </p>
+          </div>
+        )}
+      </TableCell>
 
       {/* Price */}
       <TableCell>
@@ -208,8 +244,12 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             <span className="text-sm text-text-400">$</span>
             <input
               type="number"
+              min={0}
+              step="0.01"
               value={form.price}
-              onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, price: Number(e.target.value) }))
+              }
               className="w-20 h-9 px-2 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
             />
           </div>
@@ -275,9 +315,11 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             >
               <Pencil size={17} />
             </button>
+            {/* Delete disabled until wired — shows toast via onDelete in page */}
             <button
               onClick={() => onDelete(dish.id)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-error hover:bg-error-bg transition-colors"
+              disabled
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-300 cursor-not-allowed opacity-40"
             >
               <Trash2 size={17} />
             </button>

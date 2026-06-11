@@ -2,24 +2,24 @@ import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../../assets/Logo.svg";
 import { useAuth } from "../../context/AuthContext";
 import {
-  DashboardIcon,
-  CategoriesIcon,
-  DishesIcon,
-  MenuIcon,
-  BannersIcon,
-  QrCodeIcon,
-  InformationIcon,
-  LogoutIcon,
-} from "../../assets/icons";
+  LayoutDashboard,
+  LayoutGrid,
+  UtensilsCrossed,
+  BookOpen,
+  Image,
+  QrCode,
+  Info,
+  LogOut,
+} from "lucide-react";
 
 const links = [
-  { to: "/dashboard", label: "Overview", icon: DashboardIcon, end: true },
-  { to: "/dashboard/categories", label: "Categories", icon: CategoriesIcon, end: false },
-  { to: "/dashboard/dishes", label: "Dishes", icon: DishesIcon, end: false },
-  { to: "/dashboard/menu", label: "Menu", icon: MenuIcon, end: false },
-  { to: "/dashboard/banners", label: "Banners", icon: BannersIcon, end: false },
-  { to: "/dashboard/qr", label: "QR Display", icon: QrCodeIcon, end: false },
-  { to: "/dashboard/information", label: "Information", icon: InformationIcon, end: false },
+  { to: "/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
+  { to: "/dashboard/categories", label: "Categories", icon: LayoutGrid, end: false },
+  { to: "/dashboard/dishes", label: "Dishes", icon: UtensilsCrossed, end: false },
+  { to: "/dashboard/menu", label: "Menu", icon: BookOpen, end: false },
+  { to: "/dashboard/banners", label: "Banners", icon: Image, end: false },
+  { to: "/dashboard/qr", label: "QR Display", icon: QrCode, end: false },
+  { to: "/dashboard/information", label: "Information", icon: Info, end: false },
 ];
 
 function Sidebar() {
@@ -34,15 +34,14 @@ function Sidebar() {
   return (
     <aside className="w-64 h-full bg-primary-900 flex flex-col px-4 py-6 rounded-r-xl">
 
-      {/* Logo */}
-      <div className="flex flex-col items-center flex-shrink-0 py-4">
+    
+      <div className="flex flex-col items-center shrink-0 py-4">
         <img src={logo} alt="Spectral QR" className="w-48" />
       </div>
 
-      {/* Divider */}
-      <div className="flex-shrink-0 h-px bg-primary-700 my-4" />
+   
+      <div className="shrink-0 h-px bg-primary-700 my-4" />
 
-      {/* Nav Links */}
       <nav className="flex flex-col gap-2.5 flex-1 pt-2">
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
@@ -64,17 +63,16 @@ function Sidebar() {
         ))}
       </nav>
 
-      {/* Logout */}
       <button
-  onClick={handleLogout}
-  className="flex items-center gap-3 px-4 py-3.5 rounded-lg border border-danger-red
-    bg-transparent text-danger-red font-sans text-base
-    cursor-pointer w-full transition-all duration-200
-    hover:bg-danger-red/10 active:bg-danger-red/20 mt-4 mb-2"
->
-  <LogoutIcon className="w-5 h-5 text-danger-red shrink-0" />
-  Log out
-</button>
+        onClick={handleLogout}
+        className="flex items-center gap-3 px-4 py-3.5 rounded-lg border border-danger-red
+          bg-transparent text-danger-red font-sans text-base
+          cursor-pointer w-full transition-all duration-200
+          hover:bg-danger-red/10 active:bg-danger-red/20 mt-4 mb-2"
+      >
+        <LogOut className="w-5 h-5 text-danger-red shrink-0" />
+        Log out
+      </button>
     </aside>
   );
 }

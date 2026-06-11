@@ -1,5 +1,12 @@
-import { useMemo } from "react";
-import { BarChart3, BookOpen, LayoutGrid, UtensilsCrossed, Eye, Heart } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  BarChart3,
+  BookOpen,
+  LayoutGrid,
+  UtensilsCrossed,
+  Eye,
+  Heart,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
@@ -12,8 +19,8 @@ import AnalyticsLineChart from "../../components/ui/overview/AnalyticsLineChart"
 import StatCard from "../../components/ui/overview/StatCard";
 import { useAuth } from "../../context/AuthContext";
 import {
-  buildMonthlyViewSeries,
-  calculateViewsTrend,
+  buildDailyViewSeries,
+  buildDailyLikesSeries,
   formatDisplayDate,
   formatStatNumber,
   resolveSubscriptionBanner,
@@ -22,6 +29,17 @@ import * as restaurantService from "../../services/restaurant.service";
 
 function OverviewPage() {
   const { restaurantId, email } = useAuth();
+  const now = new Date();
+
+  const [viewsMonth, setViewsMonth] = useState({
+    year: now.getFullYear(),
+    month: now.getMonth(),
+  });
+
+  const [likesMonth, setLikesMonth] = useState({
+    year: now.getFullYear(),
+    month: now.getMonth(),
+  });
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["overview", restaurantId],
@@ -40,48 +58,120 @@ function OverviewPage() {
   const welcomeName = restaurantName || email?.split("@")[0] || "there";
 
   const viewsSeries = useMemo(
-    () => buildMonthlyViewSeries(data?.views ?? []),
-    [data?.views],
+    () =>
+      buildDailyViewSeries(
+        data?.views ?? [],
+        viewsMonth.year,
+        viewsMonth.month,
+      ),
+    [data?.views, viewsMonth],
   );
 
-  const viewsTrend = useMemo(
-    () => calculateViewsTrend(data?.views ?? []),
-    [data?.views],
+  const likesSeries = useMemo(
+    () =>
+      buildDailyLikesSeries(
+        data?.likes ?? [],
+        likesMonth.year,
+        likesMonth.month,
+      ),
+    [data?.likes, likesMonth],
   );
 
-  const likesSeries = useMemo(() => {
-    const series = buildMonthlyViewSeries([]);
-    const likesTotal = data?.totalLikes ?? 0;
-    if (likesTotal > 0) {
-      const currentMonth = series[series.length - 1];
-      if (currentMonth) currentMonth.total = likesTotal;
+  const viewsTrend = useMemo(() => {
+    const views = data?.views ?? [];
+
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth();
+
+    const prevDate = new Date(curY, curM - 1, 1);
+    const prevY = prevDate.getFullYear();
+    const prevM = prevDate.getMonth();
+
+    let current = 0;
+    let previous = 0;
+
+    for (const v of views) {
+      const d = new Date(v.viewedAt);
+      if (Number.isNaN(d.getTime())) continue;
+
+      if (d.getFullYear() === curY && d.getMonth() === curM) current++;
+      else if (d.getFullYear() === prevY && d.getMonth() === prevM) previous++;
     }
-    return series;
-  }, [data?.totalLikes]);
+
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }, [data?.views]);
+
+  const likesTrend = useMemo(() => {
+    const likes = data?.likes ?? [];
+
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth();
+
+    const prevDate = new Date(curY, curM - 1, 1);
+    const prevY = prevDate.getFullYear();
+    const prevM = prevDate.getMonth();
+
+    let current = 0;
+    let previous = 0;
+
+    for (const l of likes) {
+      const d = new Date(l.likedAt);
+      if (Number.isNaN(d.getTime())) continue;
+
+      if (d.getFullYear() === curY && d.getMonth() === curM) current++;
+      else if (d.getFullYear() === prevY && d.getMonth() === prevM) previous++;
+    }
+
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }, [data?.likes]);
+
+  function prevMonth(setter: typeof setViewsMonth) {
+    setter(({ year, month }) =>
+      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 },
+    );
+  }
+
+  function nextMonth(setter: typeof setViewsMonth) {
+    setter(({ year, month }) =>
+      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 },
+    );
+  }
 
   return (
     <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
-      {!isLoading && !isError && subscriptionBanner === "warning" && formattedExpiryDate && (
-        <Notification
-          variant="warning"
-          title="Subscription Expiring Soon"
-          message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew your plan to keep all premium features active.`}
-          className="mb-6"
-        />
-      )}
+      {!isLoading &&
+        !isError &&
+        subscriptionBanner === "warning" &&
+        formattedExpiryDate && (
+          <Notification
+            variant="warning"
+            title="Subscription Expiring Soon"
+            message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew to keep features active.`}
+            className="mb-6"
+          />
+        )}
 
-      {!isLoading && !isError && subscriptionBanner === "success" && formattedExpiryDate && (
-        <Notification
-          variant="success"
-          title="Subscription Renewed Successfully"
-          message={`Your Business Pro plan has been renewed successfully and will remain active until ${formattedExpiryDate}.`}
-          className="mb-6"
-        />
-      )}
+      {!isLoading &&
+        !isError &&
+        subscriptionBanner === "success" &&
+        formattedExpiryDate && (
+          <Notification
+            variant="success"
+            title="Subscription Active"
+            message={`Your plan is active until ${formattedExpiryDate}.`}
+            className="mb-6"
+          />
+        )}
 
       <div className="mb-8">
-        <PageHeader title="OverView" />
-        <p className="text-base text-text-400 mt-1">Welcome back, {welcomeName}</p>
+        <PageHeader title="Overview" />
+        <p className="text-base text-text-400 mt-1">
+          Welcome back, {welcomeName}
+        </p>
       </div>
 
       {isLoading ? (
@@ -99,36 +189,51 @@ function OverviewPage() {
               title="Analytics dashboard"
               description="Live stats from your restaurant account"
             />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
               <StatCard
-                label="Menu"
+                label="Menus"
                 value={formatStatNumber(data?.totalMenus ?? 0)}
                 icon={<BookOpen className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-200"
               />
+
               <StatCard
                 label="Categories"
                 value={formatStatNumber(data?.totalCategories ?? 0)}
                 icon={<LayoutGrid className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-100"
               />
+
               <StatCard
                 label="Dishes"
                 value={formatStatNumber(data?.totalDishes ?? 0)}
                 icon={<UtensilsCrossed className="w-5 h-5 text-primary-700" />}
                 className="bg-primary-100"
               />
+
               <StatCard
                 label="Views"
-                value={formatStatNumber(data?.views.length ?? 0)}
+                value={formatStatNumber(
+                  data?.views?.filter((v) => {
+                    const d = new Date(v.viewedAt);
+                    const now = new Date();
+                    return (
+                      d.getFullYear() === now.getFullYear() &&
+                      d.getMonth() === now.getMonth()
+                    );
+                  }).length ?? 0,
+                )}
                 icon={<Eye className="w-5 h-5 text-primary-700" />}
                 trend={viewsTrend}
                 className="bg-beige-200"
               />
+
               <StatCard
                 label="Likes"
                 value={formatStatNumber(data?.totalLikes ?? 0)}
                 icon={<Heart className="w-5 h-5 text-primary-700" />}
+                trend={likesTrend}
                 className="bg-primary-200"
               />
             </div>
@@ -140,19 +245,33 @@ function OverviewPage() {
               title="Analytics Charts"
               description="Monthly activity overview"
             />
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <AnalyticsLineChart
                 title="Views"
                 series={viewsSeries}
                 primaryKey="total"
                 secondaryKey="direct"
+                primaryDefaultVisible={true}
+                secondaryDefaultVisible={false}
+                showSecondaryToggle={false}
+                month={viewsMonth}
+                onPrev={() => prevMonth(setViewsMonth)}
+                onNext={() => nextMonth(setViewsMonth)}
                 emptyMessage="View activity will appear here once customers start visiting your menu."
               />
+
               <AnalyticsLineChart
                 title="Likes"
                 series={likesSeries}
                 primaryKey="total"
                 secondaryKey="qrCode"
+                primaryDefaultVisible={true}
+                secondaryDefaultVisible={false}
+                showSecondaryToggle={false}
+                month={likesMonth}
+                onPrev={() => prevMonth(setLikesMonth)}
+                onNext={() => nextMonth(setLikesMonth)}
                 emptyMessage="Like activity will appear here once guests start liking dishes."
               />
             </div>

@@ -145,6 +145,7 @@ export interface RestaurantDashboardStatsResponse {
   views: MenuView[];
   totalLikes: number;
   subscriptionEndDate?: string;
+  likes: { likedAt: string }[];
 }
 
 

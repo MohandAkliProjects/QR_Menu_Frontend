@@ -39,3 +39,12 @@ export async function getFullMenu(menuId: string): Promise<FullMenuResponse> {
     auth: false,
   });
 }
+
+export function sumMenuLikes(fullMenu: FullMenuResponse): number {
+  return fullMenu.categories.reduce(
+    (total, cat) =>
+      total +
+      cat.dishes.reduce((dishTotal, dish) => dishTotal + (dish.likes ?? 0), 0),
+    0
+  );
+}

@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
 import {
-  CategoriesIcon,
-  DishesIcon,
-  EyeIcon,
-  HeartIcon,
-  MenuIcon,
+  CategoriesIcon, DishesIcon, EyeIcon, HeartIcon, MenuIcon,
 } from "../../assets/icons";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
@@ -16,9 +13,9 @@ import Notification from "../../components/shared/Notification";
 import SectionHeader from "../../components/shared/SectionHeader";
 import AnalyticsLineChart from "../../components/ui/overview/AnalyticsLineChart";
 import StatCard from "../../components/ui/overview/StatCard";
-import ToastContainer from "../../components/ui/ToastContainer";
+//import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
-import useToast from "../../hooks/useToast";
+//import useToast from "../../hooks/useToast";
 import {
   buildMonthlyViewSeries,
   calculateViewsTrend,
@@ -26,109 +23,58 @@ import {
   formatStatNumber,
   resolveSubscriptionBanner,
 } from "../../lib/analytics";
-import * as menuService from "../../services/menu.service";
 import * as restaurantService from "../../services/restaurant.service";
 
 function OverviewPage() {
-  const { restaurantId, menuId, email } = useAuth();
-  const { toasts, showToast, removeToast } = useToast();
+  const { restaurantId, email } = useAuth();
+  //const { toasts, showToast, removeToast } = useToast();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [restaurantName, setRestaurantName] = useState("");
-  const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | undefined>();
-  const [totalMenus, setTotalMenus] = useState(0);
-  const [totalCategories, setTotalCategories] = useState(0);
-  const [totalDishes, setTotalDishes] = useState(0);
-  const [totalViews, setTotalViews] = useState(0);
-  const [totalLikes, setTotalLikes] = useState(0);
-  const [viewsSeries, setViewsSeries] = useState(() => buildMonthlyViewSeries([]));
-  const [viewsTrend, setViewsTrend] = useState<number | null>(null);
-
-  const loadOverview = useCallback(async (signal?: { cancelled: boolean }) => {
-    if (!restaurantId) {
-      if (!signal?.cancelled) {
-        setError("Restaurant session is missing.");
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (!signal?.cancelled) {
-      setLoading(true);
-      setError(null);
-    }
-
-    try {
-      const requests: [
-        Promise<Awaited<ReturnType<typeof restaurantService.getDashboardStats>>>,
-        Promise<Awaited<ReturnType<typeof restaurantService.getRestaurant>>>,
-        Promise<number>,
-      ] = [
-        restaurantService.getDashboardStats(restaurantId),
-        restaurantService.getRestaurant(restaurantId),
-        menuId
-          ? menuService.getFullMenu(menuId).then(menuService.sumMenuLikes)
-          : Promise.resolve(0),
-      ];
-
-      const [dashboard, restaurant, likesTotal] = await Promise.all(requests);
-
-      if (signal?.cancelled) return;
-
-      setRestaurantName(dashboard.name || restaurant.name);
-      setSubscriptionEndDate(restaurant.subscriptionEndDate);
-      setTotalMenus(dashboard.totalMenus);
-      setTotalCategories(dashboard.totalCategories);
-      setTotalDishes(dashboard.totalDishes);
-      setTotalViews(dashboard.views.length);
-      setTotalLikes(likesTotal);
-      setViewsSeries(buildMonthlyViewSeries(dashboard.views));
-      setViewsTrend(calculateViewsTrend(dashboard.views));
-    } catch (err) {
-      if (!signal?.cancelled) {
-        const message = getErrorMessage(err, "Could not load overview data.");
-        setError(message);
-        showToast("error", "Load Failed", message);
-      }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
-    }
-  }, [menuId, restaurantId, showToast]);
-
-  useEffect(() => {
-    const signal = { cancelled: false };
-    loadOverview(signal);
-    return () => {
-      signal.cancelled = true;
-    };
-  }, [loadOverview]);
+const {
+  data,
+  isLoading,
+  isError,
+  error,
+  refetch,
+} = useQuery({
+  queryKey: ["overview", restaurantId],
+  queryFn: () => restaurantService.getDashboardStats(restaurantId!),
+  enabled: !!restaurantId,
+  staleTime: 1000 * 60,
+});
 
   const subscriptionBanner = useMemo(
-    () => resolveSubscriptionBanner(subscriptionEndDate),
-    [subscriptionEndDate]
+    () => resolveSubscriptionBanner(data?.subscriptionEndDate),
+    [data?.subscriptionEndDate]
   );
 
-  const formattedExpiryDate = formatDisplayDate(subscriptionEndDate);
+  const formattedExpiryDate = formatDisplayDate(data?.subscriptionEndDate);
+const restaurantName = data?.name ?? "";
   const welcomeName = restaurantName || email?.split("@")[0] || "there";
+
+  const viewsSeries = useMemo(
+    () => buildMonthlyViewSeries(data?.views ?? []),
+    [data?.views]
+  );
+
+  const viewsTrend = useMemo(
+    () => calculateViewsTrend(data?.views ?? []),
+    [data?.views]
+  );
 
   const likesSeries = useMemo(() => {
     const series = buildMonthlyViewSeries([]);
-    if (totalLikes <= 0) return series;
-
-    const currentMonth = series[series.length - 1];
-    if (currentMonth) {
-      currentMonth.total = totalLikes;
+    const likesTotal = data?.totalLikes ?? 0;
+    if (likesTotal > 0) {
+      const currentMonth = series[series.length - 1];
+      if (currentMonth) currentMonth.total = likesTotal;
     }
-
     return series;
-  }, [totalLikes]);
+  }, [data?.totalLikes]);
 
   return (
     <div className="flex flex-col min-h-full p-6 sm:p-8 lg:p-10 w-full">
-      <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      {!loading && !error && subscriptionBanner === "warning" && formattedExpiryDate && (
+      {!isLoading && !isError && subscriptionBanner === "warning" && formattedExpiryDate && (
         <Notification
           variant="warning"
           title="Subscription Expiring Soon"
@@ -137,7 +83,7 @@ function OverviewPage() {
         />
       )}
 
-      {!loading && !error && subscriptionBanner === "success" && formattedExpiryDate && (
+      {!isLoading && !isError && subscriptionBanner === "success" && formattedExpiryDate && (
         <Notification
           variant="success"
           title="Subscription Renewed Successfully"
@@ -151,10 +97,13 @@ function OverviewPage() {
         <p className="text-base text-text-400 mt-1">Welcome back, {welcomeName}</p>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <PageLoadingState message="Loading overview..." />
-      ) : error ? (
-        <PageErrorState message={error} onRetry={() => loadOverview()} />
+      ) : isError ? (
+        <PageErrorState
+          message={getErrorMessage(error, "Could not load overview data.")}
+          onRetry={refetch}
+        />
       ) : (
         <div className="flex flex-col gap-8">
           <section className="flex flex-col gap-4">
@@ -163,36 +112,35 @@ function OverviewPage() {
               title="Analytics dashboard"
               description="Live stats from your restaurant account"
             />
-
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
               <StatCard
                 label="Menu"
-                value={formatStatNumber(totalMenus)}
+                value={formatStatNumber(data?.totalMenus ?? 0)}
                 icon={<MenuIcon className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-200"
               />
               <StatCard
                 label="Categories"
-                value={formatStatNumber(totalCategories)}
+                value={formatStatNumber(data?.totalCategories ?? 0)}
                 icon={<CategoriesIcon className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-100"
               />
               <StatCard
                 label="Dishes"
-                value={formatStatNumber(totalDishes)}
+                value={formatStatNumber(data?.totalDishes ?? 0)}
                 icon={<DishesIcon className="w-5 h-5 text-primary-700" />}
                 className="bg-primary-100"
               />
               <StatCard
                 label="Views"
-                value={formatStatNumber(totalViews)}
+                value={formatStatNumber(data?.views.length ?? 0)}
                 icon={<EyeIcon className="w-5 h-5 text-primary-700" />}
                 trend={viewsTrend}
                 className="bg-beige-200"
               />
               <StatCard
                 label="Likes"
-                value={formatStatNumber(totalLikes)}
+                value={formatStatNumber(data?.totalLikes ?? 0)}
                 icon={<HeartIcon className="w-5 h-5 text-primary-700" />}
                 className="bg-primary-200"
               />
@@ -205,7 +153,6 @@ function OverviewPage() {
               title="Analytics Charts"
               description="Monthly activity overview"
             />
-
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <AnalyticsLineChart
                 title="Views"

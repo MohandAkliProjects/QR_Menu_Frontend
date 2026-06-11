@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Upload, Trash2, Check } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
@@ -23,69 +24,75 @@ interface Banner {
   visible: boolean;
 }
 
+function mapBanners(data: Awaited<ReturnType<typeof restaurantService.getBanners>>): Banner[] {
+  return (data.banners ?? []).map((b) => ({
+    id: b.id,
+    src: b.imageUrl,
+    visible: b.visible,
+  }));
+}
+
 function BannersPage() {
   const { restaurantId } = useAuth();
-  const [banners, setBanners] = useState<Banner[]>([]);
+  const queryClient = useQueryClient();
+  const { toasts, showToast, removeToast } = useToast();
+
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectedBanner, setSelectedBanner] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const { toasts, showToast, removeToast } = useToast();
-
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const bannersKey = ["banners", restaurantId];
+
+  const {
+    data: banners = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: bannersKey,
+    queryFn: async () => {
+      const data = await restaurantService.getBanners(restaurantId!);
+      return mapBanners(data);
+    },
+    enabled: !!restaurantId,
+  });
+
+  const addBannerMutation = useMutation({
+    mutationFn: (file: File) =>
+      restaurantService.addBanner(restaurantId!, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bannersKey });
+      handleDeletePreview();
+      showToast("success", "Banner Added", "Your banner has been uploaded.");
+    },
+    onError: (err) =>
+      showToast("error", "Upload Failed", getErrorMessage(err)),
+  });
+
+  const deleteBannerMutation = useMutation({
+    mutationFn: (id: string) =>
+      restaurantService.deleteBanner(restaurantId!, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bannersKey });
+      showToast("success", "Banner Deleted", "Banner has been removed.");
+    },
+    onError: (err) =>
+      showToast("error", "Delete Failed", getErrorMessage(err)),
+  });
+
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: ({ id, visible }: { id: string; visible: boolean }) =>
+      restaurantService.updateBannerVisibility(restaurantId!, id, visible),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bannersKey });
+    },
+    onError: (err) =>
+      showToast("error", "Update Failed", getErrorMessage(err)),
+  });
+
   const isLimitReached = banners.length >= MAX_BANNERS;
-
-  const loadBanners = useCallback(async (signal?: { cancelled: boolean }) => {
-    if (!restaurantId) {
-      if (!signal?.cancelled) {
-        setError("Restaurant session is missing.");
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (!signal?.cancelled) {
-      setLoading(true);
-      setError(null);
-    }
-
-    try {
-      const data = await restaurantService.getBanners(restaurantId);
-      if (!signal?.cancelled) {
-        setBanners(
-          (data.banners ?? []).map((banner) => ({
-            id: banner.id,
-            src: banner.imageUrl,
-            visible: banner.visible,
-          }))
-        );
-      }
-    } catch (err) {
-      if (!signal?.cancelled) {
-        const message = getErrorMessage(err, "Could not load banners.");
-        setError(message);
-        showToast("error", "Load Failed", message);
-      }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
-    }
-  }, [restaurantId, showToast]);
-
-  useEffect(() => {
-    const signal = { cancelled: false };
-
-    async function run() {
-      await loadBanners(signal);
-    }
-
-    run();
-    return () => {
-      signal.cancelled = true;
-    };
-  }, [loadBanners]);
 
   function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
@@ -100,78 +107,6 @@ function BannersPage() {
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  async function handleConfirm() {
-    if (!pendingFile || !restaurantId) return;
-
-    setUploading(true);
-    try {
-      const updated = await restaurantService.addBanner(restaurantId, pendingFile);
-      setBanners(
-        (updated.banners ?? []).map((banner) => ({
-          id: banner.id,
-          src: banner.imageUrl,
-          visible: banner.visible,
-        }))
-      );
-      handleDeletePreview();
-      showToast("success", "Banner Added", "Your banner has been uploaded.");
-    } catch (err) {
-      showToast("error", "Upload Failed", getErrorMessage(err));
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function handleDeleteBanner(id: string) {
-    if (!restaurantId) return;
-
-    try {
-      const updated = await restaurantService.deleteBanner(restaurantId, id);
-      setBanners(
-        (updated.banners ?? []).map((banner) => ({
-          id: banner.id,
-          src: banner.imageUrl,
-          visible: banner.visible,
-        }))
-      );
-      showToast("success", "Banner Deleted", "Banner has been removed.");
-    } catch (err) {
-      showToast("error", "Delete Failed", getErrorMessage(err));
-    }
-  }
-
-  async function handleToggleVisibility(id: string) {
-    if (!restaurantId) return;
-    const banner = banners.find((b) => b.id === id);
-    if (!banner) return;
-
-    const newVisible = !banner.visible;
-
-    setBanners((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, visible: newVisible } : b))
-    );
-
-    try {
-      const updated = await restaurantService.updateBannerVisibility(
-        restaurantId,
-        id,
-        newVisible
-      );
-      setBanners(
-        (updated.banners ?? []).map((b) => ({
-          id: b.id,
-          src: b.imageUrl,
-          visible: b.visible,
-        }))
-      );
-    } catch (err) {
-      setBanners((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, visible: !newVisible } : b))
-      );
-      showToast("error", "Update Failed", getErrorMessage(err));
-    }
-  }
-
   return (
     <div className="w-full min-h-screen p-6 sm:p-8 lg:p-12">
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -179,10 +114,13 @@ function BannersPage() {
       <div className="w-full flex flex-col gap-8">
         <PageHeader title="Banners" />
 
-        {loading ? (
+        {isLoading ? (
           <PageLoadingState message="Loading banners..." />
-        ) : error ? (
-          <PageErrorState message={error} onRetry={() => loadBanners()} />
+        ) : isError ? (
+          <PageErrorState
+            message={getErrorMessage(error, "Could not load banners.")}
+            onRetry={refetch}
+          />
         ) : (
           <>
             <div className="flex flex-col gap-4 w-full">
@@ -206,8 +144,7 @@ function BannersPage() {
                     onClick={() => !isLimitReached && inputRef.current?.click()}
                     className={`
                       flex flex-col items-center justify-center gap-4
-                      w-full max-w-120
-                      h-80
+                      w-full max-w-120 h-80
                       border-2 border-dashed rounded-2xl
                       transition-all duration-200
                       ${
@@ -246,10 +183,10 @@ function BannersPage() {
                         className="flex-1 bg-transparent! border! border-error! text-error! hover:bg-error/10!"
                       />
                       <Button
-                        label={uploading ? "Uploading..." : "Confirm"}
+                        label={addBannerMutation.isPending ? "Uploading..." : "Confirm"}
                         icon={Check}
-                        onClick={handleConfirm}
-                        disabled={uploading}
+                        onClick={() => pendingFile && addBannerMutation.mutate(pendingFile)}
+                        disabled={addBannerMutation.isPending}
                         className="flex-1 bg-info! hover:bg-info/90!"
                       />
                     </div>
@@ -287,8 +224,13 @@ function BannersPage() {
                       key={banner.id}
                       src={banner.src}
                       visible={banner.visible}
-                      onDelete={() => handleDeleteBanner(banner.id)}
-                      onToggleVisibility={() => handleToggleVisibility(banner.id)}
+                      onDelete={() => deleteBannerMutation.mutate(banner.id)}
+                      onToggleVisibility={() =>
+                        toggleVisibilityMutation.mutate({
+                          id: banner.id,
+                          visible: !banner.visible,
+                        })
+                      }
                       onPreview={() => setSelectedBanner(banner.src)}
                     />
                   ))}

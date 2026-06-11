@@ -82,8 +82,10 @@ export interface CategoryWithDishesResponse {
 export interface MenuResponse {
   id: string;
   restaurantId: string;
-  devise: Devise;
-  translations: TranslationsMap<MenuTranslation>;
+  devise: string;
+  translations: Record<string, { title: string }>;
+  totalCategories: number;
+  totalDishes: number;
 }
 
 export interface FullMenuResponse {
@@ -141,6 +143,8 @@ export interface RestaurantDashboardStatsResponse {
   totalCategories: number;
   totalDishes: number;
   views: MenuView[];
+  totalLikes: number;
+  subscriptionEndDate?: string;
 }
 
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ExternalLink,
   LayoutList,
@@ -9,6 +9,7 @@ import {
   X,
   Edit2,
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
 import { CategoriesIcon, DishesIcon } from "../../assets/icons";
@@ -31,13 +32,23 @@ import {
   type MenuFormState,
 } from "../../lib/mappers";
 import * as menuService from "../../services/menu.service";
+import { ROUTES } from "../../types/routes";
 import type { Devise } from "../../types/enums";
+import * as restaurantService from "../../services/restaurant.service";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const DEVISE_OPTIONS: Devise[] = [
-  "eur", "usd", "gbp", "dzd", "sar",
-  "aed", "try", "cad", "chf", "cny",
+  "eur",
+  "usd",
+  "gbp",
+  "dzd",
+  "sar",
+  "aed",
+  "try",
+  "cad",
+  "chf",
+  "cny",
 ];
 
 const ALL_LANGUAGES = ["EN", "FR", "AR"] as const;
@@ -55,10 +66,7 @@ const LANGUAGE_PLACEHOLDERS: Record<SupportedLang, string> = {
   AR: "عنوان القائمة",
 };
 
-const LANGUAGE_FIELD: Record<
-  SupportedLang,
-  keyof Pick<MenuFormState, "english" | "french" | "arabic">
-> = {
+const LANGUAGE_FIELD: Record<SupportedLang, "english" | "french" | "arabic"> = {
   EN: "english",
   FR: "french",
   AR: "arabic",
@@ -75,7 +83,7 @@ interface MenuFormErrors {
 
 function validateMenuForm(
   form: MenuFormState,
-  supportedLanguages: SupportedLang[]
+  supportedLanguages: SupportedLang[],
 ): MenuFormErrors {
   const errors: MenuFormErrors = {};
   for (const lang of supportedLanguages) {
@@ -92,199 +100,157 @@ function validateMenuForm(
 
 function MenuPage() {
   const { restaurantId, menuId } = useAuth();
+  const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
-  const showToastRef = useRef(showToast);
-  useEffect(() => {
-    showToastRef.current = showToast;
-  }, [showToast]);
-
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<MenuFormState | null>(null);
   const [initialForm, setInitialForm] = useState<MenuFormState | null>(null);
-
-  const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>([]);
+  const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>(
+    [],
+  );
   const [initialLanguages, setInitialLanguages] = useState<SupportedLang[]>([]);
-
-  const [categoryCount, setCategoryCount] = useState(0);
-  const [dishCount, setDishCount] = useState(0);
-
   const [errors, setErrors] = useState<MenuFormErrors>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const [isEditing, setIsEditing] = useState(false);
+  const menuKey = ["menu", restaurantId, menuId] as const;
 
-  // ── Load ───────────────────────────────────────────────────────────────
+  // ── Queries ────────────────────────────────────────────────────────────
 
-  const loadMenu = useCallback(async (signal?: { cancelled: boolean }) => {
-    if (!restaurantId || !menuId) {
-      if (!signal?.cancelled) {
-        setError("No default menu found for this restaurant.");
-        setLoading(false);
-      }
+  const {
+    data: menuData,
+    isLoading: menuLoading,
+    isError: menuIsError,
+    error: menuError,
+    refetch: refetchMenu,
+  } = useQuery({
+    queryKey: menuKey,
+    queryFn: () => menuService.getMenuById(restaurantId!, menuId!),
+    enabled: !!restaurantId && !!menuId,
+    staleTime: Infinity,
+  });
+
+  const { data: restaurantData } = useQuery({
+    queryKey: ["restaurant", restaurantId],
+    queryFn: () => restaurantService.getRestaurant(restaurantId!),
+    enabled: !!restaurantId,
+    staleTime: Infinity,
+  });
+
+  // ── Derived server state ───────────────────────────────────────────────
+
+  const serverForm = menuData ? menuResponseToForm(menuData) : null;
+
+  const serverLanguages = useMemo<SupportedLang[]>(() => {
+    if (!menuData) return [];
+    return Object.keys(menuData.translations)
+      .map((k) => k.toUpperCase())
+      .filter((k): k is SupportedLang =>
+        (ALL_LANGUAGES as readonly string[]).includes(k),
+      );
+  }, [menuData]);
+
+const categoryCount = menuData?.totalCategories ?? 0;
+const dishCount = menuData?.totalDishes ?? 0;
+
+  const activeForm = isEditing ? form : serverForm;
+  const activeLangs = isEditing ? supportedLanguages : serverLanguages;
+
+  // ── Mutations ──────────────────────────────────────────────────────────
+
+  const saveMutation = useMutation({
+    mutationFn: (f: MenuFormState) =>
+      menuService.updateMenu(
+        restaurantId!,
+        menuId!,
+        menuFormToUpdateRequest(f, supportedLanguages),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: menuKey });
+      setIsEditing(false);
+      setErrors({});
+      setForm(null);
+      showToast("success", "Menu Saved", "Your menu has been updated.");
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => menuService.deleteMenu(menuId!),
+    onSuccess: () => {
+      showToast("success", "Menu Deleted", "The menu has been deleted.");
+      setShowDeleteModal(false);
+      window.location.reload();
+    },
+    onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
+  });
+
+  // ── Handlers ───────────────────────────────────────────────────────────
+
+  const handleEdit = () => {
+    setErrors({});
+    setForm(serverForm);
+    setSupportedLanguages(serverLanguages);
+    setInitialForm(serverForm);
+    setInitialLanguages(serverLanguages);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setErrors({});
+    setIsEditing(false);
+    setForm(initialForm);
+    setSupportedLanguages(initialLanguages);
+  };
+
+  const handleSave = () => {
+    if (!activeForm) return;
+    const validationErrors = validateMenuForm(activeForm, activeLangs);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      showToast(
+        "error",
+        "Validation Error",
+        "Please fill in all required fields.",
+      );
       return;
     }
-
-    if (!signal?.cancelled) {
-      setLoading(true);
-      setError(null);
-    }
-
-    try {
-      const [menu, fullMenu] = await Promise.all([
-        menuService.getMenuById(restaurantId, menuId),
-        menuService.getFullMenu(menuId),
-      ]);
-
-      if (signal?.cancelled) return;
-
-      if (!menu) {
-        setError("Default menu could not be loaded.");
-        setForm(null);
-        return;
-      }
-
-      const mappedForm = menuResponseToForm(menu);
-
-      setForm(mappedForm);
-      setInitialForm(mappedForm);
-
-      const langs = Object.keys(menu.translations)
-        .map((k) => k.toUpperCase())
-        .filter(
-          (k): k is SupportedLang =>
-            ALL_LANGUAGES.includes(k as SupportedLang)
-        );
-
-      setSupportedLanguages(langs);
-      setInitialLanguages(langs);
-
-      setCategoryCount(fullMenu.categories.length);
-      setDishCount(
-        fullMenu.categories.reduce(
-          (total, cat) => total + cat.dishes.length,
-          0
-        )
-      );
-    } catch (err) {
-      if (!signal?.cancelled) {
-        const message = getErrorMessage(err, "Could not load menu.");
-        setError(message);
-        showToastRef.current("error", "Load Failed", message);
-      }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
-    }
-  }, [menuId, restaurantId]);
-
-  useEffect(() => {
-    const signal = { cancelled: false };
-    loadMenu(signal);
-    return () => {
-      signal.cancelled = true;
-    };
-  }, [loadMenu]);
-
-  // ── Language management ────────────────────────────────────────────────
-
-  const availableToAdd = ALL_LANGUAGES.filter(
-    (l) => !supportedLanguages.includes(l)
-  );
-
-  const handleAddLanguage = (lang: SupportedLang) => {
-    setSupportedLanguages((prev) => [...prev, lang]);
+    saveMutation.mutate(activeForm);
   };
 
   const handleRemoveLanguage = (lang: SupportedLang) => {
     setSupportedLanguages((prev) => prev.filter((l) => l !== lang));
-
     const field = LANGUAGE_FIELD[lang];
     setForm((prev) => (prev ? { ...prev, [field]: "" } : prev));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  // ── Save ───────────────────────────────────────────────────────────────
+  // ── Derived UI ─────────────────────────────────────────────────────────
 
-  const handleSave = async () => {
-    if (!form || !restaurantId || !menuId) return;
-
-    const validationErrors = validateMenuForm(form, supportedLanguages);
-    setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      showToast("error", "Validation Error", "Please fill in all required fields.");
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const updated = await menuService.updateMenu(
-        restaurantId,
-        menuId,
-        menuFormToUpdateRequest(form, supportedLanguages)
-      );
-
-      const updatedForm = menuResponseToForm(updated);
-
-      setForm(updatedForm);
-      setInitialForm(updatedForm);
-
-      const langs = Object.keys(updated.translations)
-        .map((k) => k.toUpperCase())
-        .filter(
-          (k): k is SupportedLang =>
-            ALL_LANGUAGES.includes(k as SupportedLang)
-        );
-
-      setSupportedLanguages(langs);
-      setInitialLanguages(langs);
-
-      setIsEditing(false);
-
-      showToast("success", "Menu Saved", "Your menu has been updated.");
-    } catch (err) {
-      showToast("error", "Save Failed", getErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  
-
-  // ── Delete ─────────────────────────────────────────────────────────────
-
-  const handleDeleteConfirm = async () => {
-    if (!menuId) return;
-
-    setDeleting(true);
-
-    try {
-      await menuService.deleteMenu(menuId);
-      showToast("success", "Menu Deleted", "The menu has been deleted.");
-      setShowDeleteModal(false);
-      window.location.reload();
-    } catch (err) {
-      showToast("error", "Delete Failed", getErrorMessage(err));
-    } finally {
-      setDeleting(false);
-    }
-  };
+  const availableToAdd = ALL_LANGUAGES.filter((l) => !activeLangs.includes(l));
 
   const previewUrl = useMemo(
-    () => (menuId ? `/menu/${menuId}` : null),
-    [menuId]
+    () =>
+      restaurantData?.slug
+        ? `${window.location.origin}${ROUTES.publicMenu(restaurantData.slug)}`
+        : null,
+    [restaurantData],
   );
 
+const isLoading = menuLoading;
+const isError = menuIsError;
+
+  const noMenuError =
+    !restaurantId || !menuId
+      ? "No default menu found for this restaurant."
+      : null;
+
   const gridCols =
-    supportedLanguages.length === 1
+    activeLangs.length === 1
       ? "grid-cols-1"
-      : supportedLanguages.length === 2
-      ? "grid-cols-1 sm:grid-cols-2"
-      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
+      : activeLangs.length === 2
+        ? "grid-cols-1 sm:grid-cols-2"
+        : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -307,46 +273,32 @@ function MenuPage() {
               onClick={() =>
                 window.open(previewUrl, "_blank", "noopener,noreferrer")
               }
-              disabled={loading || Boolean(error)}
+              disabled={isLoading || isError}
               className="!bg-transparent !border !border-primary-400 !text-primary-700 hover:!bg-primary-50"
             />
           )}
 
           {!isEditing ? (
-            <Button
-              label="Edit"
-              icon={Edit2}
-              onClick={() => {
-                setErrors({});
-                setIsEditing(true);
-              }}
-            />
+            <Button label="Edit" icon={Edit2} onClick={handleEdit} />
           ) : (
             <>
               <Button
                 label="Cancel"
                 variant="secondary"
-                onClick={() => {
-                  setErrors({});
-                  setIsEditing(false);
-
-                  if (initialForm) setForm(initialForm);
-                  setSupportedLanguages(initialLanguages);
-                }}
+                onClick={handleCancel}
               />
-
               <Button
-                label={saving ? "Saving..." : "Save Changes"}
+                label={saveMutation.isPending ? "Saving..." : "Save Changes"}
                 icon={Save}
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saveMutation.isPending}
               />
             </>
           )}
         </div>
       </div>
 
-      {!loading && !error && (
+      {!isLoading && !isError && (
         <Notification
           variant="info"
           title="Default Menu"
@@ -355,16 +307,19 @@ function MenuPage() {
         />
       )}
 
-      {loading ? (
+      {noMenuError ? (
+        <PageErrorState message={noMenuError} />
+      ) : isLoading ? (
         <PageLoadingState message="Loading menu..." />
-      ) : error ? (
-        <PageErrorState message={error} onRetry={() => loadMenu()} />
-      ) : form ? (
+      ) : isError ? (
+        <PageErrorState
+          message={getErrorMessage(menuError, "Could not load menu.")}
+          onRetry={refetchMenu}
+        />
+      ) : activeForm ? (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
-
           {/* LEFT */}
           <div className="flex flex-col gap-6">
-
             <Card className="flex flex-col gap-6">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <SectionHeader
@@ -372,13 +327,14 @@ function MenuPage() {
                   title="Menu Titles"
                   description="One title per supported language"
                 />
-
                 {isEditing && availableToAdd.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {availableToAdd.map((lang) => (
                       <button
                         key={lang}
-                        onClick={() => handleAddLanguage(lang)}
+                        onClick={() =>
+                          setSupportedLanguages((prev) => [...prev, lang])
+                        }
                         className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-primary-400 text-xs font-medium text-primary-700 hover:bg-primary-50"
                       >
                         <Plus size={13} />
@@ -390,17 +346,15 @@ function MenuPage() {
               </div>
 
               <div className={`grid ${gridCols} gap-4`}>
-                {supportedLanguages.map((lang) => {
+                {activeLangs.map((lang) => {
                   const field = LANGUAGE_FIELD[lang];
-
                   return (
                     <div key={lang} className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-text-600">
                           {LANGUAGE_LABELS[lang]}
                         </label>
-
-                        {isEditing && supportedLanguages.length > 1 && (
+                        {isEditing && activeLangs.length > 1 && (
                           <button
                             onClick={() => handleRemoveLanguage(lang)}
                             className="text-text-300 hover:text-error"
@@ -411,7 +365,7 @@ function MenuPage() {
                       </div>
 
                       <Input
-                        value={form[field]}
+                        value={activeForm[field] ?? ""}
                         disabled={!isEditing}
                         placeholder={LANGUAGE_PLACEHOLDERS[lang]}
                         dir={lang === "AR" ? "rtl" : undefined}
@@ -421,7 +375,7 @@ function MenuPage() {
                             [field]: undefined,
                           }));
                           setForm((prev) =>
-                            prev ? { ...prev, [field]: e.target.value } : prev
+                            prev ? { ...prev, [field]: e.target.value } : prev,
                           );
                         }}
                       />
@@ -443,10 +397,9 @@ function MenuPage() {
                 title="Currency"
                 description="The currency shown to customers on your public menu"
               />
-
               <div className="max-w-[200px]">
                 <SelectDropdown
-                  value={form.devise.toUpperCase()}
+                  value={activeForm.devise.toUpperCase()}
                   options={DEVISE_OPTIONS.map((d) => d.toUpperCase())}
                   disabled={!isEditing}
                   onChange={(value) => {
@@ -454,11 +407,10 @@ function MenuPage() {
                     setForm((prev) =>
                       prev
                         ? { ...prev, devise: value.toLowerCase() as Devise }
-                        : prev
+                        : prev,
                     );
                   }}
                 />
-
                 {errors.devise && (
                   <span className="text-xs text-error mt-1 block">
                     {errors.devise}
@@ -470,7 +422,6 @@ function MenuPage() {
 
           {/* RIGHT */}
           <div className="flex flex-col gap-6">
-
             <Card className="flex flex-col gap-4">
               <SectionHeader icon={LayoutList} title="Menu Summary" />
               <div className="grid grid-cols-2 gap-3">
@@ -483,7 +434,6 @@ function MenuPage() {
                     {categoryCount}
                   </span>
                 </div>
-
                 <div className="rounded-xl bg-beige-100 px-4 py-3">
                   <div className="flex items-center gap-2 text-primary-700 mb-1">
                     <DishesIcon className="w-4 h-4" />
@@ -502,7 +452,6 @@ function MenuPage() {
                 Deleting this menu will permanently remove all categories and
                 dishes associated with it.
               </p>
-
               <Button
                 label="Delete Menu"
                 icon={Trash2}
@@ -526,10 +475,10 @@ function MenuPage() {
               fullWidth
             />
             <Button
-              label={deleting ? "Deleting..." : "Yes, Delete"}
+              label={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
               icon={Trash2}
-              onClick={handleDeleteConfirm}
-              disabled={deleting}
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
               fullWidth
               className="!bg-error !border-error"
             />

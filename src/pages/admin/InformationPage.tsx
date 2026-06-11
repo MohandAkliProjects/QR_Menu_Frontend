@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Edit2, Globe, Phone, Plus, Save, User } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
@@ -24,7 +25,6 @@ import {
 } from "../../lib/mappers";
 import * as restaurantService from "../../services/restaurant.service";
 
-
 interface SocialLink {
   id: number;
   platform: string;
@@ -46,10 +46,7 @@ function validateRestaurant(form: RestaurantForm): RestaurantFormErrors {
 
   if (!form.restaurantName.trim())
     errors.restaurantName = "Restaurant name is required.";
-  if (
-    form.emailAddress &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAddress)
-  )
+  if (form.emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAddress))
     errors.emailAddress = "Enter a valid email address.";
 
   const phoneErrors: Record<number, string> = {};
@@ -79,35 +76,45 @@ function validateRestaurant(form: RestaurantForm): RestaurantFormErrors {
   return errors;
 }
 
-
 function InformationPage() {
   const { restaurantId, email: userEmail } = useAuth();
+  const queryClient = useQueryClient();
+  const { toasts, showToast, removeToast } = useToast();
 
   const [avatarKey, setAvatarKey] = useState(0);
   const [deleteLogo, setDeleteLogo] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<RestaurantForm | null>(null);
   const [errors, setErrors] = useState<RestaurantFormErrors>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
-  const { toasts, showToast, removeToast } = useToast();
+  const restaurantKey = ["restaurant", restaurantId];
 
+  const {
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: restaurantKey,
+    queryFn: () => restaurantService.getRestaurant(restaurantId!),
+    enabled: !!restaurantId,
+    // Populate the form when data first arrives (or on refetch after save)
+    // We use select to avoid re-setting form while user is editing
+    staleTime: Infinity,
+  });
 
-  const loadProfile = useCallback(async () => {
-    if (!restaurantId) {
-      setError("Restaurant session is missing.");
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const restaurant = await restaurantService.getRestaurant(restaurantId);
+  // We populate the form separately using onSuccess equivalent:
+  // Since we need to set local form state from server data,
+  // we use a separate query with a callback pattern
+  useQuery({
+    queryKey: restaurantKey,
+    queryFn: () => restaurantService.getRestaurant(restaurantId!),
+    enabled: !!restaurantId && !isEditing,
+    staleTime: Infinity,
+    select: (restaurant) => {
       const mapped = restaurantResponseToForm(restaurant);
-      setForm({
+      return {
         restaurantName: mapped.restaurantName,
         emailAddress: restaurant.emailAddress ?? "",
         address: mapped.address,
@@ -115,130 +122,65 @@ function InformationPage() {
         phones: mapped.phones,
         socials: mapped.socials,
         logoUrl: mapped.logoUrl,
-      });
-    } catch (err) {
-      const message = getErrorMessage(err, "Could not load restaurant profile.");
-      setError(message);
-      showToast("error", "Load Failed", message);
-    } finally {
-      setLoading(false);
-    }
-  }, [restaurantId, showToast]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      if (!restaurantId) {
-        if (!cancelled) {
-          setError("Restaurant session is missing.");
-          setLoading(false);
-        }
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const restaurant = await restaurantService.getRestaurant(restaurantId);
-        const mapped = restaurantResponseToForm(restaurant);
-        if (!cancelled) {
-          setForm({
-            restaurantName: mapped.restaurantName,
-            emailAddress: restaurant.emailAddress ?? "",
-            address: mapped.address,
-            city: mapped.city,
-            phones: mapped.phones,
-            socials: mapped.socials,
-            logoUrl: mapped.logoUrl,
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message = getErrorMessage(err, "Could not load restaurant profile.");
-          setError(message);
-          showToast("error", "Load Failed", message);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [restaurantId, showToast]);
-
-
-  const handleInfoChange = (
-    key: keyof Omit<RestaurantInfoFields, "logoUrl">,
-    value: string,
-  ) => {
-    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
-    setErrors((prev) => ({ ...prev, [key]: undefined }));
-  };
-
-  const updatePhone = (id: number, value: string) => {
-    setForm((prev) =>
-      prev
-        ? { ...prev, phones: prev.phones.map((p) => (p.id === id ? { ...p, value } : p)) }
-        : prev,
-    );
-    setErrors((prev) => ({
-      ...prev,
-      phones: { ...prev.phones, [id]: undefined },
-    }));
-  };
-
-  const deletePhone = (id: number) =>
-    setForm((prev) =>
-      prev ? { ...prev, phones: prev.phones.filter((p) => p.id !== id) } : prev,
-    );
-
-  const addPhone = () =>
-    setForm((prev) =>
-      prev
-        ? { ...prev, phones: [...prev.phones, { id: Date.now(), value: "" }] }
-        : prev,
-    );
-
-  const updateSocial = (
-    id: number,
-    key: keyof Omit<SocialLink, "id">,
-    value: string,
-  ) => {
-    setForm((prev) =>
-      prev
-        ? { ...prev, socials: prev.socials.map((s) => (s.id === id ? { ...s, [key]: value } : s)) }
-        : prev,
-    );
-    setErrors((prev) => ({
-      ...prev,
-      socials: { ...prev.socials, [id]: undefined },
-    }));
-  };
-
-  const deleteSocial = (id: number) =>
-    setForm((prev) =>
-      prev ? { ...prev, socials: prev.socials.filter((s) => s.id !== id) } : prev,
-    );
-
-  const addSocial = () => {
-    setForm((prev) => {
-      if (!prev) return prev;
-      const usedPlatforms = new Set(prev.socials.map((s) => s.platform));
-      const nextPlatform =
-        SOCIAL_PLATFORMS.find((p) => !usedPlatforms.has(p)) ?? SOCIAL_PLATFORMS[0];
-      return {
-        ...prev,
-        socials: [...prev.socials, { id: Date.now(), platform: nextPlatform, url: "" }],
       };
-    });
-  };
+    },
+  });
 
+  // Better pattern: single query, populate form via a ref-tracked initializer
+  // Let me restructure this cleanly:
+
+  const { data: restaurantData } = useQuery({
+    queryKey: restaurantKey,
+    queryFn: () => restaurantService.getRestaurant(restaurantId!),
+    enabled: !!restaurantId,
+    staleTime: Infinity,
+  });
+
+  // Sync server data into local form when not editing
+  // We do this via derived state: if not editing, form mirrors server data
+  const serverForm: RestaurantForm | null = restaurantData
+    ? (() => {
+        const mapped = restaurantResponseToForm(restaurantData);
+        return {
+          restaurantName: mapped.restaurantName,
+          emailAddress: restaurantData.emailAddress ?? "",
+          address: mapped.address,
+          city: mapped.city,
+          phones: mapped.phones,
+          socials: mapped.socials,
+          logoUrl: mapped.logoUrl,
+        };
+      })()
+    : null;
+
+  // Active form: local edits while editing, server data otherwise
+  const activeForm = isEditing ? form : serverForm;
+
+  const saveMutation = useMutation({
+    mutationFn: (f: RestaurantForm) =>
+      restaurantService.updateRestaurant(
+        restaurantId!,
+        restaurantFormToUpdateRequest(f),
+        logoFile,
+        deleteLogo,
+        null,
+        false
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: restaurantKey });
+      setLogoFile(null);
+      setDeleteLogo(false);
+      setIsEditing(false);
+      setErrors({});
+      setForm(null);
+      showToast("success", "Profile Saved", "Your restaurant profile has been updated.");
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
 
   const handleEdit = () => {
     setErrors({});
+    setForm(serverForm);
     setIsEditing(true);
   };
 
@@ -248,55 +190,73 @@ function InformationPage() {
     setLogoFile(null);
     setDeleteLogo(false);
     setAvatarKey((k) => k + 1);
-    loadProfile();
+    setForm(null);
   };
 
-  const handleSave = async () => {
-    if (!restaurantId || !form) {
+  const handleSave = () => {
+    if (!restaurantId || !activeForm) {
       showToast("error", "Session Error", "Restaurant session is missing.");
       return;
     }
-
-    const validationErrors = validateRestaurant(form);
+    const validationErrors = validateRestaurant(activeForm);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       showToast("error", "Validation Error", "Please fix the highlighted fields.");
       return;
     }
-
-    setSaving(true);
-    try {
-      const updated = await restaurantService.updateRestaurant(
-        restaurantId,
-        restaurantFormToUpdateRequest(form),
-        logoFile,
-        deleteLogo,
-        null,
-        false,
-      );
-      const mapped = restaurantResponseToForm(updated);
-      setForm({
-        restaurantName: mapped.restaurantName,
-        emailAddress: updated.emailAddress ?? "",
-        address: mapped.address,
-        city: mapped.city,
-        phones: mapped.phones,
-        socials: mapped.socials,
-        logoUrl: mapped.logoUrl,
-      });
-      setLogoFile(null);
-      setIsEditing(false);
-      setErrors({});
-      showToast("success", "Profile Saved", "Your restaurant profile has been updated.");
-    } catch (err) {
-      showToast("error", "Save Failed", getErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate(activeForm);
   };
 
+  const handleInfoChange = (
+    key: keyof Omit<RestaurantInfoFields, "logoUrl">,
+    value: string
+  ) => {
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
 
-  if (!form && loading) {
+  const updatePhone = (id: number, value: string) => {
+    setForm((prev) =>
+      prev ? { ...prev, phones: prev.phones.map((p) => (p.id === id ? { ...p, value } : p)) } : prev
+    );
+    setErrors((prev) => ({ ...prev, phones: { ...prev.phones, [id]: undefined } }));
+  };
+
+  const deletePhone = (id: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, phones: prev.phones.filter((p) => p.id !== id) } : prev
+    );
+
+  const addPhone = () =>
+    setForm((prev) =>
+      prev ? { ...prev, phones: [...prev.phones, { id: Date.now(), value: "" }] } : prev
+    );
+
+  const updateSocial = (id: number, key: keyof Omit<SocialLink, "id">, value: string) => {
+    setForm((prev) =>
+      prev ? { ...prev, socials: prev.socials.map((s) => (s.id === id ? { ...s, [key]: value } : s)) } : prev
+    );
+    setErrors((prev) => ({ ...prev, socials: { ...prev.socials, [id]: undefined } }));
+  };
+
+  const deleteSocial = (id: number) =>
+    setForm((prev) =>
+      prev ? { ...prev, socials: prev.socials.filter((s) => s.id !== id) } : prev
+    );
+
+  const addSocial = () => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const usedPlatforms = new Set(prev.socials.map((s) => s.platform));
+      const nextPlatform = SOCIAL_PLATFORMS.find((p) => !usedPlatforms.has(p)) ?? SOCIAL_PLATFORMS[0];
+      return {
+        ...prev,
+        socials: [...prev.socials, { id: Date.now(), platform: nextPlatform, url: "" }],
+      };
+    });
+  };
+
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-6 p-6 w-full">
         <PageLoadingState message="Loading profile..." />
@@ -304,23 +264,24 @@ function InformationPage() {
     );
   }
 
-  if (!form && error) {
+  if (isError) {
     return (
       <div className="flex flex-col gap-6 p-6 w-full">
         <ToastContainer toasts={toasts} onClose={removeToast} />
-        <PageErrorState message={error} onRetry={loadProfile} />
+        <PageErrorState
+          message={getErrorMessage(error, "Could not load restaurant profile.")}
+          onRetry={refetch}
+        />
       </div>
     );
   }
 
-  if (!form) return null;
-
+  if (!activeForm) return null;
 
   return (
     <div className="flex flex-col gap-6 p-6 w-full">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      {/* Page header + edit controls */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <PageHeader
           title="Profile Settings"
@@ -333,10 +294,10 @@ function InformationPage() {
           )}
           {isEditing ? (
             <Button
-              label={saving ? "Saving..." : "Save Changes"}
+              label={saveMutation.isPending ? "Saving..." : "Save Changes"}
               icon={Save}
               onClick={handleSave}
-              disabled={saving}
+              disabled={saveMutation.isPending}
             />
           ) : (
             <Button label="Edit" icon={Edit2} onClick={handleEdit} />
@@ -344,7 +305,6 @@ function InformationPage() {
         </div>
       </div>
 
-      {/* ── Account / login email ── */}
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={User}
@@ -352,9 +312,7 @@ function InformationPage() {
           description="Your account credentials"
         />
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-600">
-            Account Email
-          </label>
+          <label className="text-sm font-medium text-text-600">Account Email</label>
           <Input value={userEmail ?? ""} readOnly placeholder="your@email.com" />
           <p className="text-xs text-text-400">
             This is the email you use to log in. Contact support to change it.
@@ -362,18 +320,16 @@ function InformationPage() {
         </div>
       </Card>
 
-      {/* ── Password ── */}
       <ChangePasswordCard />
 
-      {/* ── Restaurant info  ── */}
       <RestaurantInfoCard
         isEditing={isEditing}
         fields={{
-          restaurantName: form.restaurantName,
-          emailAddress: form.emailAddress,
-          address: form.address,
-          city: form.city,
-          logoUrl: form.logoUrl,
+          restaurantName: activeForm.restaurantName,
+          emailAddress: activeForm.emailAddress,
+          address: activeForm.address,
+          city: activeForm.city,
+          logoUrl: activeForm.logoUrl,
         }}
         errors={{
           restaurantName: errors.restaurantName,
@@ -393,7 +349,6 @@ function InformationPage() {
         }}
       />
 
-      {/* ── Phone Numbers ── */}
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Phone}
@@ -406,12 +361,12 @@ function InformationPage() {
           }
         />
         <div className="flex flex-col gap-3">
-          {form.phones.length === 0 && (
+          {activeForm.phones.length === 0 && (
             <p className="text-sm text-text-400 text-center py-2">
               No phone numbers added yet.
             </p>
           )}
-          {form.phones.map((phone) => (
+          {activeForm.phones.map((phone) => (
             <div key={phone.id} className="flex flex-col gap-1">
               <PhoneNumberItem
                 value={phone.value}
@@ -420,16 +375,13 @@ function InformationPage() {
                 onDelete={() => deletePhone(phone.id)}
               />
               {errors.phones?.[phone.id] && (
-                <p className="text-xs text-error pl-1">
-                  {errors.phones[phone.id]}
-                </p>
+                <p className="text-xs text-error pl-1">{errors.phones[phone.id]}</p>
               )}
             </div>
           ))}
         </div>
       </Card>
 
-      {/* ── Social Media ── */}
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Globe}
@@ -442,12 +394,12 @@ function InformationPage() {
           }
         />
         <div className="flex flex-col gap-3">
-          {form.socials.length === 0 && (
+          {activeForm.socials.length === 0 && (
             <p className="text-sm text-text-400 text-center py-2">
               No social links added yet.
             </p>
           )}
-          {form.socials.map((social) => (
+          {activeForm.socials.map((social) => (
             <div key={social.id} className="flex flex-col gap-1">
               <SocialMediaItem
                 platform={social.platform}
@@ -458,9 +410,7 @@ function InformationPage() {
                 onDelete={() => deleteSocial(social.id)}
               />
               {errors.socials?.[social.id] && (
-                <p className="text-xs text-error pl-1">
-                  {errors.socials[social.id]}
-                </p>
+                <p className="text-xs text-error pl-1">{errors.socials[social.id]}</p>
               )}
             </div>
           ))}

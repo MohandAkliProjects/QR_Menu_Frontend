@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   closestCenter,
@@ -40,62 +41,185 @@ const ITEMS_PER_PAGE = 10;
 
 function CategoriesPage() {
   const { menuId, restaurantId } = useAuth();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [supportedLanguages, setSupportedLanguages] = useState<Language[]>([]);
+  const queryClient = useQueryClient();
+  const { toasts, showToast, removeToast } = useToast();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toasts, showToast, removeToast } = useToast();
+
+  // For drag reorder — we keep a local reordered list only during/after drag
+  // until invalidation resolves
+  const [localCategories, setLocalCategories] = useState<Category[] | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const loadData = useCallback(async (signal?: { cancelled: boolean }) => {
-    if (!menuId || !restaurantId) {
-      if (!signal?.cancelled) {
-        setError("No menu found for this restaurant. Please create a menu first.");
-        setLoading(false);
-      }
-      return;
-    }
+  const categoriesKey = ["categories", restaurantId, menuId];
 
-    if (!signal?.cancelled) {
-      setLoading(true);
-      setError(null);
-    }
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: categoriesKey,
+    queryFn: () =>
+      categoryService.loadCategoriesPageData(restaurantId!, menuId!),
+    enabled: !!menuId && !!restaurantId,
+  });
 
-    try {
-      const { categories: categoriesData, supportedLanguages: langs } =
-        await categoryService.loadCategoriesPageData(restaurantId, menuId);
-
-      if (!signal?.cancelled) {
-        setSupportedLanguages(langs);
-        setCategories(categoriesData.map(categoryResponseToUI));
-      }
-    } catch (err) {
-      if (!signal?.cancelled) {
-        const message = getErrorMessage(err, "Could not load categories.");
-        setError(message);
-        showToast("error", "Load Failed", message);
-      }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
-    }
-  }, [menuId, restaurantId, showToast]);
-
-  useEffect(() => {
-    const signal = { cancelled: false };
-    async function run() { await loadData(signal); }
-    run();
-    return () => { signal.cancelled = true; };
-  }, [loadData]);
+  const categories: Category[] = (localCategories ?? data?.categories.map(categoryResponseToUI)) ?? [];
+  const supportedLanguages: Language[] = data?.supportedLanguages ?? [];
 
   const languages: LanguageConfig = {
     showEnglish: supportedLanguages.includes("EN" as Language),
     showFrench: supportedLanguages.includes("FR" as Language),
     showArabic: supportedLanguages.includes("AR" as Language),
   };
+
+  // ── Mutations ────────────────────────────────────────────────────────────
+
+  const createMutation = useMutation({
+    mutationFn: ({
+      data,
+      iconFile,
+    }: {
+      data: Parameters<typeof categoryService.createCategory>[1];
+      iconFile: File | null;
+    }) => categoryService.createCategory(menuId!, data, iconFile),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      setCurrentPage(1);
+      showToast("success", "Category Added", "New category has been added successfully.");
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+      iconFile,
+    }: {
+      id: string;
+      data: Parameters<typeof categoryService.updateCategory>[1];
+      iconFile: File | null;
+    }) => categoryService.updateCategory(id, data, iconFile),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      showToast("success", "Category Updated", "Category has been updated successfully.");
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      showToast("success", "Category Saved", "Your changes have been saved.");
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => categoryService.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      showToast("success", "Category Deleted", "Category has been removed.");
+    },
+    onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      categoryService.reorderCategories(menuId!, { orderedCategoriesIds: orderedIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      setLocalCategories(null);
+      showToast("success", "Order Updated", "Category order has been saved.");
+    },
+    onError: (err) => {
+      setLocalCategories(null);
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      showToast("error", "Reorder Failed", getErrorMessage(err));
+    },
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !menuId) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex).map((c, i) => ({
+      ...c,
+      order: i + 1,
+    }));
+
+    setLocalCategories(reordered);
+    reorderMutation.mutate(reordered.map((c) => String(c.id)));
+  };
+
+  const handleConfirm = (
+    formData: Omit<Category, "id" | "order"> & { iconFile: File | null }
+  ) => {
+    if (!menuId) return;
+
+    if (editTarget) {
+      updateMutation.mutate({
+        id: String(editTarget.id),
+        data: {
+          translations: categoryUIToTranslations(formData),
+          isVisible: formData.status === "visible",
+        },
+        iconFile: formData.iconFile,
+      });
+    } else {
+      createMutation.mutate({
+        data: {
+          translations: categoryUIToTranslations(formData),
+          isVisible: formData.status === "visible",
+        },
+        iconFile: formData.iconFile,
+      });
+    }
+    setEditTarget(null);
+  };
+
+  const handleEdit = (category: Category, iconFile: File | null) => {
+    const previous = categories.find((c) => c.id === category.id);
+    if (!previous) return;
+
+    const onlyStatusChanged =
+      previous.english === category.english &&
+      previous.french === category.french &&
+      previous.arabic === category.arabic &&
+      previous.icon === category.icon &&
+      previous.status !== category.status &&
+      !iconFile;
+
+    if (onlyStatusChanged) {
+      toggleMutation.mutate(String(category.id));
+    } else {
+      updateMutation.mutate({
+        id: String(category.id),
+        data: {
+          translations: categoryUIToTranslations(category),
+          isVisible: category.status === "visible",
+        },
+        iconFile,
+      });
+    }
+  };
+
+  const handleDelete = (id: UniqueIdentifier) => {
+    deleteMutation.mutate(String(id));
+  };
+
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const categoriesWithMissing = categories.filter((c) => {
     if (languages.showEnglish && !c.english) return true;
@@ -120,125 +244,9 @@ function CategoriesPage() {
     { key: "actions", label: "Actions", center: true, width: "min-w-[140px]" },
   ];
 
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id || !menuId) return;
-
-    const oldIndex = categories.findIndex((c) => c.id === active.id);
-    const newIndex = categories.findIndex((c) => c.id === over.id);
-    const reordered = arrayMove(categories, oldIndex, newIndex).map((c, i) => ({
-      ...c,
-      order: i + 1,
-    }));
-
-    setCategories(reordered);
-
-    try {
-      await categoryService.reorderCategories(menuId, {
-        orderedCategoriesIds: reordered.map((c) => String(c.id)),
-      });
-      showToast("success", "Order Updated", "Category order has been saved.");
-    } catch (err) {
-      await loadData();
-      showToast("error", "Reorder Failed", getErrorMessage(err));
-    }
-  };
-
-
-  const handleConfirm = async (
-    data: Omit<Category, "id" | "order"> & { iconFile: File | null }
-  ) => {
-    if (!menuId) return;
-
-    try {
-      if (editTarget) {
-        const updated = await categoryService.updateCategory(
-          String(editTarget.id),
-          {
-            translations: categoryUIToTranslations(data),
-            isVisible: data.status === "visible",
-          },
-          data.iconFile
-        );
-        setCategories((prev) =>
-          prev.map((c) => (c.id === editTarget.id ? categoryResponseToUI(updated) : c))
-        );
-        showToast("success", "Category Updated", "Category has been updated successfully.");
-      } else {
-        const created = await categoryService.createCategory(
-          menuId,
-          {
-            translations: categoryUIToTranslations(data),
-            isVisible: data.status === "visible",
-          },
-          data.iconFile
-        );
-        setCategories((prev) => [...prev, categoryResponseToUI(created)]);
-        setCurrentPage(1);
-        showToast("success", "Category Added", "New category has been added successfully.");
-      }
-
-      setEditTarget(null);
-    } catch (err) {
-      showToast("error", "Save Failed", getErrorMessage(err));
-    }
-  };
-
-
-  const handleEdit = async (category: Category, iconFile: File | null) => {
-    const previous = categories.find((c) => c.id === category.id);
-    if (!previous) return;
-
-    const onlyStatusChanged =
-      previous.english === category.english &&
-      previous.french === category.french &&
-      previous.arabic === category.arabic &&
-      previous.icon === category.icon &&
-      previous.status !== category.status &&
-      !iconFile;
-
-    setCategories((prev) =>
-      prev.map((c) => (c.id === category.id ? category : c))
-    );
-
-    try {
-      const response = onlyStatusChanged
-        ? await categoryService.toggleCategoryVisible(String(category.id))
-        : await categoryService.updateCategory(
-            String(category.id),
-            {
-              translations: categoryUIToTranslations(category),
-              isVisible: category.status === "visible",
-            },
-            iconFile
-          );
-
-      setCategories((prev) =>
-        prev.map((c) => (c.id === category.id ? categoryResponseToUI(response) : c))
-      );
-      showToast("success", "Category Saved", "Your changes have been saved.");
-    } catch (err) {
-      setCategories((prev) =>
-        prev.map((c) => (c.id === category.id ? previous : c))
-      );
-      showToast("error", "Save Failed", getErrorMessage(err));
-    }
-  };
-
-
-  const handleDelete = async (id: UniqueIdentifier) => {
-    const previous = [...categories];
-    setCategories((prev) => prev.filter((c) => c.id !== id));
-
-    try {
-      await categoryService.deleteCategory(String(id));
-      showToast("success", "Category Deleted", "Category has been removed.");
-    } catch (err) {
-      setCategories(previous);
-      showToast("error", "Delete Failed", getErrorMessage(err));
-    }
-  };
+  const noMenuError = !menuId || !restaurantId
+    ? "No menu found for this restaurant. Please create a menu first."
+    : null;
 
   return (
     <div className="flex flex-col min-h-full p-6 sm:p-8 lg:p-10 w-full">
@@ -257,11 +265,11 @@ function CategoriesPage() {
             setEditTarget(null);
             setModalOpen(true);
           }}
-          disabled={loading || Boolean(error)}
+          disabled={isLoading || isError || !!noMenuError}
         />
       </div>
 
-      {!loading && !error && categoriesWithMissing.length > 0 && (
+      {!isLoading && !isError && !noMenuError && categoriesWithMissing.length > 0 && (
         <Notification
           variant="warning"
           title="Missing Translations"
@@ -272,10 +280,15 @@ function CategoriesPage() {
         />
       )}
 
-      {loading ? (
+      {noMenuError ? (
+        <PageErrorState message={noMenuError} />
+      ) : isLoading ? (
         <PageLoadingState message="Loading categories..." />
-      ) : error ? (
-        <PageErrorState message={error} onRetry={() => loadData()} />
+      ) : isError ? (
+        <PageErrorState
+          message={getErrorMessage(error, "Could not load categories.")}
+          onRetry={refetch}
+        />
       ) : (
         <>
           <div className="flex-1">

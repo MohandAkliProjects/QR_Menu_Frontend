@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Copy, Download, ExternalLink } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { QRCodeCanvas } from "qrcode.react";
 
 import { getErrorMessage } from "../../api/errors";
@@ -17,62 +18,26 @@ import { ROUTES } from "../../types/routes";
 import * as restaurantService from "../../services/restaurant.service";
 
 function QrDisplayPage() {
-  const { restaurantId} = useAuth();
-  const [qrUrl, setQrUrl] = useState("");
-  const [qrDisplayUrl, setQrDisplayUrl] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { restaurantId } = useAuth();
   const { toasts, showToast, removeToast } = useToast();
 
-const loadQrData = useCallback(async (signal?: { cancelled: boolean }) => {
-    if (!restaurantId) {
-      if (!signal?.cancelled) {
-        setError("Restaurant session is missing.");
-        setLoading(false);
-      }
-      return;
-    }
-
-    if (!signal?.cancelled) {
-      setLoading(true);
-      setError(null);
-    }
-
-    try {
-      const restaurant = await restaurantService.getRestaurant(restaurantId);
-      const qrRedirectUrl = `${window.location.origin}${ROUTES.qrRedirect(restaurantId)}`;
-      const displayUrl = restaurant.slug
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["restaurant", restaurantId],
+    queryFn: () => restaurantService.getRestaurant(restaurantId!),
+    enabled: !!restaurantId,
+    staleTime: Infinity,
+    select: (restaurant) => ({
+      qrUrl: `${window.location.origin}${ROUTES.qrRedirect(restaurantId!)}`,
+      qrDisplayUrl: restaurant.slug
         ? `${window.location.origin}${ROUTES.publicMenu(restaurant.slug)}`
-        : "";
+        : "",
+    }),
+  });
 
-      if (!signal?.cancelled) {
-        setQrUrl(qrRedirectUrl);
-        setQrDisplayUrl(displayUrl);
-      }
-    } catch (err) {
-      if (!signal?.cancelled) {
-        const message = getErrorMessage(err, "Could not load QR information.");
-        setError(message);
-        showToast("error", "Load Failed", message);
-      }
-    } finally {
-      if (!signal?.cancelled) setLoading(false);
-    }
-  }, [restaurantId, showToast]);
+  const qrUrl = data?.qrUrl ?? "";
+  const qrDisplayUrl = data?.qrDisplayUrl ?? "";
 
-  useEffect(() => {
-    const signal = { cancelled: false };
-
-    async function run() {
-      await loadQrData(signal);
-    }
-
-    run();
-    return () => {
-      signal.cancelled = true;
-    };
-  }, [loadQrData]);
-  async function handleCopy() {
+  const handleCopy = useCallback(async () => {
     if (!qrDisplayUrl) return;
     try {
       await navigator.clipboard.writeText(qrDisplayUrl);
@@ -80,7 +45,7 @@ const loadQrData = useCallback(async (signal?: { cancelled: boolean }) => {
     } catch {
       showToast("error", "Copy Failed", "Could not copy the URL.");
     }
-  }
+  }, [qrDisplayUrl, showToast]);
 
   function handleTest() {
     if (!qrDisplayUrl) return;
@@ -109,15 +74,15 @@ const loadQrData = useCallback(async (signal?: { cancelled: boolean }) => {
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="w-full flex flex-col gap-8">
-        <PageHeader
-          title="QR Display"
-          showDescription={false}
-        />
+        <PageHeader title="QR Display" showDescription={false} />
 
-        {loading ? (
+        {isLoading ? (
           <PageLoadingState message="Loading QR display..." />
-        ) : error ? (
-          <PageErrorState message={error} onRetry={loadQrData} />
+        ) : isError ? (
+          <PageErrorState
+            message={getErrorMessage(error, "Could not load QR information.")}
+            onRetry={refetch}
+          />
         ) : (
           <>
             <div className="flex flex-col gap-8 w-full">
@@ -176,8 +141,7 @@ const loadQrData = useCallback(async (signal?: { cancelled: boolean }) => {
 
             <div
               className="
-                flex gap-6 w-full
-                m-6
+                flex gap-6 w-full m-6
                 max-w-sm sm:max-w-md md:max-w-150 lg:max-w-175 xl:max-w-200
                 mx-auto
               "

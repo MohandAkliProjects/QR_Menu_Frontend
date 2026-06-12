@@ -88,11 +88,28 @@ export interface MenuResponse {
   totalDishes: number;
 }
 
+export interface RestaurantInfo {
+  name: string;
+  logoUrl?: string;
+  ville: string;
+  address?: string;
+  instagramLink?: string;
+  facebookLink?: string;
+  tiktokLink?: string;
+  snapshatLink?: string;
+  googleMapsLink?: string;
+  emailAddress?: string;
+  phones?: string[];
+  banners?: BannerResponse[];
+}
+
 export interface FullMenuResponse {
   id: string;
+  restaurantId: string;
   translations: TranslationsMap<MenuTranslation>;
   devise: Devise;
   categories: CategoryWithDishesResponse[];
+  restaurant: RestaurantInfo;
 }
 
 export interface MenuWithCategoriesResponse {

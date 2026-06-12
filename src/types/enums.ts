@@ -1,7 +1,7 @@
 /** Mirrors com.qrmenu.qrmenu.enums — JSON keys match backend serialization */
 
-export type Language = "EN" | "FR" | "AR";
-
+// enums.ts
+export type Language = "en" | "fr" | "ar";
 export type Devise =
   | "dzd"
   | "eur"

@@ -2,6 +2,7 @@ import { apiRequest } from "../api/client";
 import type {
   FullMenuResponse,
   MenuResponse,
+  RestaurantResponse,
   UpdateMenuRequest,
 } from "../types";
 
@@ -34,10 +35,20 @@ export async function deleteMenu(menuId: string): Promise<void> {
   return apiRequest<void>(`/api/menus/${menuId}`, { method: "DELETE" });
 }
 
-export async function getFullMenu(menuId: string): Promise<FullMenuResponse> {
-  return apiRequest<FullMenuResponse>(`/api/menus/${menuId}/full`, {
-    auth: false,
-  });
+export async function getFullMenuBySlug(slug: string): Promise<FullMenuResponse> {
+  const restaurant = await apiRequest<RestaurantResponse>(
+    `/api/restaurants/slug/${slug}`,
+    { auth: false }
+  );
+
+  if (!restaurant.defaultMenuId) {
+    throw new Error("NO_MENU");
+  }
+
+  return apiRequest<FullMenuResponse>(
+    `/api/menus/${restaurant.defaultMenuId}/full`,
+    { auth: false }
+  );
 }
 
 export function sumMenuLikes(fullMenu: FullMenuResponse): number {

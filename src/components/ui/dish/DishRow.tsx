@@ -1,13 +1,15 @@
 import { useState, useRef } from "react";
 import {
-  Eye,
-  EyeOff,
   Pencil,
   Trash2,
   Save,
   Upload,
   Image as ImageIcon,
   Heart,
+  Eye,
+  EyeOff,
+  Check,
+  X,
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
@@ -86,11 +88,19 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
     setIsEditing(false);
   };
 
-  const handleToggleStatus = () => {
+  /*const handleToggleStatus = () => {
     onSave({
       ...dish,
       status: dish.status === "visible" ? "hidden" : "visible",
     } as Dish);
+  };*/
+
+  const handleToggleStatus = () => {
+    const updated = {
+      ...dish,
+      status: dish.status === "visible" ? "hidden" : "visible",
+    } as Dish;
+    onSave(updated);
   };
 
   const handleToggleAvailable = () => {
@@ -132,7 +142,11 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
           {form.image ? (
-            <img src={form.image} alt="" className="w-full h-full object-cover" />
+            <img
+              src={form.image}
+              alt=""
+              className="w-full h-full object-cover"
+            />
           ) : isEditing ? (
             <Upload size={16} className="text-text-400" />
           ) : (
@@ -156,7 +170,9 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
           <div className="flex flex-col gap-1">
             <input
               value={form.english}
-              onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, english: e.target.value }))
+              }
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
             {error && (
@@ -219,7 +235,9 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
         {isEditing ? (
           <textarea
             value={form.description ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, description: e.target.value }))
+            }
             rows={2}
             className="
               w-full px-3 py-2 rounded-lg border border-beige-400
@@ -258,14 +276,14 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
         )}
       </TableCell>
 
-      {/* Available */}
+      {/* Available — clickable badge */}
       <TableCell>
-        <div className="flex justify-center" onClick={handleToggleAvailable}>
+        <div className="flex justify-center">
           <Badge variant={dish.available} />
         </div>
       </TableCell>
 
-      {/* Status */}
+      {/* Status — clickable badge */}
       <TableCell>
         <div className="flex justify-center">
           <Badge variant={dish.status} />
@@ -277,7 +295,9 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
         <div className="flex items-center justify-center gap-1">
           <Heart
             size={15}
-            className={dish.likes > 0 ? "text-error fill-error" : "text-text-300"}
+            className={
+              dish.likes > 0 ? "text-error fill-error" : "text-text-300"
+            }
           />
           <span className="text-sm text-text-400">{dish.likes}</span>
         </div>
@@ -306,20 +326,42 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             <button
               onClick={handleToggleStatus}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              title={dish.status === "visible" ? "Hide dish" : "Show dish"}
             >
-              {dish.status === "visible" ? <Eye size={17} /> : <EyeOff size={17} />}
+              {dish.status === "visible" ? (
+                <Eye size={17} />
+              ) : (
+                <EyeOff size={17} />
+              )}
+            </button>
+
+            {/* Availability */}
+            <button
+              onClick={handleToggleAvailable}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              title={
+                dish.available === "available"
+                  ? "Mark unavailable"
+                  : "Mark available"
+              }
+            >
+              {dish.available === "available" ? (
+                <Check size={17} />
+              ) : (
+                <X size={17} />
+              )}
             </button>
             <button
               onClick={() => setIsEditing(true)}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              title="Edit dish"
             >
               <Pencil size={17} />
             </button>
-            {/* Delete disabled until wired — shows toast via onDelete in page */}
             <button
               onClick={() => onDelete(dish.id)}
-              disabled
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-300 cursor-not-allowed opacity-40"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-error/10 hover:text-error transition-colors"
+              title="Delete dish"
             >
               <Trash2 size={17} />
             </button>

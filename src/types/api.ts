@@ -48,13 +48,16 @@ export interface DishResponse {
   categoryId: string;
   price: number;
   imageUrl?: string;
-  likes: number;
+  likesCount: number;
   isAvailable: boolean;
+      /** @deprecated */
+  available: boolean;
   isVisible: boolean;
+      /** @deprecated */
+  visible: boolean;
   order: number;
   translations: TranslationsMap<DishTranslation>;
 }
-
 
 export interface CategoryResponse {
   id: string;

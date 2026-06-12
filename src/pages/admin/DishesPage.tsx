@@ -161,7 +161,6 @@ function DishesPage() {
     [dishes, languages],
   );
 
-
   const createMutation = useMutation({
     mutationFn: ({
       categoryId,
@@ -205,10 +204,10 @@ function DishesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
       showToast(
-        "info",
-        "Coming Soon",
-        "Visibility toggle will be wired in a future update.",
-      );
+        "success",
+        "Visibility Updated",
+        "Dish visibility has been updated.",
+      ); // ← real message
     },
     onError: (err) => showToast("error", "Update Failed", getErrorMessage(err)),
   });
@@ -218,10 +217,10 @@ function DishesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
       showToast(
-        "info",
-        "Coming Soon",
-        "Availability toggle will be wired in a future update.",
-      );
+        "success",
+        "Availability Updated",
+        "Dish availability has been updated.",
+      ); // ← real message
     },
     onError: (err) => showToast("error", "Update Failed", getErrorMessage(err)),
   });
@@ -231,14 +230,39 @@ function DishesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
       showToast(
-        "info",
-        "Coming Soon",
-        "Delete will be wired in a future update.",
-      );
+        "success",
+        "Dish Deleted",
+        "Dish has been deleted successfully.",
+      ); // ← real message
     },
     onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: ({
+      categoryId,
+      orderedIds,
+    }: {
+      categoryId: string;
+      orderedIds: string[];
+    }) =>
+      dishService.reorderDishes(categoryId, {
+        orderedDishesIds: orderedIds,
+      }),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dishesKey });
+
+      showToast(
+        "success",
+        "Dishes Reordered",
+        "Dish order has been updated successfully.",
+      );
+    },
+
+    onError: (err) =>
+      showToast("error", "Reorder Failed", getErrorMessage(err)),
+  });
 
   const handleConfirm = (data: Omit<Dish, "id" | "order" | "likes">) => {
     const payload = buildDishPayload(data);
@@ -294,13 +318,28 @@ function DishesPage() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    showToast(
-      "info",
-      "Coming Soon",
-      "Dish reordering will be available in a future update.",
-    );
-  };
 
+    const activeDish = dishes.find((d) => d.id === active.id);
+    if (!activeDish) return;
+
+    const categoryId = String(activeDish.categoryId);
+    const categoryDishes = dishes
+      .filter((d) => String(d.categoryId) === categoryId)
+      .sort((a, b) => a.order - b.order);
+
+    const oldIndex = categoryDishes.findIndex((d) => d.id === active.id);
+    const newIndex = categoryDishes.findIndex((d) => d.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = [...categoryDishes];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    reorderMutation.mutate({
+      categoryId,
+      orderedIds: reordered.map((d) => String(d.id)),
+    });
+  };
 
   const filteredDishes = useMemo(
     () =>

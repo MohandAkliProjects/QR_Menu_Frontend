@@ -15,7 +15,7 @@ export interface AllDishesResponse {
 function appendDishFormData(
   formData: FormData,
   ui: DishFormPayload,
-  includeImage = true
+  includeImage = true,
 ) {
   const translations = dishUIToTranslations({
     english: ui.english ?? "",
@@ -49,18 +49,17 @@ function appendDishFormData(
   }
 }
 
-
 export async function getAllDishesByRestaurant(
-  restaurantId: string
+  restaurantId: string,
 ): Promise<AllDishesResponse> {
   return apiRequest<AllDishesResponse>(
-    `/api/dishes/restaurant/${restaurantId}`
+    `/api/dishes/restaurant/${restaurantId}`,
   );
 }
 
 export async function createDish(
   categoryId: string,
-  payload: DishFormPayload
+  payload: DishFormPayload,
 ): Promise<DishResponse> {
   const formData = new FormData();
   appendDishFormData(formData, payload);
@@ -72,7 +71,7 @@ export async function createDish(
 
 export async function updateDish(
   dishId: string,
-  payload: DishFormPayload
+  payload: DishFormPayload,
 ): Promise<DishResponse> {
   const formData = new FormData();
   appendDishFormData(formData, payload, Boolean(payload.imageFile));
@@ -86,18 +85,29 @@ export async function deleteDish(dishId: string): Promise<void> {
   return apiRequest<void>(`/api/dishes/${dishId}`, { method: "DELETE" });
 }
 
-export async function toggleDishVisible(
-  dishId: string
-): Promise<DishResponse> {
+export async function toggleDishVisible(dishId: string): Promise<DishResponse> {
   return apiRequest<DishResponse>(`/api/dishes/${dishId}/toggle-visible`, {
     method: "PATCH",
   });
 }
 
 export async function toggleDishAvailable(
-  dishId: string
+  dishId: string,
 ): Promise<DishResponse> {
   return apiRequest<DishResponse>(`/api/dishes/${dishId}/toggle-available`, {
     method: "PATCH",
   });
+}
+
+export async function reorderDishes(
+  categoryId: string,
+  payload: { orderedDishesIds: string[] },
+): Promise<DishResponse[]> {
+  return apiRequest<DishResponse[]>(
+    `/api/dishes/category/${categoryId}/reorderDishes`,
+    {
+      method: "PATCH",
+      body: payload,
+    },
+  );
 }

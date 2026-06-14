@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 
 interface IconInputProps {
+  id?: string;
+  name?: string;
   icon: LucideIcon;
   type?: string;
   placeholder?: string;
@@ -8,9 +10,10 @@ interface IconInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   className?: string;
+  autocomplete?: string;
 }
 
-function IconInput({ icon: Icon, type = "text", placeholder, value, onChange, error, className }: IconInputProps) {
+function IconInput({ id, name, icon: Icon, type = "text", placeholder, value, onChange, error, className, autocomplete }: IconInputProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className={`
@@ -20,10 +23,13 @@ function IconInput({ icon: Icon, type = "text", placeholder, value, onChange, er
       `}>
         <Icon size={18} className="text-text-400 shrink-0" />
         <input
+          id={id}
+          name={name}
           type={type}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          autoComplete={autocomplete}
           className={`flex-1 bg-transparent text-base text-dark-700 placeholder:text-text-400 focus:outline-none ${className ?? ""}`}
         />
       </div>

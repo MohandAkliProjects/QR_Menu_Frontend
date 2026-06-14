@@ -69,9 +69,9 @@ function LoginPage() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSubmit();
-  };
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (e.key === "Enter") handleSubmit();
+  // };
 
   return (
     <div className="min-h-screen bg-primary-50 flex flex-col items-center justify-center px-4">
@@ -91,16 +91,19 @@ function LoginPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-4" onKeyDown={handleKeyDown}>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); } } className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-600">Email</label>
             <IconInput
+              id="email"
+              name="email"
               icon={Mail}
               type="email"
               placeholder="your@email.com"
               value={form.email}
               onChange={field("email")}
               error={errors.email}
+              autocomplete="email"
             />
           </div>
 
@@ -110,12 +113,15 @@ function LoginPage() {
             </label>
             <div className="relative">
               <IconInput
+                id="password"
+                name="password"    
                 icon={Lock}
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={form.password}
                 onChange={field("password")}
                 error={errors.password}
+                autocomplete="current-password"
                 className="[&::-webkit-credentials-auto-fill-button]:hidden [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
               />
               <button
@@ -128,15 +134,16 @@ function LoginPage() {
               </button>
             </div>
           </div>
-        </div>
 
-        <Button
+           <Button
           label={loading ? "Signing in..." : "Sign In"}
           icon={LogIn}
-          onClick={handleSubmit}
+          // onClick={handleSubmit}
           disabled={loading}
           fullWidth
+          type="submit"
         />
+        </form>
       </Card>
 
       <p className="mt-8 text-sm text-text-400">

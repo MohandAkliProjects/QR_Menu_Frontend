@@ -7,10 +7,11 @@ interface ButtonProps {
   disabled?: boolean;
   fullWidth?: boolean;
   className?: string;
+  type?: "submit" | "button" | "reset" | undefined 
   variant?: "primary" | "secondary";
 }
 
-function Button({ label, icon: Icon, onClick, disabled, fullWidth, className, variant = "primary" }: ButtonProps) {
+function Button({ label, icon: Icon, onClick, disabled, fullWidth, className, type , variant = "primary" }: ButtonProps) {
   const base = `
     flex items-center justify-center gap-3 px-3 py-4 rounded-lg
     h-12 ${fullWidth ? "w-full" : "w-auto"}
@@ -28,6 +29,7 @@ function Button({ label, icon: Icon, onClick, disabled, fullWidth, className, va
       onClick={onClick}
       disabled={disabled}
       className={`${base} ${variants[variant]} ${className ?? ""}`}
+      type={type}
     >
       {Icon && <Icon size={18} className="text-beige-600" />}
       {label}

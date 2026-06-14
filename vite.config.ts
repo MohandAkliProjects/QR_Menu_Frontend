@@ -10,11 +10,6 @@ export default defineConfig({
     svgr(),
   ],
   server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-      },
-    },
+    host: "qrmenu.test",
   },
 });

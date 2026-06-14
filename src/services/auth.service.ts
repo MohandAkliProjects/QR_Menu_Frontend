@@ -1,5 +1,5 @@
 import { apiRequest } from "../api/client";
-import type { AuthResponse, LoginRequest, LogoutResponse } from "../types";
+import type { AuthResponse, LoginRequest } from "../types";
 import { jwtDecode } from "jwt-decode";
 
 interface JwtPayload {
@@ -23,8 +23,4 @@ export async function loginRestaurant(credentials: LoginRequest): Promise<AuthRe
     role: decoded.role as AuthResponse["role"],
     restaurantId: decoded.restaurantId ?? "",
   };
-}
-
-export async function logout(): Promise<LogoutResponse> {
-  return apiRequest<LogoutResponse>("/api/auth/logout", { method: "POST" });
 }

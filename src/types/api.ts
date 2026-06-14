@@ -177,10 +177,6 @@ export interface ApiError {
   path: string;
 }
 
-export interface LogoutResponse {
-  message: string;
-}
-
 
 export interface LoginRequest {
   email: string;

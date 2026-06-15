@@ -10,7 +10,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-2 py-4">
+    <div className="flex items-center justify-center gap-2 py-4 " >
       
       {/* Prev */}
       <button

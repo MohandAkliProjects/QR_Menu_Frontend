@@ -36,6 +36,8 @@ export function categoryResponseToUI(category: CategoryResponse): CategoryUI {
 
 export function dishResponseToUI(dish: DishResponse): DishUI {
   const en = dish.translations.en ?? dish.translations["en" as Language];
+  console.log("🔥 RAW DISH FROM BACKEND:", dish);
+
   return {
     id: dish.id,
     order: dish.order,

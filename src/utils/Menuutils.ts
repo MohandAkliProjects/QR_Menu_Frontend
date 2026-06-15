@@ -5,7 +5,7 @@ export function sumMenuLikes(fullMenu: FullMenuResponse): number {
     (total, category) =>
       total +
       category.dishes.reduce(
-        (categoryTotal, dish) => categoryTotal + (dish.likes ?? 0),
+        (categoryTotal, dish) => categoryTotal + (dish.likesCount ?? 0),
         0
       ),
     0

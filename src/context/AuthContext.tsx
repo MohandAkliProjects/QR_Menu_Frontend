@@ -12,6 +12,7 @@ import * as menuService from "../services/menu.service";
 import * as restaurantService from "../services/restaurant.service";
 import type { Role } from "../types";
 
+
 const STORAGE_KEY = "qr_menu_auth";
 
 interface StoredAuth {

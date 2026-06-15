@@ -229,7 +229,7 @@ const toggleVisibleMutation = useMutation({
   },
 
   onSuccess: () => {
-    showToast("success", "Visibility Updated", "Dish visibility has been updated.");
+    //showToast("success", "Visibility Updated", "Dish visibility has been updated.");
   },
   onError: (err, _variables, context) => {
     queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
@@ -269,7 +269,7 @@ const toggleAvailableMutation = useMutation({
   },
 
   onSuccess: () => {
-    showToast("success", "Availability Updated", "Dish availability has been updated.");
+    //showToast("success", "Availability Updated", "Dish availability has been updated.");
   },
   onError: (err, _variables, context) => {
     queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
@@ -346,7 +346,7 @@ const reorderMutation = useMutation({
   },
 
   onSuccess: () => {
-    showToast("success", "Dishes Reordered", "Dish order has been updated successfully.");
+   // showToast("success", "Dishes Reordered", "Dish order has been updated successfully.");
   },
   onError: (err, _variables, context) => {
     queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);

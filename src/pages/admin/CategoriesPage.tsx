@@ -146,7 +146,7 @@ const toggleMutation = useMutation({
   },
 
   onSuccess: () => {
-    showToast("success", "Category Saved", "Your changes have been saved.");
+    //showToast("success", "Category Saved", "Your changes have been saved.");
   },
 
   onError: (err, _variables, context) => {
@@ -212,7 +212,7 @@ const reorderMutation = useMutation({
   },
 
   onSuccess: () => {
-    showToast("success", "Order Updated", "Category order has been saved.");
+    //showToast("success", "Order Updated", "Category order has been saved.");
   },
 
   onError: (err, _variables, context) => {

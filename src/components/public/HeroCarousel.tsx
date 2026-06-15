@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { BannerResponse } from "../types/api";
+import type { BannerResponse } from "../../types/api";
 
 interface HeroCarouselProps {
   banners: BannerResponse[];

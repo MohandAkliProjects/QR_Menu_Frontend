@@ -1,4 +1,4 @@
-import type { RestaurantInfo } from "../types/api";
+import type { RestaurantInfo } from "../../types/api";
 
 interface FooterProps {
   restaurant: RestaurantInfo;

@@ -9,16 +9,16 @@ import { ApiClientError } from "../../api/errors";
 import { getFullMenuBySlug } from "../../services/menu.service";
 import useToast from "../../hooks/useToast";
 import ToastContainer from "../../components/ui/ToastContainer";
-import HeroCarousel from "../../menu/hero";
-import RestaurantHeader from "../../menu/header";
-import SearchBar from "../../menu/searchBar";
-import CategoryFilter from "../../menu/categoireFilter";
-import DishCard from "../../menu/dishCard";
-import DishModal from "../../menu/Dishmodal";
-import EmptyCategory from "../../menu/Emptycategory";
-import RestaurantInfoCard from "../../menu/RestaurntInfoCard";
-import SocialFab from "../../menu/socailFab";
-import Footer from "../../menu/Footer";
+import HeroCarousel from "../../components/public/HeroCarousel";
+import RestaurantHeader from "../../components/public/RestaurantHeader";
+import SearchBar from "../../components/public/SearchBar";
+import CategoryFilter from "../../components/public/CategoryFilter";
+import DishCard from "../../components/public/DishCard";
+import DishModal from "../../components/public/DishModal";
+import EmptyCategory from "../../components/public/EmptyCategory";
+import RestaurantInfoCard from "../../components/public/RestaurantInfoCard";
+import SocialFab from "../../components/public/SocialFab";
+import Footer from "../../components/public/Footer";
 import RestaurantClosed from "../../components/public/RestaurantClosed";
 import {
   getCategoryName,
@@ -33,6 +33,9 @@ const ALL_ID = "all";
 /** Fallback height for the sticky search/category bar before it's measured. */
 const STICKY_OFFSET_FALLBACK = 132;
 
+/** Base URL for all API calls — adjust to match your env config. */
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 export default function PublicMenuPage() {
   const { menuId: slug } = useParams<RouteParams["PublicMenu"]>();
   const { toasts, showToast, removeToast } = useToast();
@@ -43,7 +46,10 @@ export default function PublicMenuPage() {
   const [activeCategoryId, setActiveCategoryId] = useState<string>(ALL_ID);
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishResponse | null>(null);
+  // liked: Set of dish ids toggled on by this visitor in this session
   const [liked, setLiked] = useState<Set<string>>(new Set());
+  // likeLoading: tracks in-flight like/dislike requests to prevent double-taps
+  const [likeLoading, setLikeLoading] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
   const { data: menu, isLoading, error } = useQuery({
@@ -53,6 +59,16 @@ export default function PublicMenuPage() {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
+
+  // ── View tracking ─────────────────────────────────────────────────────────
+  // Record a menu view once the menu id is known. Fire-and-forget: we don't
+  // block rendering on this and we silently ignore failures.
+  useEffect(() => {
+    if (!menu?.id) return;
+    fetch(`${API_BASE}/api/menus/${menu.id}/addView`, { method: "PATCH" }).catch(() => {
+      // intentionally silent
+    });
+  }, [menu?.id]);
 
   const availableLanguages = useMemo(
     () => (menu ? (Object.keys(menu.translations) as Language[]) : []),
@@ -78,19 +94,75 @@ export default function PublicMenuPage() {
       .filter((category) => category.dishes.length > 0);
   }, [menu]);
 
-  // Visual "like" toggle only - there's no like-submission endpoint yet,
-  // so we just show the existing "coming soon" toast.
+  // ── Like / dislike ────────────────────────────────────────────────────────
+  // Optimistic UI: toggle the heart immediately, then call the API.
+  // If the API fails, roll back and show a toast.
   const toggleLike = useCallback(
-    (dishId: string) => {
+    async (dishId: string) => {
+      if (likeLoading.has(dishId)) return; // prevent double-tap
+
+      const wasLiked = liked.has(dishId);
+      const endpoint = wasLiked ? "dislike" : "like";
+
+      // Optimistic update
       setLiked((prev) => {
         const next = new Set(prev);
-        if (next.has(dishId)) next.delete(dishId);
+        if (wasLiked) next.delete(dishId);
         else next.add(dishId);
         return next;
       });
-      showToast("success", "Coming Soon", "Likes will be available soon!");
+
+      // Also optimistically update the open modal's dish if it matches
+      setSelectedDish((prev) => {
+        if (!prev || prev.id !== dishId) return prev;
+        return {
+          ...prev,
+          likesCount: wasLiked
+            ? Math.max(0, prev.likesCount - 1)
+            : prev.likesCount + 1,
+        };
+      });
+
+      setLikeLoading((prev) => new Set(prev).add(dishId));
+
+      try {
+        const res = await fetch(`${API_BASE}/api/dishes/${dishId}/${endpoint}`, {
+          method: "PATCH",
+        });
+
+        if (!res.ok) throw new Error("Request failed");
+
+        // Sync the real likesCount from the server response
+        const updated: DishResponse = await res.json();
+        setSelectedDish((prev) => {
+          if (!prev || prev.id !== dishId) return prev;
+          return { ...prev, likesCount: updated.likesCount };
+        });
+      } catch {
+        // Roll back optimistic update
+        setLiked((prev) => {
+          const next = new Set(prev);
+          if (wasLiked) next.add(dishId);
+          else next.delete(dishId);
+          return next;
+        });
+        setSelectedDish((prev) => {
+          if (!prev || prev.id !== dishId) return prev;
+          return {
+            ...prev,
+            likesCount: wasLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
+          };
+        });
+        showToast("error", "Oops", "Could not save your like. Please try again.");
+      } finally {
+        setLikeLoading((prev) => {
+          const next = new Set(prev);
+          next.delete(dishId);
+          return next;
+        });
+      }
     },
-    [showToast],
+    [liked, likeLoading, showToast],
   );
 
   const scrollToCategory = useCallback((id: string) => {

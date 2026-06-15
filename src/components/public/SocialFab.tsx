@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Ghost, Mail, MapPin, Phone, Share2, X } from "lucide-react";
 
-import type { RestaurantInfo } from "../types/api";
+import type { RestaurantInfo } from "../../types/api";
 
 interface SocialFabProps {
   restaurant: RestaurantInfo;

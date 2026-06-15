@@ -1,5 +1,5 @@
-import type { RestaurantInfo } from "../types/api";
-import type { Language } from "../types/enums";
+import type { RestaurantInfo } from "../../types/api";
+import type { Language } from "../../types/enums";
 
 interface RestaurantHeaderProps {
   restaurant: RestaurantInfo;

@@ -2,7 +2,7 @@ import { Trash2 } from "lucide-react";
 import Input from "../Input";
 import SelectDropdown from "../SelectDropdown";
 
-const SOCIAL_PLATFORMS = ["FaceBook", "Instagram", "WebSite", "Twitter", "TikTok", "YouTube"];
+const SOCIAL_PLATFORMS = ["FaceBook", "Instagram", "Google Maps", "TikTok", "Snapchat" ];
 
 interface SocialMediaItemProps {
   platform: string;

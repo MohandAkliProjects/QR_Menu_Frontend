@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
@@ -9,23 +9,42 @@ import { ApiClientError } from "../../api/errors";
 import { getFullMenuBySlug } from "../../services/menu.service";
 import useToast from "../../hooks/useToast";
 import ToastContainer from "../../components/ui/ToastContainer";
-import BannerCarousel from "../../components/public/BannerCarousel";
-import MenuHeader from "../../components/public/MenuHeader";
-import CategoryNav from "../../components/public/CategoryNav";
-import DishCard from "../../components/public/DishCard";
-import DishModal from "../../components/public/DishModal";
-import SocialLinks from "../../components/public/SocialLinks";
+import HeroCarousel from "../../menu/hero";
+import RestaurantHeader from "../../menu/header";
+import SearchBar from "../../menu/searchBar";
+import CategoryFilter from "../../menu/categoireFilter";
+import DishCard from "../../menu/dishCard";
+import DishModal from "../../menu/Dishmodal";
+import EmptyCategory from "../../menu/Emptycategory";
+import RestaurantInfoCard from "../../menu/RestaurntInfoCard";
+import SocialFab from "../../menu/socailFab";
+import Footer from "../../menu/Footer";
 import RestaurantClosed from "../../components/public/RestaurantClosed";
+import {
+  getCategoryName,
+  getDishText,
+  isCategoryVisible,
+  isDishVisible,
+  isRTL,
+} from "../../utils/menu-display";
+import "../../styles/public-menu.css";
 
 const ALL_ID = "all";
+/** Fallback height for the sticky search/category bar before it's measured. */
+const STICKY_OFFSET_FALLBACK = 132;
 
 export default function PublicMenuPage() {
   const { menuId: slug } = useParams<RouteParams["PublicMenu"]>();
   const { toasts, showToast, removeToast } = useToast();
+
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const stickyRef = useRef<HTMLDivElement | null>(null);
+
   const [activeCategoryId, setActiveCategoryId] = useState<string>(ALL_ID);
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishResponse | null>(null);
+  const [liked, setLiked] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
 
   const { data: menu, isLoading, error } = useQuery({
     queryKey: ["public-menu", slug],
@@ -47,23 +66,86 @@ export default function PublicMenuPage() {
     return availableLanguages[0] ?? null;
   }, [selectedLanguage, availableLanguages]);
 
-  const categoriesWithDishes = useMemo(
-    () => (menu?.categories ?? []).filter((c) => c.dishes.length > 0),
-    [menu],
+  // Only visible categories, with only their visible dishes, dropping any
+  // category left with nothing to show.
+  const categoriesWithDishes = useMemo<CategoryWithDishesResponse[]>(() => {
+    return (menu?.categories ?? [])
+      .filter(isCategoryVisible)
+      .map((category) => ({
+        ...category,
+        dishes: category.dishes.filter(isDishVisible),
+      }))
+      .filter((category) => category.dishes.length > 0);
+  }, [menu]);
+
+  // Visual "like" toggle only - there's no like-submission endpoint yet,
+  // so we just show the existing "coming soon" toast.
+  const toggleLike = useCallback(
+    (dishId: string) => {
+      setLiked((prev) => {
+        const next = new Set(prev);
+        if (next.has(dishId)) next.delete(dishId);
+        else next.add(dishId);
+        return next;
+      });
+      showToast("success", "Coming Soon", "Likes will be available soon!");
+    },
+    [showToast],
   );
 
   const scrollToCategory = useCallback((id: string) => {
     setActiveCategoryId(id);
+
     if (id === ALL_ID) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const target = sectionRefs.current[id];
+    if (!target) return;
+
+    const offset = stickyRef.current?.offsetHeight ?? STICKY_OFFSET_FALLBACK;
+    const top = target.getBoundingClientRect().top + window.scrollY - offset - 8;
+    window.scrollTo({ top, behavior: "smooth" });
   }, []);
 
-  const handleLike = useCallback(() => {
-    showToast("success", "Coming Soon", "Likes will be available soon!");
-  }, [showToast]);
+  // Scroll-spy: highlight whichever category section is currently under the
+  // sticky bar. Disabled while searching, since the category strip is hidden.
+  useEffect(() => {
+    if (search.trim()) return;
+
+    const handleScroll = () => {
+      const offset = (stickyRef.current?.offsetHeight ?? STICKY_OFFSET_FALLBACK) + 16;
+
+      for (let i = categoriesWithDishes.length - 1; i >= 0; i--) {
+        const category = categoriesWithDishes[i];
+        const el = sectionRefs.current[category.id];
+        if (el && el.getBoundingClientRect().top <= offset) {
+          setActiveCategoryId(category.id);
+          return;
+        }
+      }
+      setActiveCategoryId(ALL_ID);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [categoriesWithDishes, search]);
+
+  const searchResults = useMemo(() => {
+    if (!search.trim() || !language) return null;
+
+    const term = search.trim().toLowerCase();
+    return categoriesWithDishes
+      .flatMap((category) => category.dishes)
+      .filter((dish) => {
+        const { name, description } = getDishText(dish, language);
+        return (
+          name.toLowerCase().includes(term) ||
+          (description ?? "").toLowerCase().includes(term)
+        );
+      });
+  }, [search, categoriesWithDishes, language]);
 
   const isClosed = error instanceof ApiClientError && error.status === 403;
 
@@ -71,10 +153,10 @@ export default function PublicMenuPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-tertiary">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--menu-bg)" }}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-primary-700 border-t-transparent animate-spin" />
-          <p className="text-sm text-text-400">Loading menu…</p>
+          <div className="w-8 h-8 rounded-full border-2 border-[var(--menu-accent)] border-t-transparent animate-spin" />
+          <p className="text-sm text-[var(--menu-muted)]">Loading menu…</p>
         </div>
       </div>
     );
@@ -82,8 +164,8 @@ export default function PublicMenuPage() {
 
   if (error && !isClosed) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6 bg-background-tertiary">
-        <p className="text-base text-text-400 text-center">
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "var(--menu-bg)" }}>
+        <p className="text-base text-[var(--menu-muted)] text-center">
           Menu not found or unavailable.
         </p>
       </div>
@@ -97,13 +179,14 @@ export default function PublicMenuPage() {
     Object.values(menu.translations)[0]?.title ??
     "";
 
-  const categoriesToShow =
-    activeCategoryId === ALL_ID
-      ? categoriesWithDishes
-      : categoriesWithDishes.filter((c) => c.id === activeCategoryId);
+  const banners = (menu.restaurant.banners ?? []).filter((b) => b.visible);
 
   return (
-    <div className="min-h-screen bg-background-tertiary">
+    <div
+      dir={isRTL(language) ? "rtl" : "ltr"}
+      className="min-h-screen"
+      style={{ background: "var(--menu-bg)", fontFamily: '"Nunito", system-ui, sans-serif' }}
+    >
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {selectedDish && (
@@ -111,23 +194,22 @@ export default function PublicMenuPage() {
           dish={selectedDish}
           devise={menu.devise}
           language={language}
+          liked={liked.has(selectedDish.id)}
+          onLike={() => toggleLike(selectedDish.id)}
           onClose={() => setSelectedDish(null)}
-          onLike={handleLike}
         />
       )}
 
-      <SocialLinks restaurant={menu.restaurant} />
-
       <div className="w-full sm:max-w-2xl lg:max-w-5xl mx-auto px-4 pb-24">
 
-        {menu.restaurant.banners && menu.restaurant.banners.length > 0 && (
+        {banners.length > 0 && (
           <div className="pt-4">
-            <BannerCarousel banners={menu.restaurant.banners} />
+            <HeroCarousel banners={banners} />
           </div>
         )}
 
         <div className="pt-5 pb-4">
-          <MenuHeader
+          <RestaurantHeader
             restaurant={menu.restaurant}
             menuTitle={menuTitle}
             availableLanguages={availableLanguages}
@@ -136,54 +218,104 @@ export default function PublicMenuPage() {
           />
         </div>
 
-        <div className="sticky top-0 z-10 bg-background-tertiary py-3 -mx-4 px-4 border-b border-border-tertiary">
-          <CategoryNav
-            categories={categoriesWithDishes}
-            activeCategoryId={activeCategoryId}
-            language={language}
-            onSelect={scrollToCategory}
-            allId={ALL_ID}
-          />
-        </div>
-
-        <div className="flex flex-col gap-8 pt-6">
-          {categoriesToShow.map((category: CategoryWithDishesResponse) => {
-            const catLabel =
-              category.translations[language]?.name ??
-              Object.values(category.translations)[0]?.name ??
-              "—";
-
-            return (
-              <section
-                key={category.id}
-                id={category.id}
-                ref={(el) => { sectionRefs.current[category.id] = el; }}
-              >
-                <h2 className="text-lg font-bold text-dark-800 mb-3">{catLabel}</h2>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {category.dishes.map((dish: DishResponse) => (
-                    <DishCard
-                      key={dish.id}
-                      dish={dish}
-                      devise={menu.devise}
-                      language={language}
-                      onLike={handleLike}
-                      onClick={() => setSelectedDish(dish)}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-
-          {categoriesToShow.length === 0 && (
-            <p className="text-center text-sm text-text-400 py-10">
-              No dishes available in this category.
-            </p>
+        <div
+          ref={stickyRef}
+          className="sticky top-0 z-20 -mx-4 px-4 py-3 border-b border-[var(--menu-border)]"
+          style={{ background: "var(--menu-bg)" }}
+        >
+          <div className="mb-3">
+            <SearchBar value={search} onChange={setSearch} />
+          </div>
+          {!search && (
+            <CategoryFilter
+              categories={categoriesWithDishes}
+              activeCategoryId={activeCategoryId}
+              language={language}
+              onSelect={scrollToCategory}
+              allId={ALL_ID}
+            />
           )}
         </div>
+
+        {searchResults !== null ? (
+          <div className="pt-4">
+            <p className="text-xs text-[var(--menu-muted)] mb-3">
+              {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+            </p>
+
+            {searchResults.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {searchResults.map((dish) => (
+                  <DishCard
+                    key={dish.id}
+                    dish={dish}
+                    devise={menu.devise}
+                    language={language}
+                    liked={liked.has(dish.id)}
+                    onLike={() => toggleLike(dish.id)}
+                    onClick={() => setSelectedDish(dish)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="text-5xl mb-4">🔍</div>
+                <p className="text-base font-semibold text-[var(--menu-primary)] menu-font-display">
+                  No results found
+                </p>
+                <p className="text-xs text-[var(--menu-muted)] mt-1">Try a different search term</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2 pt-6">
+              {categoriesWithDishes.map((category) => {
+                const catLabel = getCategoryName(category, language);
+
+                return (
+                  <section
+                    key={category.id}
+                    ref={(el) => { sectionRefs.current[category.id] = el; }}
+                    style={{ scrollMarginTop: STICKY_OFFSET_FALLBACK + 8 }}
+                    className="pb-4"
+                  >
+                    <h2 className="text-lg font-bold text-[var(--menu-primary)] mb-3 menu-font-display">
+                      {catLabel}
+                    </h2>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {category.dishes.map((dish) => (
+                        <DishCard
+                          key={dish.id}
+                          dish={dish}
+                          devise={menu.devise}
+                          language={language}
+                          liked={liked.has(dish.id)}
+                          onLike={() => toggleLike(dish.id)}
+                          onClick={() => setSelectedDish(dish)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+
+              {categoriesWithDishes.length === 0 && (
+                <EmptyCategory message="No dishes available at the moment." />
+              )}
+            </div>
+
+            <div className="my-6 border-t border-[var(--menu-border)]" />
+
+            <RestaurantInfoCard restaurant={menu.restaurant} />
+
+            <Footer restaurant={menu.restaurant} />
+          </>
+        )}
       </div>
+
+      <SocialFab restaurant={menu.restaurant} />
     </div>
   );
 }

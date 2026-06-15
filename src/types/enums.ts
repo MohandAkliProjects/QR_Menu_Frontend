@@ -25,5 +25,7 @@ export type SocialPlatform =
   | "INSTAGRAM"
   | "TIKTOK"
   | "EMAIL"
-  | "WEBSITE"
-  | "GOOGLE";
+   //"WEBSITE"
+   //"GOOGLE";
+  |"Snapchat"
+  |"Google Maps";

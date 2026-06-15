@@ -1,8 +1,10 @@
 export const SOCIAL_PLATFORMS = [
   "FaceBook",
   "Instagram",
-  "WebSite",
-  "Twitter",
+  //"WebSite",
+  //"Twitter",
   "TikTok",
-  "YouTube",
+  //"YouTube",
+  "Google Maps",
+  "Snapchat"
 ] as const;

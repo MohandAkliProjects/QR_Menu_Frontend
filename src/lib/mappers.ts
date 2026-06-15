@@ -200,7 +200,9 @@ export function restaurantResponseToForm(restaurant: RestaurantResponse) {
   pushSocial("FaceBook", restaurant.facebookLink);
   pushSocial("Instagram", restaurant.instagramLink);
   pushSocial("TikTok", restaurant.tiktokLink);
-  pushSocial("WebSite", restaurant.googleMapsLink);
+ // pushSocial("WebSite", restaurant.googleMapsLink);
+  pushSocial("Google Maps", restaurant.googleMapsLink);
+  pushSocial("Snapchat", restaurant.snapchatLink);
 
   return {
     restaurantName: restaurant.name,
@@ -243,8 +245,9 @@ export function restaurantFormToUpdateRequest(
     if (social.platform === "FaceBook") request.facebookLink = url;
     if (social.platform === "Instagram") request.instagramLink = url;
     if (social.platform === "TikTok") request.tiktokLink = url;
-    if (social.platform === "WebSite") request.googleMapsLink = url;
-    if (social.platform === "Snapchat") request.snapshatLink = url;
+    //if (social.platform === "WebSite") request.googleMapsLink = url;
+    if (social.platform === "Google Maps") request.googleMapsLink = url;
+    if (social.platform === "Snapchat") request.snapchatLink = url;
   }
 
   return request;

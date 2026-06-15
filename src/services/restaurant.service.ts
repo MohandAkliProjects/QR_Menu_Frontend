@@ -35,7 +35,7 @@ export async function updateRestaurant(
   if (data.instagramLink) formData.append("instagramLink", data.instagramLink);
   if (data.facebookLink) formData.append("facebookLink", data.facebookLink);
   if (data.tiktokLink) formData.append("tiktokLink", data.tiktokLink);
-  if (data.snapshatLink) formData.append("snapshatLink", data.snapshatLink);
+  if (data.snapchatLink) formData.append("snapchatLink", data.snapchatLink);
   if (data.googleMapsLink) formData.append("googleMapsLink", data.googleMapsLink);
 
   if (data.phones && data.phones.length > 0) {

@@ -99,7 +99,7 @@ export interface RestaurantInfo {
   instagramLink?: string;
   facebookLink?: string;
   tiktokLink?: string;
-  snapshatLink?: string;
+  snapchatLink?: string;
   googleMapsLink?: string;
   emailAddress?: string;
   phones?: string[];
@@ -136,7 +136,7 @@ export interface RestaurantResponse {
   phones: string[];
   subscriptionEndDate?: string;
   instagramLink?: string;
-  snapshatLink?: string;
+  snapchatLink?: string;
   facebookLink?: string;
   tiktokLink?: string;
   googleMapsLink?: string;
@@ -233,7 +233,7 @@ export interface RestaurantUpdateRequest {
   address?: string;
   phones?: string[];
   instagramLink?: string;
-  snapshatLink?: string;
+  snapchatLink?: string;
   facebookLink?: string;
   tiktokLink?: string;
   emailAddress?: string;

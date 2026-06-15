@@ -1,0 +1,41 @@
+/* Design tokens for the public menu pages, based on the Figma design.
+   Import this once at the top of PublicMenuPage.tsx (or in your global
+   stylesheet). Adjust the hex values here to re-theme every component
+   without touching the component files. */
+
+:root {
+  --menu-bg: #faf7f4;
+  --menu-card: #ffffff;
+  --menu-border: #ece4dd;
+  --menu-secondary: #f3efec;
+  --menu-muted: #8a7b72;
+  --menu-foreground: #2b2420;
+  --menu-primary: #63432b;
+  --menu-accent: #b68d37;
+  --menu-danger: #e53e3e;
+
+  /* Optional: load "Playfair Display" via Google Fonts (or your own
+     font pipeline) if you want the serif headings shown in the Figma. */
+  --menu-font-display: "Playfair Display", Georgia, serif;
+}
+
+.menu-font-display {
+  font-family: var(--menu-font-display);
+}
+
+/* Bottom-sheet open animation used by DishModal */
+@keyframes menu-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Hide scrollbars on horizontally-scrolling rows (category strip, etc.)
+   while keeping them scrollable. Works alongside the inline
+   `scrollbarWidth: "none"` set on Firefox. */
+.menu-scroll-x::-webkit-scrollbar {
+  display: none;
+}

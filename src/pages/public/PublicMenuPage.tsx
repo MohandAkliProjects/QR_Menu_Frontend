@@ -20,6 +20,7 @@ import RestaurantInfoCard from "../../components/public/RestaurantInfoCard";
 import SocialFab from "../../components/public/SocialFab";
 import Footer from "../../components/public/Footer";
 import RestaurantClosed from "../../components/public/RestaurantClosed";
+import { shouldRecordView } from "../../lib/view-tracker";
 import {
   getCategoryName,
   getDishText,
@@ -28,6 +29,7 @@ import {
   isRTL,
 } from "../../utils/menu-display";
 import "../../styles/public-menu.css";
+import { loadLikedToday, pruneOldLikes, saveLikedToday } from "../../lib/likes-storage";
 
 const ALL_ID = "all";
 /** Fallback height for the sticky search/category bar before it's measured. */
@@ -47,7 +49,10 @@ export default function PublicMenuPage() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishResponse | null>(null);
   // liked: Set of dish ids toggled on by this visitor in this session
-  const [liked, setLiked] = useState<Set<string>>(new Set());
+ const [liked, setLiked] = useState<Set<string>>(() => {
+  pruneOldLikes();
+  return loadLikedToday();
+});
   // likeLoading: tracks in-flight like/dislike requests to prevent double-taps
   const [likeLoading, setLikeLoading] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -59,17 +64,13 @@ export default function PublicMenuPage() {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
+//effects 
+useEffect(() => {
+  if (!menu?.id) return;
+  if (!shouldRecordView(menu.id)) return; // ← skip if already viewed today
 
-  // ── View tracking ─────────────────────────────────────────────────────────
-  // Record a menu view once the menu id is known. Fire-and-forget: we don't
-  // block rendering on this and we silently ignore failures.
-  useEffect(() => {
-    if (!menu?.id) return;
-    fetch(`${API_BASE}/api/menus/${menu.id}/addView`, { method: "PATCH" }).catch(() => {
-      // intentionally silent
-    });
-  }, [menu?.id]);
-
+  fetch(`${API_BASE}/api/menus/${menu.id}/addView`, { method: "PATCH" }).catch(() => {});
+}, [menu?.id]);
   const availableLanguages = useMemo(
     () => (menu ? (Object.keys(menu.translations) as Language[]) : []),
     [menu],
@@ -94,77 +95,71 @@ export default function PublicMenuPage() {
       .filter((category) => category.dishes.length > 0);
   }, [menu]);
 
-  // ── Like / dislike ────────────────────────────────────────────────────────
-  // Optimistic UI: toggle the heart immediately, then call the API.
-  // If the API fails, roll back and show a toast.
-  const toggleLike = useCallback(
-    async (dishId: string) => {
-      if (likeLoading.has(dishId)) return; // prevent double-tap
+const toggleLike = useCallback(
+  async (dishId: string) => {
+    if (likeLoading.has(dishId)) return;
 
-      const wasLiked = liked.has(dishId);
-      const endpoint = wasLiked ? "dislike" : "like";
+    const wasLiked = liked.has(dishId);
+    const endpoint = wasLiked ? "dislike" : "like";
 
-      // Optimistic update
-      setLiked((prev) => {
-        const next = new Set(prev);
-        if (wasLiked) next.delete(dishId);
-        else next.add(dishId);
-        return next;
+    // Optimistic update + persist
+    setLiked((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(dishId);
+      else next.add(dishId);
+      saveLikedToday(next);
+      return next;
+    });
+
+    setSelectedDish((prev) => {
+      if (!prev || prev.id !== dishId) return prev;
+      return {
+        ...prev,
+        likesCount: wasLiked ? Math.max(0, prev.likesCount - 1) : prev.likesCount + 1,
+      };
+    });
+
+    setLikeLoading((prev) => new Set(prev).add(dishId));
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dishes/${dishId}/${endpoint}`, {
+        method: "PATCH",
       });
 
-      // Also optimistically update the open modal's dish if it matches
+      if (!res.ok) throw new Error("Request failed");
+
+      const updated: DishResponse = await res.json();
+      setSelectedDish((prev) => {
+        if (!prev || prev.id !== dishId) return prev;
+        return { ...prev, likesCount: updated.likesCount };
+      });
+    } catch {
+      // Roll back optimistic update + persist rollback
+      setLiked((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.add(dishId);
+        else next.delete(dishId);
+        saveLikedToday(next);
+        return next;
+      });
       setSelectedDish((prev) => {
         if (!prev || prev.id !== dishId) return prev;
         return {
           ...prev,
-          likesCount: wasLiked
-            ? Math.max(0, prev.likesCount - 1)
-            : prev.likesCount + 1,
+          likesCount: wasLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
         };
       });
-
-      setLikeLoading((prev) => new Set(prev).add(dishId));
-
-      try {
-        const res = await fetch(`${API_BASE}/api/dishes/${dishId}/${endpoint}`, {
-          method: "PATCH",
-        });
-
-        if (!res.ok) throw new Error("Request failed");
-
-        // Sync the real likesCount from the server response
-        const updated: DishResponse = await res.json();
-        setSelectedDish((prev) => {
-          if (!prev || prev.id !== dishId) return prev;
-          return { ...prev, likesCount: updated.likesCount };
-        });
-      } catch {
-        // Roll back optimistic update
-        setLiked((prev) => {
-          const next = new Set(prev);
-          if (wasLiked) next.add(dishId);
-          else next.delete(dishId);
-          return next;
-        });
-        setSelectedDish((prev) => {
-          if (!prev || prev.id !== dishId) return prev;
-          return {
-            ...prev,
-            likesCount: wasLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
-          };
-        });
-        showToast("error", "Oops", "Could not save your like. Please try again.");
-      } finally {
-        setLikeLoading((prev) => {
-          const next = new Set(prev);
-          next.delete(dishId);
-          return next;
-        });
-      }
-    },
-    [liked, likeLoading, showToast],
-  );
-
+      showToast("error", "Oops", "Could not save your like. Please try again.");
+    } finally {
+      setLikeLoading((prev) => {
+        const next = new Set(prev);
+        next.delete(dishId);
+        return next;
+      });
+    }
+  },
+  [liked, likeLoading, showToast],
+);
   const scrollToCategory = useCallback((id: string) => {
     setActiveCategoryId(id);
 

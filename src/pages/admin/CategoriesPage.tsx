@@ -33,11 +33,21 @@ import AddCategoryModal from "../../components/ui/category/AddCategoryModal";
 import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
-import { categoryResponseToUI, categoryUIToTranslations } from "../../lib/mappers";
+import {
+  categoryResponseToUI,
+  categoryUIToTranslations,
+} from "../../lib/mappers";
 import * as categoryService from "../../services/category.service";
 import type { Language } from "../../types/enums";
 
-const ITEMS_PER_PAGE = 10;
+import type { CategoryResponse } from "../../types/api";
+
+const ITEMS_PER_PAGE = 1000;
+
+type CategoriesPageData = {
+  categories: CategoryResponse[];
+  supportedLanguages: Language[];
+};
 
 function CategoriesPage() {
   const { menuId, restaurantId } = useAuth();
@@ -50,26 +60,20 @@ function CategoriesPage() {
 
   // For drag reorder — we keep a local reordered list only during/after drag
   // until invalidation resolves
-  const [localCategories, setLocalCategories] = useState<Category[] | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
   const categoriesKey = ["categories", restaurantId, menuId];
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: categoriesKey,
     queryFn: () =>
       categoryService.loadCategoriesPageData(restaurantId!, menuId!),
     enabled: !!menuId && !!restaurantId,
   });
 
-  const categories: Category[] = (localCategories ?? data?.categories.map(categoryResponseToUI)) ?? [];
+  const categories: Category[] = data?.categories.map(categoryResponseToUI) ?? [];
+
   const supportedLanguages: Language[] = data?.supportedLanguages ?? [];
 
   const languages: LanguageConfig = {
@@ -78,6 +82,7 @@ function CategoriesPage() {
     showArabic: supportedLanguages.includes("AR" as Language),
   };
 
+  //this part is for the mutation
 
   const createMutation = useMutation({
     mutationFn: ({
@@ -90,7 +95,11 @@ function CategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: categoriesKey });
       setCurrentPage(1);
-      showToast("success", "Category Added", "New category has been added successfully.");
+      showToast(
+        "success",
+        "Category Added",
+        "New category has been added successfully.",
+      );
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
@@ -107,44 +116,115 @@ function CategoriesPage() {
     }) => categoryService.updateCategory(id, data, iconFile),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: categoriesKey });
-      showToast("success", "Category Updated", "Category has been updated successfully.");
+      showToast(
+        "success",
+        "Category Updated",
+        "Category has been updated successfully.",
+      );
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
 
-  const toggleMutation = useMutation({
-    mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-      showToast("success", "Category Saved", "Your changes have been saved.");
-    },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
-  });
+const toggleMutation = useMutation({
+  mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => categoryService.deleteCategory(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-      showToast("success", "Category Deleted", "Category has been removed.");
-    },
-    onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
-  });
+  onMutate: async (id: string) => {
+    await queryClient.cancelQueries({ queryKey: categoriesKey });
+    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
 
-  const reorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) =>
-      categoryService.reorderCategories(menuId!, { orderedCategoriesIds: orderedIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-      setLocalCategories(null);
-      showToast("success", "Order Updated", "Category order has been saved.");
-    },
-    onError: (err) => {
-      setLocalCategories(null);
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-      showToast("error", "Reorder Failed", getErrorMessage(err));
-    },
-  });
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        categories: old.categories.map((cat) =>
+          cat.id === id ? { ...cat, isVisible: !cat.isVisible } : cat
+        ),
+      };
+    });
 
+    return { previous };
+  },
+
+  onSuccess: () => {
+    //showToast("success", "Category Saved", "Your changes have been saved.");
+  },
+
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+    showToast("error", "Save Failed", getErrorMessage(err));
+  },
+
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: categoriesKey });
+  },
+});
+
+const deleteMutation = useMutation({
+  mutationFn: (id: string) => categoryService.deleteCategory(id),
+
+  onMutate: async (id: string) => {
+    await queryClient.cancelQueries({ queryKey: categoriesKey });
+    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        categories: old.categories.filter((cat) => cat.id !== id),
+      };
+    });
+
+    return { previous };
+  },
+
+  onSuccess: () => {
+    showToast("success", "Category Deleted", "Category has been removed.");
+  },
+
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+    showToast("error", "Delete Failed", getErrorMessage(err));
+  },
+
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: categoriesKey });
+  },
+});
+
+const reorderMutation = useMutation({
+  mutationFn: (orderedIds: string[]) =>
+    categoryService.reorderCategories(menuId!, { orderedCategoriesIds: orderedIds }),
+
+  onMutate: async (orderedIds: string[]) => {
+    await queryClient.cancelQueries({ queryKey: categoriesKey });
+    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+      if (!old) return old;
+      const map = new Map(old.categories.map((cat) => [cat.id, cat]));
+      return {
+        ...old,
+        categories: orderedIds.map((id) => map.get(id)).filter(Boolean) as CategoryResponse[],
+      };
+    });
+
+    return { previous };
+  },
+
+  onSuccess: () => {
+    //showToast("success", "Order Updated", "Category order has been saved.");
+  },
+
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+    showToast("error", "Reorder Failed", getErrorMessage(err));
+  },
+
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: categoriesKey });
+  },
+});
+//this part is for the handlers
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -157,12 +237,11 @@ function CategoriesPage() {
       order: i + 1,
     }));
 
-    setLocalCategories(reordered);
     reorderMutation.mutate(reordered.map((c) => String(c.id)));
   };
 
   const handleConfirm = (
-    formData: Omit<Category, "id" | "order"> & { iconFile: File | null }
+    formData: Omit<Category, "id" | "order"> & { iconFile: File | null },
   ) => {
     if (!menuId) return;
 
@@ -217,7 +296,6 @@ function CategoriesPage() {
     deleteMutation.mutate(String(id));
   };
 
-
   const categoriesWithMissing = categories.filter((c) => {
     if (languages.showEnglish && !c.english) return true;
     if (languages.showFrench && !c.french) return true;
@@ -226,24 +304,44 @@ function CategoriesPage() {
   });
 
   const totalPages = Math.max(1, Math.ceil(categories.length / ITEMS_PER_PAGE));
-  const paginatedCategories = categories.slice(
+  /*const paginatedCategories = categories.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+    currentPage * ITEMS_PER_PAGE,
+  );*/
+   const paginatedCategories = categories;
 
   const columns: Column[] = [
     { key: "order", label: "Order", center: true, width: "min-w-[80px]" },
     { key: "icon", label: "Icon", center: true, width: "min-w-[80px]" },
-    { key: "english", label: "English", center: true, width: "min-w-[140px]", hidden: !languages.showEnglish },
-    { key: "french", label: "Français", center: true, width: "min-w-[140px]", hidden: !languages.showFrench },
-    { key: "arabic", label: "Arabic", center: true, width: "min-w-[140px]", hidden: !languages.showArabic },
+    {
+      key: "english",
+      label: "English",
+      center: true,
+      width: "min-w-[140px]",
+      hidden: !languages.showEnglish,
+    },
+    {
+      key: "french",
+      label: "Français",
+      center: true,
+      width: "min-w-[140px]",
+      hidden: !languages.showFrench,
+    },
+    {
+      key: "arabic",
+      label: "Arabic",
+      center: true,
+      width: "min-w-[140px]",
+      hidden: !languages.showArabic,
+    },
     { key: "status", label: "Status", center: true, width: "min-w-[120px]" },
     { key: "actions", label: "Actions", center: true, width: "min-w-[140px]" },
   ];
 
-  const noMenuError = !menuId || !restaurantId
-    ? "No menu found for this restaurant. Please create a menu first."
-    : null;
+  const noMenuError =
+    !menuId || !restaurantId
+      ? "No menu found for this restaurant. Please create a menu first."
+      : null;
 
   return (
     <div className="flex flex-col  p-6 sm:p-8 lg:p-10 w-full">
@@ -266,16 +364,19 @@ function CategoriesPage() {
         />
       </div>
 
-      {!isLoading && !isError && !noMenuError && categoriesWithMissing.length > 0 && (
-        <Notification
-          variant="warning"
-          title="Missing Translations"
-          message={`${categoriesWithMissing.length} categor${
-            categoriesWithMissing.length > 1 ? "ies have" : "y has"
-          } missing translations. Edit them to add all required languages.`}
-          className="mb-6"
-        />
-      )}
+      {!isLoading &&
+        !isError &&
+        !noMenuError &&
+        categoriesWithMissing.length > 0 && (
+          <Notification
+            variant="warning"
+            title="Missing Translations"
+            message={`${categoriesWithMissing.length} categor${
+              categoriesWithMissing.length > 1 ? "ies have" : "y has"
+            } missing translations. Edit them to add all required languages.`}
+            className="mb-6"
+          />
+        )}
 
       {noMenuError ? (
         <PageErrorState message={noMenuError} />
@@ -314,7 +415,7 @@ function CategoriesPage() {
             </DndContext>
           </div>
 
-          <Pagination
+         <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}

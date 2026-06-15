@@ -36,8 +36,9 @@ import * as dishService from "../../services/dish.service";
 import type { Dish } from "../../types/dish";
 import type { LanguageConfig } from "../../components/ui/category/CategoryRow";
 import type { Language } from "../../types/enums";
+import type { AllDishesResponse } from "../../services/dish.service";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 1000;
 
 function buildDishPayload(data: Omit<Dish, "id" | "order" | "likes">) {
   const payload: dishService.DishFormPayload = {
@@ -199,71 +200,162 @@ function DishesPage() {
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
 
-  const toggleVisibleMutation = useMutation({
-    mutationFn: (id: string) => dishService.toggleDishVisible(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast(
-        "success",
-        "Visibility Updated",
-        "Dish visibility has been updated.",
-      ); // ← real message
-    },
-    onError: (err) => showToast("error", "Update Failed", getErrorMessage(err)),
-  });
+const toggleVisibleMutation = useMutation({
+  mutationFn: (id: string) => dishService.toggleDishVisible(id),
 
-  const toggleAvailableMutation = useMutation({
-    mutationFn: (id: string) => dishService.toggleDishAvailable(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast(
-        "success",
-        "Availability Updated",
-        "Dish availability has been updated.",
-      ); // ← real message
-    },
-    onError: (err) => showToast("error", "Update Failed", getErrorMessage(err)),
-  });
+  onMutate: async (id) => {
+    await queryClient.cancelQueries({ queryKey: dishesKey });
+    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => dishService.deleteDish(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast(
-        "success",
-        "Dish Deleted",
-        "Dish has been deleted successfully.",
-      ); // ← real message
-    },
-    onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
-  });
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        menus: old.menus.map((menu) => ({
+          ...menu,
+          categories: menu.categories.map((cat) => ({
+            ...cat,
+            dishes: cat.dishes.map((dish) =>
+              dish.id === id
+                ? { ...dish, isVisible: !dish.isVisible }
+                : dish
+            ),
+          })),
+        })),
+      };
+    });
 
-  const reorderMutation = useMutation({
-    mutationFn: ({
-      categoryId,
-      orderedIds,
-    }: {
-      categoryId: string;
-      orderedIds: string[];
-    }) =>
-      dishService.reorderDishes(categoryId, {
-        orderedDishesIds: orderedIds,
-      }),
+    return { previous };
+  },
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
+  onSuccess: () => {
+    //showToast("success", "Visibility Updated", "Dish visibility has been updated.");
+  },
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+    showToast("error", "Update Failed", getErrorMessage(err));
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: dishesKey });
+  },
+});
 
-      showToast(
-        "success",
-        "Dishes Reordered",
-        "Dish order has been updated successfully.",
-      );
-    },
+const toggleAvailableMutation = useMutation({
+  mutationFn: (id: string) => dishService.toggleDishAvailable(id),
 
-    onError: (err) =>
-      showToast("error", "Reorder Failed", getErrorMessage(err)),
-  });
+  onMutate: async (id) => {
+    await queryClient.cancelQueries({ queryKey: dishesKey });
+    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
 
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        menus: old.menus.map((menu) => ({
+          ...menu,
+          categories: menu.categories.map((cat) => ({
+            ...cat,
+            dishes: cat.dishes.map((dish) =>
+              dish.id === id
+                ? { ...dish, isAvailable: !dish.isAvailable }
+                : dish
+            ),
+          })),
+        })),
+      };
+    });
+
+    return { previous };
+  },
+
+  onSuccess: () => {
+    //showToast("success", "Availability Updated", "Dish availability has been updated.");
+  },
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+    showToast("error", "Update Failed", getErrorMessage(err));
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: dishesKey });
+  },
+});
+
+const deleteMutation = useMutation({
+  mutationFn: (id: string) => dishService.deleteDish(id),
+
+  onMutate: async (id) => {
+    await queryClient.cancelQueries({ queryKey: dishesKey });
+    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        menus: old.menus.map((menu) => ({
+          ...menu,
+          categories: menu.categories.map((cat) => ({
+            ...cat,
+            dishes: cat.dishes.filter((dish) => dish.id !== id),
+          })),
+        })),
+      };
+    });
+
+    return { previous };
+  },
+
+  onSuccess: () => {
+    showToast("success", "Dish Deleted", "Dish has been deleted successfully.");
+  },
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+    showToast("error", "Delete Failed", getErrorMessage(err));
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: dishesKey });
+  },
+});
+
+const reorderMutation = useMutation({
+  mutationFn: ({ categoryId, orderedIds }: { categoryId: string; orderedIds: string[] }) =>
+    dishService.reorderDishes(categoryId, { orderedDishesIds: orderedIds }),
+
+  onMutate: async ({ categoryId, orderedIds }) => {
+    await queryClient.cancelQueries({ queryKey: dishesKey });
+    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        menus: old.menus.map((menu) => ({
+          ...menu,
+          categories: menu.categories.map((cat) => {
+            if (String(cat.id) !== categoryId) return cat;
+            const map = new Map(cat.dishes.map((d) => [String(d.id), d]));
+            return {
+              ...cat,
+              dishes: orderedIds.map((id) => map.get(id)).filter(Boolean) as typeof cat.dishes,
+            };
+          }),
+        })),
+      };
+    });
+
+    return { previous };
+  },
+
+  onSuccess: () => {
+   // showToast("success", "Dishes Reordered", "Dish order has been updated successfully.");
+  },
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+    showToast("error", "Reorder Failed", getErrorMessage(err));
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: dishesKey });
+  },
+});
   const handleConfirm = (data: Omit<Dish, "id" | "order" | "likes">) => {
     const payload = buildDishPayload(data);
     if (editTarget) {

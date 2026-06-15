@@ -61,10 +61,12 @@ async function resolveMenuId(
   restaurantId: string,
   currentMenuId: string | null,
 ) {
+  // Already have it stored — no API call needed
+  if (currentMenuId) return currentMenuId;
+
+  // Only fetch if we don't have it
   const restaurant = await restaurantService.getRestaurant(restaurantId);
   if (restaurant.defaultMenuId) return restaurant.defaultMenuId;
-
-  if (currentMenuId) return currentMenuId;
 
   const menus = await menuService.getMenusByRestaurant(restaurantId);
   return menus[0]?.id ?? null;

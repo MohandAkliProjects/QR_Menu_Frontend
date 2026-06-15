@@ -27,11 +27,11 @@ function QrDisplayPage() {
     enabled: !!restaurantId,
     staleTime: Infinity,
     select: (restaurant) => ({
-      qrUrl: `${window.location.origin}${ROUTES.qrRedirect(restaurantId!)}`,
-      qrDisplayUrl: restaurant.slug
-        ? `${window.location.origin}${ROUTES.publicMenu(restaurant.slug)}`
-        : "",
-    }),
+  qrUrl: `https://qrmenubackend-production-5ad2.up.railway.app${ROUTES.qrRedirect(restaurantId!)}`,
+  qrDisplayUrl: restaurant.slug
+    ? `${window.location.origin}${ROUTES.publicMenu(restaurant.slug)}`
+    : "",
+}),
   });
 
   const qrUrl = data?.qrUrl ?? "";

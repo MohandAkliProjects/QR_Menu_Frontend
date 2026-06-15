@@ -16,7 +16,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="w-8 h-8 flex items-center justify-center rounded-lg border border-beige-400 text-text-400 hover:bg-beige-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded-lg border border-beige-400 text-text-400 hover:bg-beige-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors hover:cursor-pointer"
       >
         <ChevronLeft size={16} />
       </button>
@@ -29,6 +29,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
           className={`
             w-8 h-8 flex items-center justify-center rounded-lg
             text-sm font-medium transition-colors
+            hover:cursor-pointer
             ${currentPage === page
               ? "bg-primary-700 text-cream-500"
               : "border border-beige-400 text-text-400 hover:bg-beige-200"
@@ -43,7 +44,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="w-8 h-8 flex items-center justify-center rounded-lg border border-beige-400 text-text-400 hover:bg-beige-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="w-8 h-8 flex items-center justify-center rounded-lg border border-beige-400 text-text-400 hover:bg-beige-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors hover:cursor-pointer"
       >
         <ChevronRight size={16} />
       </button>

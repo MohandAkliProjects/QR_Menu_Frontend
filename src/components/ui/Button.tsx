@@ -16,7 +16,7 @@ function Button({ label, icon: Icon, onClick, disabled, fullWidth, className, ty
     flex items-center justify-center gap-3 px-3 py-4 rounded-lg
     h-12 ${fullWidth ? "w-full" : "w-auto"}
     text-base font-medium transition-all duration-200
-    disabled:opacity-50 disabled:cursor-not-allowed
+    disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer
   `;
 
   const variants = {

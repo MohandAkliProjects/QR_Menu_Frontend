@@ -272,7 +272,7 @@ function CategoryRow({
           <div className="flex items-center justify-center gap-1">
             <button
               onClick={handleToggleStatus}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
             >
               {category.status === "visible" ? (
                 <Eye size={17} />
@@ -282,13 +282,13 @@ function CategoryRow({
             </button>
             <button
               onClick={() => setIsEditing(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
             >
               <Pencil size={17} />
             </button>
             <button
               onClick={() => onDelete(category.id)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-error hover:bg-error-bg transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-error hover:bg-error-bg transition-colors hover:cursor-pointer"
             >
               <Trash2 size={17} />
             </button>

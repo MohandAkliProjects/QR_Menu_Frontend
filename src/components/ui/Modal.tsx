@@ -37,7 +37,7 @@ function Modal({ title, isOpen, onClose, children, footer }: ModalProps) {
           <h3 className="text-lg font-semibold text-dark-700">{title}</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-text-400 hover:bg-primary-100 hover:text-dark-700 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-text-400 hover:bg-primary-100 hover:text-dark-700 transition-colors hover:cursor-pointer"
           >
             <X size={18} />
           </button>

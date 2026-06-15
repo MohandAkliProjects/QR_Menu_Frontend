@@ -69,10 +69,6 @@ function LoginPage() {
     }
   };
 
-  // const handleKeyDown = (e: React.KeyboardEvent) => {
-  //   if (e.key === "Enter") handleSubmit();
-  // };
-
   return (
     <div className="min-h-screen bg-primary-50 flex flex-col items-center justify-center px-4">
       <div className="flex flex-col items-center gap-1 mb-8">
@@ -127,7 +123,7 @@ function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-400 hover:text-text-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-400 hover:text-text-600 transition-colors hover:cursor-pointer"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

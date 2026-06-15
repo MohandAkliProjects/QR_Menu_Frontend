@@ -18,7 +18,7 @@ function CategoryFilterBar({ categories, selected, onSelect }: CategoryFilterBar
         <button
           onClick={() => onSelect("all")}
           className={`
-            px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap
+            px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap hover:cursor-pointer
             ${selected === "all"
               ? "bg-primary-700 text-cream-500 border-primary-700"
               : "bg-transparent border-beige-400 text-text-500 hover:bg-beige-200"
@@ -32,7 +32,7 @@ function CategoryFilterBar({ categories, selected, onSelect }: CategoryFilterBar
             key={cat.id}
             onClick={() => onSelect(cat.id)}
             className={`
-              px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap
+              px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap hover:cursor-pointer
               ${selected === cat.id
                 ? "bg-primary-700 text-cream-500 border-primary-700"
                 : "bg-transparent border-beige-400 text-text-500 hover:bg-beige-200"

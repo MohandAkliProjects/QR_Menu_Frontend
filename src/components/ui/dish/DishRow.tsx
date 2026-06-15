@@ -325,7 +325,7 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
           <div className="flex items-center justify-center gap-1">
             <button
               onClick={handleToggleStatus}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
               title={dish.status === "visible" ? "Hide dish" : "Show dish"}
             >
               {dish.status === "visible" ? (
@@ -338,7 +338,7 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             {/* Availability */}
             <button
               onClick={handleToggleAvailable}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
               title={
                 dish.available === "available"
                   ? "Mark unavailable"
@@ -353,14 +353,14 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
             </button>
             <button
               onClick={() => setIsEditing(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
               title="Edit dish"
             >
               <Pencil size={17} />
             </button>
             <button
               onClick={() => onDelete(dish.id)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-error/10 hover:text-error transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-error/10 hover:text-error transition-colors hover:cursor-pointer"
               title="Delete dish"
             >
               <Trash2 size={17} />

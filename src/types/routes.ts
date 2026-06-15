@@ -24,7 +24,8 @@ export const ROUTES = {
   },
 
 
-  qrRedirect: (restaurantId: string) => `/r/${restaurantId}` as const,
+  //qrRedirect: (restaurantId: string) => `/r/${restaurantId}` as const,
+  qrRedirect: (restaurantId: string) => `/api/restaurants/r/${restaurantId}` as const,
   publicMenu: (slug: string) => `/menu/${slug}` as const,
 
 } as const;

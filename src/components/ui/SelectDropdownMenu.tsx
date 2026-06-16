@@ -9,15 +9,15 @@ interface SelectDropdownProps {
 
 function SelectDropdown({ value, options, onChange, disabled }: SelectDropdownProps) {
   return (
-    <div className="relative w-full min-w-0">
+    <div className="relative w-full">
       <select
         value={value}
         disabled={disabled}
         onChange={(e) => onChange?.(e.target.value)}
         className="
-          w-full min-w-0 appearance-none h-12 pl-4 pr-10 rounded-xl
+          w-full appearance-none h-12 pl-4 pr-10 rounded-xl
           bg-card-bg border border-primary-200
-          text-base text-text-800 truncate
+          text-base text-text-800
           focus:outline-none focus:border-primary-500
           disabled:opacity-60 disabled:cursor-not-allowed
           transition-all duration-200 cursor-pointer

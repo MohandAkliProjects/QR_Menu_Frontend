@@ -7,19 +7,19 @@ interface BadgeProps {
 const config = {
   visible: {
     label: "Visible",
-    className: "border border-primary-400 text-text-600",
+    className: "border border-primary-400 text-primary-600 bg-primary-50",
   },
   hidden: {
     label: "Hidden",
-    className: "border border-error text-error",
+    className: "border border-gold-500 text-gold-600 bg-gold-50",
   },
   available: {
     label: "Available",
-    className: "border border-primary-400 text-text-600",
+    className: "border border-primary-400 text-primary-600 bg-primary-50",
   },
   unavailable: {
     label: "Unavailable",
-    className: "border border-error text-error",
+    className: "border border-gold-500 text-gold-600 bg-gold-50",
   },
 };
 

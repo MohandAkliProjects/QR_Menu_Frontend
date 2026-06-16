@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Upload, Trash2, Check } from "lucide-react";
+import { X, Upload,  Check } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
@@ -156,11 +156,11 @@ function BannersPage() {
                   >
                     <Upload
                       size={56}
-                      className={isLimitReached ? "text-gold-500" : "text-primary-400"}
+                      className={isLimitReached ? "text-gold-500" : "text-primary-500"}
                     />
                     <p
                       className={`text-base font-medium ${
-                        isLimitReached ? "text-gold-500" : "text-primary-400"
+                        isLimitReached ? "text-gold-500" : "text-primary-500"
                       }`}
                     >
                       Tap to select a banner
@@ -175,21 +175,24 @@ function BannersPage() {
                       alt="Banner preview"
                       className="w-full max-h-75 object-cover rounded-2xl"
                     />
-                    <div className="flex gap-4 w-full">
-                      <Button
-                        label="Delete"
-                        icon={Trash2}
-                        onClick={handleDeletePreview}
-                        className="flex-1 bg-transparent! border! border-error! text-error! hover:bg-error/10!"
-                      />
-                      <Button
-                        label={addBannerMutation.isPending ? "Uploading..." : "Confirm"}
-                        icon={Check}
-                        onClick={() => pendingFile && addBannerMutation.mutate(pendingFile)}
-                        disabled={addBannerMutation.isPending}
-                        className="flex-1 bg-info! hover:bg-info/90!"
-                      />
-                    </div>
+                   <div className="flex gap-4 w-full">
+  <Button
+    label="Cancel"
+    icon={X}
+    onClick={handleDeletePreview}
+    disabled={addBannerMutation.isPending}
+    variant="secondary"
+    className="flex-1"
+  />
+  <Button
+    label={addBannerMutation.isPending ? "Uploading..." : "Confirm"}
+    icon={Check}
+    onClick={() => pendingFile && addBannerMutation.mutate(pendingFile)}
+    disabled={addBannerMutation.isPending}
+    variant="primary"
+    className="flex-1"
+  />
+</div>
                   </div>
                 </div>
               )}

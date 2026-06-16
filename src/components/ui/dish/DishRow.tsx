@@ -8,10 +8,10 @@ import {
   Heart,
   Eye,
   EyeOff,
-  Check,
-  X,
+ 
   ChevronDown,
 } from "lucide-react";
+import { CircleCheck, CircleX } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
 import type { UniqueIdentifier } from "@dnd-kit/core";
@@ -23,7 +23,10 @@ import useToast from "../../../hooks/useToast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getErrorMessage } from "../../../api/errors";
 import * as dishService from "../../../services/dish.service";
-import type { AllDishesResponse, UpdateDishRequest } from "../../../services/dish.service";
+import type {
+  AllDishesResponse,
+  UpdateDishRequest,
+} from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
 
 interface DishRowProps {
@@ -49,7 +52,6 @@ function DishUItoUpdateDishRequest(dish: Dish): UpdateDishRequest {
     image: dish.image ?? undefined,
   };
 }
-
 
 interface NamePopoverProps {
   label: string;
@@ -101,12 +103,17 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
             className={`
               absolute left-1/2 -translate-x-1/2
               w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst
-                ? "-top-1.5 border-l border-t"
-                : "-bottom-1.5 border-r border-b"}
+              ${
+                isFirst
+                  ? "-top-1.5 border-l border-t"
+                  : "-bottom-1.5 border-r border-b"
+              }
             `}
           />
-          <p dir={dir} className="text-sm text-text-700 whitespace-normal wrap-break-words">
+          <p
+            dir={dir}
+            className="text-sm text-text-700 whitespace-normal wrap-break-words"
+          >
             {label}
           </p>
         </div>
@@ -115,21 +122,22 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
   );
 }
 
-
 interface DescriptionPopoverProps {
   dish: Dish;
   languages: LanguageConfig;
   isFirst?: boolean;
 }
 
-function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProps) {
+function DescriptionPopover({
+  dish,
+  languages,
+  isFirst,
+}: DescriptionPopoverProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const hasAny =
-    dish.englishDescription ||
-    dish.frenchDescription ||
-    dish.arabicDescription;
+    dish.englishDescription || dish.frenchDescription || dish.arabicDescription;
 
   useEffect(() => {
     if (!open) return;
@@ -147,21 +155,24 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
   }
 
   const entries = [
-    languages.showEnglish && dish.englishDescription && {
-      label: "EN",
-      text: dish.englishDescription,
-      dir: "ltr" as const,
-    },
-    languages.showFrench && dish.frenchDescription && {
-      label: "FR",
-      text: dish.frenchDescription,
-      dir: "ltr" as const,
-    },
-    languages.showArabic && dish.arabicDescription && {
-      label: "AR",
-      text: dish.arabicDescription,
-      dir: "rtl" as const,
-    },
+    languages.showEnglish &&
+      dish.englishDescription && {
+        label: "EN",
+        text: dish.englishDescription,
+        dir: "ltr" as const,
+      },
+    languages.showFrench &&
+      dish.frenchDescription && {
+        label: "FR",
+        text: dish.frenchDescription,
+        dir: "ltr" as const,
+      },
+    languages.showArabic &&
+      dish.arabicDescription && {
+        label: "AR",
+        text: dish.arabicDescription,
+        dir: "rtl" as const,
+      },
   ].filter(Boolean) as { label: string; text: string; dir: "ltr" | "rtl" }[];
 
   return (
@@ -172,7 +183,9 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
         title="Click to see descriptions"
       >
         <span className="truncate">
-          {dish.englishDescription || dish.frenchDescription || dish.arabicDescription}
+          {dish.englishDescription ||
+            dish.frenchDescription ||
+            dish.arabicDescription}
         </span>
         <ChevronDown
           size={13}
@@ -194,9 +207,11 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
             className={`
               absolute left-1/2 -translate-x-1/2
               w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst
-                ? "-top-1.5 border-l border-t"
-                : "-bottom-1.5 border-r border-b"}
+              ${
+                isFirst
+                  ? "-top-1.5 border-l border-t"
+                  : "-bottom-1.5 border-r border-b"
+              }
             `}
           />
           {entries.map((entry) => (
@@ -204,7 +219,10 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
               <span className="text-[10px] font-semibold tracking-widest uppercase text-text-400">
                 {entry.label}
               </span>
-              <p dir={entry.dir} className="text-sm text-text-700 leading-relaxed wrap-break-words">
+              <p
+                dir={entry.dir}
+                className="text-sm text-text-700 leading-relaxed wrap-break-words"
+              >
                 {entry.text}
               </p>
             </div>
@@ -215,7 +233,6 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
   );
 }
 
-
 interface DescriptionEditProps {
   form: UpdateDishRequest;
   setForm: React.Dispatch<React.SetStateAction<UpdateDishRequest>>;
@@ -224,10 +241,34 @@ interface DescriptionEditProps {
 
 function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
   const tabs = [
-    languages.showEnglish && { key: "en", label: "EN", field: "englishDescription" as const, dir: "ltr" as const, placeholder: "Description…" },
-    languages.showFrench  && { key: "fr", label: "FR", field: "frenchDescription" as const,  dir: "ltr" as const, placeholder: "Description…" },
-    languages.showArabic  && { key: "ar", label: "AR", field: "arabicDescription" as const,   dir: "rtl" as const, placeholder: "وصف…" },
-  ].filter(Boolean) as { key: string; label: string; field: keyof UpdateDishRequest; dir: "ltr" | "rtl"; placeholder: string }[];
+    languages.showEnglish && {
+      key: "en",
+      label: "EN",
+      field: "englishDescription" as const,
+      dir: "ltr" as const,
+      placeholder: "Description…",
+    },
+    languages.showFrench && {
+      key: "fr",
+      label: "FR",
+      field: "frenchDescription" as const,
+      dir: "ltr" as const,
+      placeholder: "Description…",
+    },
+    languages.showArabic && {
+      key: "ar",
+      label: "AR",
+      field: "arabicDescription" as const,
+      dir: "rtl" as const,
+      placeholder: "وصف…",
+    },
+  ].filter(Boolean) as {
+    key: string;
+    label: string;
+    field: keyof UpdateDishRequest;
+    dir: "ltr" | "rtl";
+    placeholder: string;
+  }[];
 
   const [activeTab, setActiveTab] = useState(tabs[0]?.key ?? "en");
   const active = tabs.find((t) => t.key === activeTab);
@@ -245,9 +286,11 @@ function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
               onClick={() => setActiveTab(tab.key)}
               className={`
                 px-2 py-0.5 text-[10px] font-semibold transition-colors
-                ${activeTab === tab.key
-                  ? "bg-primary-700 text-cream-500"
-                  : "bg-card-bg text-text-500 hover:bg-beige-100"}
+                ${
+                  activeTab === tab.key
+                    ? "bg-primary-700 text-cream-500"
+                    : "bg-card-bg text-text-500 hover:bg-beige-100"
+                }
               `}
             >
               {tab.label}
@@ -278,10 +321,11 @@ function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
   );
 }
 
-
 function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<UpdateDishRequest>(DishUItoUpdateDishRequest(dish));
+  const [form, setForm] = useState<UpdateDishRequest>(
+    DishUItoUpdateDishRequest(dish),
+  );
   const [error, setError] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,7 +354,11 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
       dishService.updateDish(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast("success", "Dish Updated", "Dish has been updated successfully.");
+      showToast(
+        "success",
+        "Dish Updated",
+        "Dish has been updated successfully.",
+      );
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
@@ -329,7 +377,7 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
             categories: menu.categories.map((cat) => ({
               ...cat,
               dishes: cat.dishes.map((d) =>
-                d.id === id ? { ...d, isVisible: !d.isVisible } : d
+                d.id === id ? { ...d, isVisible: !d.isVisible } : d,
               ),
             })),
           })),
@@ -358,7 +406,7 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
             categories: menu.categories.map((cat) => ({
               ...cat,
               dishes: cat.dishes.map((d) =>
-                d.id === id ? { ...d, isAvailable: !d.isAvailable } : d
+                d.id === id ? { ...d, isAvailable: !d.isAvailable } : d,
               ),
             })),
           })),
@@ -373,8 +421,10 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
     onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
   });
 
-  const handleToggleStatus = () => toggleVisibleMutation.mutate(String(dish.id));
-  const handleToggleAvailable = () => toggleAvailableMutation.mutate(String(dish.id));
+  const handleToggleStatus = () =>
+    toggleVisibleMutation.mutate(String(dish.id));
+  const handleToggleAvailable = () =>
+    toggleAvailableMutation.mutate(String(dish.id));
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -385,14 +435,26 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
     reader.readAsDataURL(file);
   };
 
-  const isMissingEnglish = languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
-  const isMissingFrench  = languages.showFrench  && (form.frenchName?.trim().length ?? 0) < 1;
-  const isMissingArabic  = languages.showArabic  && (form.arabicName?.trim().length ?? 0) < 1;
+  const isMissingEnglish =
+    languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
+  const isMissingFrench =
+    languages.showFrench && (form.frenchName?.trim().length ?? 0) < 1;
+  const isMissingArabic =
+    languages.showArabic && (form.arabicName?.trim().length ?? 0) < 1;
 
   const handleSave = () => {
-    if (isMissingEnglish) { setError("English name is required."); return; }
-    if (isMissingFrench)  { setError("French name is required.");  return; }
-    if (isMissingArabic)  { setError("Arabic name is required.");  return; }
+    if (isMissingEnglish) {
+      setError("English name is required.");
+      return;
+    }
+    if (isMissingFrench) {
+      setError("French name is required.");
+      return;
+    }
+    if (isMissingArabic) {
+      setError("Arabic name is required.");
+      return;
+    }
     setError("");
     updateMutation.mutate({ payload: form });
     setIsEditing(false);
@@ -436,7 +498,11 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
           {form.image ? (
-            <img src={form.image} alt="" className="w-full h-full object-cover" />
+            <img
+              src={form.image}
+              alt=""
+              className="w-full h-full object-cover"
+            />
           ) : isEditing ? (
             <Upload size={16} className="text-text-400" />
           ) : (
@@ -460,15 +526,21 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
           <div className="flex flex-col gap-1">
             <input
               value={form.englishName ?? ""}
-              onChange={(e) => setForm((p) => ({ ...p, englishName: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, englishName: e.target.value }))
+              }
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
-            {error && <span className="text-xs text-error text-center">{error}</span>}
+            {error && (
+              <span className="text-xs text-error text-center">{error}</span>
+            )}
           </div>
         ) : dish.english ? (
           <NamePopover label={dish.english} dir="ltr" isFirst={isFirst} />
         ) : (
-          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+          <span
+            className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}
+          >
             Missing
           </span>
         )}
@@ -479,13 +551,17 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
         {isEditing ? (
           <input
             value={form.frenchName ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, frenchName: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, frenchName: e.target.value }))
+            }
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : dish.french ? (
           <NamePopover label={dish.french} dir="ltr" isFirst={isFirst} />
         ) : (
-          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+          <span
+            className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}
+          >
             Missing
           </span>
         )}
@@ -496,14 +572,18 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
         {isEditing ? (
           <input
             value={form.arabicName ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, arabicName: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, arabicName: e.target.value }))
+            }
             dir="rtl"
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
         ) : dish.arabic ? (
           <NamePopover label={dish.arabic} dir="rtl" isFirst={isFirst} />
         ) : (
-          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+          <span
+            className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}
+          >
             Missing
           </span>
         )}
@@ -513,9 +593,17 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
       <TableCell>
         <div className="flex justify-center">
           {isEditing ? (
-            <DescriptionEdit form={form} setForm={setForm} languages={languages} />
+            <DescriptionEdit
+              form={form}
+              setForm={setForm}
+              languages={languages}
+            />
           ) : (
-            <DescriptionPopover dish={dish} languages={languages} isFirst={isFirst} />
+            <DescriptionPopover
+              dish={dish}
+              languages={languages}
+              isFirst={isFirst}
+            />
           )}
         </div>
       </TableCell>
@@ -530,7 +618,9 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
               min={0}
               step="0.01"
               value={form.price}
-              onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, price: Number(e.target.value) }))
+              }
               className="w-20 h-9 px-2 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
             />
           </div>
@@ -540,9 +630,14 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
       </TableCell>
 
       {/* Available */}
+      {/* Available */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge variant={dish.available === "available" ? "available" : "hidden"} />
+          <Badge
+            variant={
+              dish.available === "available" ? "available" : "unavailable"
+            }
+          />
         </div>
       </TableCell>
 
@@ -558,7 +653,9 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
         <div className="flex items-center justify-center gap-1">
           <Heart
             size={15}
-            className={dish.likes > 0 ? "text-error fill-error" : "text-text-300"}
+            className={
+              dish.likes > 0 ? "text-error fill-error" : "text-text-300"
+            }
           />
           <span className="text-sm text-text-400">{dish.likes}</span>
         </div>
@@ -589,14 +686,26 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
               title={dish.status === "visible" ? "Hide dish" : "Show dish"}
             >
-              {dish.status === "visible" ? <Eye size={17} /> : <EyeOff size={17} />}
+              {dish.status === "visible" ? (
+                <Eye size={17} />
+              ) : (
+                <EyeOff size={17} />
+              )}
             </button>
             <button
               onClick={handleToggleAvailable}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
-              title={dish.available === "available" ? "Mark unavailable" : "Mark available"}
+              title={
+                dish.available === "available"
+                  ? "Mark unavailable"
+                  : "Mark available"
+              }
             >
-              {dish.available === "available" ? <Check size={17} /> : <X size={17} />}
+              {dish.available === "available" ? (
+                <CircleCheck size={17} />
+              ) : (
+                <CircleX size={17} />
+              )}
             </button>
             <button
               onClick={() => setIsEditing(true)}

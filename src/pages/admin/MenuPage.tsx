@@ -233,15 +233,15 @@ function MenuPage() {
         />
 
         <div className="flex items-center gap-3 flex-wrap">
-          {previewUrl && (
-            <Button
-              label="Preview"
-              icon={ExternalLink}
-              onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
-              disabled={isLoading || isError}
-              className="bg-transparent! border! border-primary-400! text-primary-700! hover:bg-primary-50!"
-            />
-          )}
+         {previewUrl && (
+  <Button
+    label="Preview"
+    icon={ExternalLink}
+    variant="secondary"
+    onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
+    disabled={isLoading || isError}
+  />
+)}
 
           {!isEditing ? (
             <Button label="Edit" icon={Edit2} onClick={handleEdit} />

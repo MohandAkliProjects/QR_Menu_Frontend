@@ -30,7 +30,6 @@ import ToastContainer from "../../components/ui/ToastContainer";
 import AddDishModal from "../../components/ui/dish/AddDishModa";
 import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
-import { dataUrlToFile, isDataUrl } from "../../lib/files";
 import { categoryWithDishesToUI } from "../../lib/mappers";
 import * as dishService from "../../services/dish.service";
 import type { Dish } from "../../types/dish";
@@ -40,21 +39,6 @@ import type { AllDishesResponse } from "../../services/dish.service";
 
 const ITEMS_PER_PAGE = 1000;
 
-function buildDishPayload(data: Omit<Dish, "id" | "order" | "likes">) {
-  const payload: dishService.DishFormPayload = {
-    english: data.english,
-    french: data.french,
-    arabic: data.arabic,
-    description: data.description,
-    price: data.price,
-    available: data.available,
-    status: data.status,
-  };
-  if (data.image && isDataUrl(data.image)) {
-    payload.imageFile = dataUrlToFile(data.image, "dish-image.png");
-  }
-  return payload;
-}
 
 function DishesPage() {
   const { menuId, restaurantId } = useAuth();
@@ -66,7 +50,6 @@ function DishesPage() {
   >("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Dish | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
   const dishesKey = ["dishes", restaurantId];
@@ -119,7 +102,9 @@ function DishesPage() {
               english: dish.english,
               french: dish.french,
               arabic: dish.arabic,
-              description: dish.description,
+              englishDescription: dish.englishDescription,
+              frenchDescription: dish.frenchDescription,
+              arabDescription: dish.arabicDescription,
               price: dish.price,
               available: dish.available,
               status: dish.status,
@@ -162,123 +147,7 @@ function DishesPage() {
     [dishes, languages],
   );
 
-  const createMutation = useMutation({
-    mutationFn: ({
-      categoryId,
-      payload,
-    }: {
-      categoryId: string;
-      payload: dishService.DishFormPayload;
-    }) => dishService.createDish(categoryId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast(
-        "success",
-        "Dish Added",
-        "New dish has been added successfully.",
-      );
-    },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
-  });
 
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: dishService.DishFormPayload;
-    }) => dishService.updateDish(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast(
-        "success",
-        "Dish Updated",
-        "Dish has been updated successfully.",
-      );
-    },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
-  });
-
-const toggleVisibleMutation = useMutation({
-  mutationFn: (id: string) => dishService.toggleDishVisible(id),
-
-  onMutate: async (id) => {
-    await queryClient.cancelQueries({ queryKey: dishesKey });
-    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        menus: old.menus.map((menu) => ({
-          ...menu,
-          categories: menu.categories.map((cat) => ({
-            ...cat,
-            dishes: cat.dishes.map((dish) =>
-              dish.id === id
-                ? { ...dish, isVisible: !dish.isVisible }
-                : dish
-            ),
-          })),
-        })),
-      };
-    });
-
-    return { previous };
-  },
-
-  onSuccess: () => {
-    //showToast("success", "Visibility Updated", "Dish visibility has been updated.");
-  },
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-    showToast("error", "Update Failed", getErrorMessage(err));
-  },
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: dishesKey });
-  },
-});
-
-const toggleAvailableMutation = useMutation({
-  mutationFn: (id: string) => dishService.toggleDishAvailable(id),
-
-  onMutate: async (id) => {
-    await queryClient.cancelQueries({ queryKey: dishesKey });
-    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        menus: old.menus.map((menu) => ({
-          ...menu,
-          categories: menu.categories.map((cat) => ({
-            ...cat,
-            dishes: cat.dishes.map((dish) =>
-              dish.id === id
-                ? { ...dish, isAvailable: !dish.isAvailable }
-                : dish
-            ),
-          })),
-        })),
-      };
-    });
-
-    return { previous };
-  },
-
-  onSuccess: () => {
-    //showToast("success", "Availability Updated", "Dish availability has been updated.");
-  },
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-    showToast("error", "Update Failed", getErrorMessage(err));
-  },
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: dishesKey });
-  },
-});
 
 const deleteMutation = useMutation({
   mutationFn: (id: string) => dishService.deleteDish(id),
@@ -356,52 +225,7 @@ const reorderMutation = useMutation({
     queryClient.invalidateQueries({ queryKey: dishesKey });
   },
 });
-  const handleConfirm = (data: Omit<Dish, "id" | "order" | "likes">) => {
-    const payload = buildDishPayload(data);
-    if (editTarget) {
-      updateMutation.mutate({ id: String(editTarget.id), payload });
-    } else {
-      createMutation.mutate({ categoryId: String(data.categoryId), payload });
-    }
-    setEditTarget(null);
-    setModalOpen(false);
-  };
 
-  const handleEdit = (dish: Dish) => {
-    const previous = dishes.find((d) => d.id === dish.id);
-    if (!previous) return;
-
-    const onlyAvailabilityChanged =
-      previous.status === dish.status &&
-      previous.available !== dish.available &&
-      previous.english === dish.english &&
-      previous.french === dish.french &&
-      previous.arabic === dish.arabic &&
-      previous.description === dish.description &&
-      previous.price === dish.price &&
-      previous.image === dish.image;
-
-    const onlyStatusChanged =
-      previous.available === dish.available &&
-      previous.status !== dish.status &&
-      previous.english === dish.english &&
-      previous.french === dish.french &&
-      previous.arabic === dish.arabic &&
-      previous.description === dish.description &&
-      previous.price === dish.price &&
-      previous.image === dish.image;
-
-    if (onlyAvailabilityChanged) {
-      toggleAvailableMutation.mutate(String(dish.id));
-    } else if (onlyStatusChanged) {
-      toggleVisibleMutation.mutate(String(dish.id));
-    } else {
-      updateMutation.mutate({
-        id: String(dish.id),
-        payload: buildDishPayload(dish),
-      });
-    }
-  };
 
   const handleDelete = (id: UniqueIdentifier) => {
     deleteMutation.mutate(String(id));
@@ -514,7 +338,6 @@ const reorderMutation = useMutation({
           label="Add Dish"
           icon={Plus}
           onClick={() => {
-            setEditTarget(null);
             setModalOpen(true);
           }}
           disabled={isLoading || isError || categoryOptions.length === 0}
@@ -572,7 +395,6 @@ const reorderMutation = useMutation({
                     <DishRow
                       key={dish.id}
                       dish={dish}
-                      onSave={handleEdit}
                       onDelete={handleDelete}
                       isLast={index === paginatedDishes.length - 1}
                       languages={languages}
@@ -592,14 +414,10 @@ const reorderMutation = useMutation({
       )}
 
       <AddDishModal
-        key={editTarget?.id ?? "new"}
         isOpen={modalOpen}
         onClose={() => {
           setModalOpen(false);
-          setEditTarget(null);
         }}
-        onConfirm={handleConfirm}
-        editData={editTarget}
         categories={categoryOptions}
         supportedLanguages={supportedLanguages}
       />

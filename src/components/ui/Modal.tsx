@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, LoaderCircle } from "lucide-react";
 import { useEffect } from "react";
 
 interface ModalProps {
@@ -6,10 +6,11 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  isPending: boolean;
   footer?: React.ReactNode;
 }
 
-function Modal({ title, isOpen, onClose, children, footer }: ModalProps) {
+function Modal({ title, isOpen, onClose, isPending, children, footer }: ModalProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -51,8 +52,14 @@ function Modal({ title, isOpen, onClose, children, footer }: ModalProps) {
         {/* footer */}
         {footer && (
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-primary-200">
-            {footer}
-          </div>
+            {isPending ? (
+              <div className="flex w-full justify-center">
+                <LoaderCircle className="size-14 animate-spin" />
+              </div>
+            ) : (
+              footer
+            )}
+         </div>
         )}
       </div>
     </div>

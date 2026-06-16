@@ -1,3 +1,4 @@
+import type { BaseDishRequest } from "../services/dish.service";
 import type {
   CategoryResponse,
   CategoryWithDishesResponse,
@@ -124,26 +125,26 @@ export function categoryUIToTranslations(
   return translations;
 }
 
-export function dishUIToTranslations(
-  ui: Pick<DishUI, "english" | "french" | "arabic" | "description">
+export function dishRequestToTranslations(
+  request: BaseDishRequest
 ): TranslationsMap<DishTranslation> {
   const translations: TranslationsMap<DishTranslation> = {};
-  if (ui.english.trim()) {
+  if (request.englishName?.trim()) {
     translations["en" as Language] = {
-      name: ui.english.trim(),
-      description: ui.description?.trim() || undefined,
+      name: request.englishName.trim(),
+      description: request.englishDescription?.trim(),
     };
   }
-  if (ui.french?.trim()) {
+  if (request.frenchName?.trim()) {
     translations["fr" as Language] = {
-      name: ui.french.trim(),
-      description: ui.description?.trim(),
+      name: request.frenchName.trim(),
+      description: request.frenchDescription?.trim(),
     };
   }
-  if (ui.arabic?.trim()) {
+  if (request.arabicName?.trim()) {
     translations["ar" as Language] = {
-      name: ui.arabic.trim(),
-      description: ui.description?.trim(),
+      name: request.arabicName.trim(),
+      description: request.arabicDescription?.trim(),
     };
   }
   return translations;

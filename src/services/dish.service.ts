@@ -1,28 +1,47 @@
 import { apiRequest } from "../api/client";
 import type { DishResponse, DishTranslation, FullMenuResponse } from "../types";
 import type { DishUI } from "../types/ui";
-import { dishUIToTranslations } from "../lib/mappers";
+import { dishRequestToTranslations } from "../lib/mappers";
+import { dataUrlToFile, isDataUrl } from "../lib/files";
 
 export type DishFormPayload = Partial<DishUI> & {
   imageFile?: File;
   wantToDeleteImage?: boolean;
 };
 
+export type BaseDishRequest = {
+  englishName?: string,
+  frenchName?: string,
+  arabicName?: string,
+  englishDescription?: string,
+  frenchDescription?: string,
+  arabicDescription?: string,
+  available: boolean,
+  visible: boolean
+  image?: string,
+  price: number,
+}
+
+export type CreateDishRequest = BaseDishRequest & {
+  categoryId: string,
+}
+
+export type UpdateDishRequest = BaseDishRequest & {
+  dishId: string,
+  wantToDeleteImage?: boolean;
+}
+
 export interface AllDishesResponse {
   menus: FullMenuResponse[];
 }
 
-function appendDishFormData(
-  formData: FormData,
-  ui: DishFormPayload,
-  includeImage = true,
-) {
-  const translations = dishUIToTranslations({
-    english: ui.english ?? "",
-    french: ui.french,
-    arabic: ui.arabic,
-    description: ui.description,
-  });
+function appendCreateDishFormData (
+  request: CreateDishRequest,
+): FormData {
+
+  const formData: FormData = new FormData();
+
+  const translations = dishRequestToTranslations(request);
 
   for (const [lang, value] of Object.entries(translations) as [
     string,
@@ -34,19 +53,51 @@ function appendDishFormData(
     }
   }
 
-  if (ui.price !== undefined) formData.append("price", String(ui.price));
-  if (ui.available !== undefined) {
-    formData.append("isAvailable", String(ui.available === "available"));
+  formData.append("price", String(request.price));
+  
+  formData.append("isAvailable", String(request.available));
+
+  formData.append("isVisible", String(request.visible));
+  
+
+  if (request.image && isDataUrl(request.image)) {
+    formData.append("image", dataUrlToFile(request.image, "dish-image.png"));
   }
-  if (ui.status !== undefined) {
-    formData.append("isVisible", String(ui.status === "visible"));
+
+  return formData;
+}
+
+function appendUpdateDishFormData(
+  request: UpdateDishRequest
+): FormData {
+  const formData = new FormData();
+  const translations = dishRequestToTranslations(request);
+
+  for (const [lang, value] of Object.entries(translations) as [
+    string,
+    DishTranslation,
+  ][]) {
+    formData.append(`translations[${lang}].name`, value.name);
+    if (value.description) {
+      formData.append(`translations[${lang}].description`, value.description);
+    }
   }
-  if (includeImage && ui.imageFile) {
-    formData.append("image", ui.imageFile);
+
+  formData.append("price", String(request.price));
+  
+  formData.append("isAvailable", String(request.available));
+  
+  formData.append("isVisible", String(request.visible));
+  
+  if (request.image && isDataUrl(request.image)) {
+    formData.append("image", dataUrlToFile(request.image, "dish-image.png"));
   }
-  if (ui.wantToDeleteImage) {
+
+  if (request.wantToDeleteImage) {
     formData.append("wantToDeleteImage", "true");
   }
+
+  return formData;
 }
 
 export async function getAllDishesByRestaurant(
@@ -58,24 +109,20 @@ export async function getAllDishesByRestaurant(
 }
 
 export async function createDish(
-  categoryId: string,
-  payload: DishFormPayload,
+  payload: CreateDishRequest,
 ): Promise<DishResponse> {
-  const formData = new FormData();
-  appendDishFormData(formData, payload);
-  return apiRequest<DishResponse>(`/api/dishes/category/${categoryId}`, {
+  const formData = appendCreateDishFormData(payload);
+  return apiRequest<DishResponse>(`/api/dishes/category/${payload.categoryId}`, {
     method: "POST",
     body: formData,
   });
 }
 
 export async function updateDish(
-  dishId: string,
-  payload: DishFormPayload,
+  payload: UpdateDishRequest,
 ): Promise<DishResponse> {
-  const formData = new FormData();
-  appendDishFormData(formData, payload, Boolean(payload.imageFile));
-  return apiRequest<DishResponse>(`/api/dishes/${dishId}`, {
+  const formData = appendUpdateDishFormData(payload);
+  return apiRequest<DishResponse>(`/api/dishes/${payload.dishId}`, {
     method: "PUT",
     body: formData,
   });

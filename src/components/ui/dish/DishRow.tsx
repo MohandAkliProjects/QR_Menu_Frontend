@@ -18,18 +18,39 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Dish } from "../../../types/dish";
 import type { LanguageConfig } from "../category/CategoryRow";
+import useToast from "../../../hooks/useToast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getErrorMessage } from "../../../api/errors";
+import * as dishService from "../../../services/dish.service";
+import type { AllDishesResponse, UpdateDishRequest } from "../../../services/dish.service";
+import { useAuth } from "../../../context/AuthContext";
 
 interface DishRowProps {
   dish: Dish;
-  onSave: (updated: Dish) => void;
   onDelete: (id: UniqueIdentifier) => void;
   isLast?: boolean;
   languages: LanguageConfig;
 }
 
-function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
+function DishUItoUpdateDishRequest(dish: Dish): UpdateDishRequest {
+  return {
+    englishName: dish.english,
+    frenchName: dish.french,
+    arabicName: dish.arabic,
+    englishDescription: dish.englishDescription,
+    frenchDescription: dish.frenchDescription,
+    arabicDescription: dish.arabicDescription,
+    available: dish.available === "available" ? true : false,
+    visible: dish.status === "visible" ? true : false,
+    price: dish.price,
+    dishId: String(dish.id),
+    image: dish.image ?? undefined
+  }
+}
+
+function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<Dish>(dish);
+  const [form, setForm] = useState<UpdateDishRequest>(DishUItoUpdateDishRequest(dish));
   const [error, setError] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +69,115 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const { showToast } = useToast();
+  const { restaurantId } = useAuth();
+  const queryClient = useQueryClient();
+  const dishesKey = ["dishes", restaurantId];
+  const updateMutation = useMutation({
+    mutationFn: ({
+      payload,
+    }: {
+      payload: UpdateDishRequest;
+    }) => dishService.updateDish(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dishesKey });
+      showToast(
+        "success",
+        "Dish Updated",
+        "Dish has been updated successfully.",
+      );
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
+
+  const toggleVisibleMutation = useMutation({
+    mutationFn: (id: string) => dishService.toggleDishVisible(id),
+  
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: dishesKey });
+      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+  
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          menus: old.menus.map((menu) => ({
+            ...menu,
+            categories: menu.categories.map((cat) => ({
+              ...cat,
+              dishes: cat.dishes.map((dish) =>
+                dish.id === id
+                  ? { ...dish, isVisible: !dish.isVisible }
+                  : dish
+              ),
+            })),
+          })),
+        };
+      });
+  
+      return { previous };
+    },
+  
+    onSuccess: () => {
+      //showToast("success", "Visibility Updated", "Dish visibility has been updated.");
+    },
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+      showToast("error", "Update Failed", getErrorMessage(err));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dishesKey });
+    },
+  });
+  
+  const toggleAvailableMutation = useMutation({
+    mutationFn: (id: string) => dishService.toggleDishAvailable(id),
+  
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: dishesKey });
+      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+  
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          menus: old.menus.map((menu) => ({
+            ...menu,
+            categories: menu.categories.map((cat) => ({
+              ...cat,
+              dishes: cat.dishes.map((dish) =>
+                dish.id === id
+                  ? { ...dish, isAvailable: !dish.isAvailable }
+                  : dish
+              ),
+            })),
+          })),
+        };
+      });
+  
+      return { previous };
+    },
+  
+    onSuccess: () => {
+      //showToast("success", "Availability Updated", "Dish availability has been updated.");
+    },
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+      showToast("error", "Update Failed", getErrorMessage(err));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dishesKey });
+    },
+  });
+
+  const handleToggleStatus = () => {
+    toggleVisibleMutation.mutate(String(dish.id));
+  }
+
+  const handleToggleAvailable = () => {
+    toggleAvailableMutation.mutate(String(dish.id));
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -58,56 +188,34 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
   };
 
   const isMissingEnglish =
-    languages.showEnglish && (form.english?.trim().length ?? 0) < 1;
+    languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
   const isMissingFrench =
-    languages.showFrench && (form.french?.trim().length ?? 0) < 1;
+    languages.showFrench && (form.frenchName?.trim().length ?? 0) < 1;
   const isMissingArabic =
-    languages.showArabic && (form.arabic?.trim().length ?? 0) < 1;
+    languages.showArabic && (form.arabicName?.trim().length ?? 0) < 1;
 
   const handleSave = () => {
-    if (languages.showEnglish && (form.english?.trim().length ?? 0) < 1) {
+    if (languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1) {
       setError("English name is required.");
       return;
     }
-    if (languages.showFrench && (form.french?.trim().length ?? 0) < 1) {
+    if (languages.showFrench && (form.frenchName?.trim().length ?? 0) < 1) {
       setError("French name is required.");
       return;
     }
-    if (languages.showArabic && (form.arabic?.trim().length ?? 0) < 1) {
+    if (languages.showArabic && (form.arabicName?.trim().length ?? 0) < 1) {
       setError("Arabic name is required.");
       return;
     }
     setError("");
-    onSave(form);
+    updateMutation.mutate({payload: form});
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setForm(dish);
+    setForm(DishUItoUpdateDishRequest(dish));
     setError("");
     setIsEditing(false);
-  };
-
-  /*const handleToggleStatus = () => {
-    onSave({
-      ...dish,
-      status: dish.status === "visible" ? "hidden" : "visible",
-    } as Dish);
-  };*/
-
-  const handleToggleStatus = () => {
-    const updated = {
-      ...dish,
-      status: dish.status === "visible" ? "hidden" : "visible",
-    } as Dish;
-    onSave(updated);
-  };
-
-  const handleToggleAvailable = () => {
-    onSave({
-      ...dish,
-      available: dish.available === "available" ? "unavailable" : "available",
-    } as Dish);
   };
 
   const missingClass = "border-warning bg-warning/10";
@@ -169,9 +277,9 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
         {isEditing ? (
           <div className="flex flex-col gap-1">
             <input
-              value={form.english}
+              value={form.englishName ?? ""}
               onChange={(e) =>
-                setForm((p) => ({ ...p, english: e.target.value }))
+                setForm((p) => ({ ...p, englishName: e.target.value }))
               }
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
@@ -194,8 +302,8 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
       <TableCell hidden={!languages.showFrench}>
         {isEditing ? (
           <input
-            value={form.french ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, french: e.target.value }))}
+            value={form.frenchName ?? ""}
+            onChange={(e) => setForm((p) => ({ ...p, frenchName: e.target.value }))}
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : (
@@ -213,8 +321,8 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
       <TableCell hidden={!languages.showArabic}>
         {isEditing ? (
           <input
-            value={form.arabic ?? ""}
-            onChange={(e) => setForm((p) => ({ ...p, arabic: e.target.value }))}
+            value={form.arabicName ?? ""}
+            onChange={(e) => setForm((p) => ({ ...p, arabicName: e.target.value }))}
             dir="rtl"
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
@@ -234,9 +342,9 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
       <TableCell>
         {isEditing ? (
           <textarea
-            value={form.description ?? ""}
+            value={form.englishDescription ?? ""}
             onChange={(e) =>
-              setForm((p) => ({ ...p, description: e.target.value }))
+              setForm((p) => ({ ...p, englishDescription: e.target.value }))
             }
             rows={2}
             className="
@@ -249,7 +357,7 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
         ) : (
           <div className="max-w-35 mx-auto">
             <p className="text-sm text-text-600 text-center overflow-y-auto max-h-12 leading-6 wrap-break-words">
-              {dish.description || "—"}
+              {dish.englishDescription || "—"}
             </p>
           </div>
         )}
@@ -279,14 +387,14 @@ function DishRow({ dish, onSave, onDelete, isLast, languages }: DishRowProps) {
       {/* Available — clickable badge */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge variant={dish.available} />
+          <Badge variant={dish.available === "available" ? "available" : "hidden"} />
         </div>
       </TableCell>
 
       {/* Status — clickable badge */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge variant={dish.status} />
+          <Badge variant={dish.status === "visible" ? "visible" : "hidden"} />
         </div>
       </TableCell>
 

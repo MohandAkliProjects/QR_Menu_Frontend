@@ -26,7 +26,9 @@ export interface DishUI {
   english: string;
   french?: string;
   arabic?: string;
-  description?: string;
+  englishDescription?: string;
+  frenchDescription?: string;
+  arabicDescription?: string;
   price: number;
   available: AvailabilityStatus;
   status: VisibilityStatus;

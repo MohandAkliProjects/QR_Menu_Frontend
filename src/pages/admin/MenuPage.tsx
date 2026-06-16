@@ -23,7 +23,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import SelectDropdown from "../../components/ui/SelectDropdown";
 import ToastContainer from "../../components/ui/ToastContainer";
-import Modal from "../../components/ui/Modal";
+//import Modal from "../../components/ui/Modal";
 import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
 import {
@@ -94,7 +94,7 @@ function MenuPage() {
   const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>([]);
   const [initialLanguages, setInitialLanguages] = useState<SupportedLang[]>([]);
   const [errors, setErrors] = useState<MenuFormErrors>({});
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  //const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const menuKey = ["menu", restaurantId, menuId] as const;
 
@@ -152,7 +152,7 @@ function MenuPage() {
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
 
-  const deleteMutation = useMutation({
+  {/*const deleteMutation = useMutation({
     mutationFn: () => menuService.deleteMenu(menuId!),
     onSuccess: () => {
       showToast("success", "Menu Deleted", "The menu has been deleted.");
@@ -160,7 +160,7 @@ function MenuPage() {
       window.location.reload();
     },
     onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
-  });
+  });*/}
 
   const handleEdit = () => {
     setErrors({});
@@ -405,7 +405,7 @@ function MenuPage() {
               <Button
                 label="Delete Menu"
                 icon={Trash2}
-                onClick={() => setShowDeleteModal(true)}
+                onClick={() => showToast}
                 className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
               />
             </Card>
@@ -413,7 +413,7 @@ function MenuPage() {
         </div>
       ) : null}
 
-      <Modal
+      {/* <Modal
         title="Delete Menu"
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -436,7 +436,7 @@ function MenuPage() {
           title="This cannot be undone"
           message="All categories, dishes, and translations will be deleted."
         />
-      </Modal>
+      </Modal> */}
     </div>
   );
 }

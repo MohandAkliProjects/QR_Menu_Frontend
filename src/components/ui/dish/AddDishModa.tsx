@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useToast from "../../../hooks/useToast";
 import { getErrorMessage } from "../../../api/errors";
 import { createDish } from "../../../services/dish.service";
-import type { CreateDishRequest  } from "../../../services/dish.service";
+import type { CreateDishRequest } from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
 
 interface Category {
@@ -52,9 +52,16 @@ function AddDishModal({
   const [form, setForm] = useState<CreateDishRequest>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateDishRequest, string>>>({});
 
+  const descTabs = [
+    showEnglish && { key: "en", label: "EN", field: "englishDescription" as const },
+    showFrench  && { key: "fr", label: "FR", field: "frenchDescription" as const },
+    showArabic  && { key: "ar", label: "AR", field: "arabicDescription" as const },
+  ].filter(Boolean) as { key: string; label: string; field: keyof CreateDishRequest }[];
+
+  const [activeDescTab, setActiveDescTab] = useState<string>(descTabs[0]?.key ?? "en");
+
   const validate = () => {
     const newErrors: Partial<Record<keyof CreateDishRequest, string>> = {};
-
     if (showEnglish && !form.englishName?.trim())
       newErrors.englishName = "English name is required.";
     if (showFrench && !form.frenchName?.trim())
@@ -65,7 +72,6 @@ function AddDishModal({
       newErrors.price = "Price must be greater than 0.";
     if (!form.categoryId)
       newErrors.categoryId = "Please select a category.";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -85,20 +91,12 @@ function AddDishModal({
   const { restaurantId } = useAuth();
 
   const createMutation = useMutation({
-    mutationFn: ({
-      payload
-    }: {
-      payload: CreateDishRequest;
-    }) => createDish(payload),
+    mutationFn: ({ payload }: { payload: CreateDishRequest }) => createDish(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dishes", restaurantId] });
       setForm(EMPTY);
       onClose();
-      showToast(
-        "success",
-        "Dish Added",
-        "New dish has been added successfully.",
-      );
+      showToast("success", "Dish Added", "New dish has been added successfully.");
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
@@ -110,6 +108,9 @@ function AddDishModal({
       : languageCount === 2
       ? "grid-cols-1 sm:grid-cols-2"
       : "grid-cols-1";
+
+  const activeTab = descTabs.find((t) => t.key === activeDescTab);
+  const isActiveArabic = activeDescTab === "ar";
 
   return (
     <Modal
@@ -136,7 +137,11 @@ function AddDishModal({
           />
         </div>
       }
+
     >
+
+      <div className="flex flex-col gap-4 overflow-y-auto max-h-[65vh] pr-1">
+              </div>
       {/* Image Upload */}
       <div className="w-full">
         <CategoryImageUpload
@@ -147,7 +152,7 @@ function AddDishModal({
         />
       </div>
 
-      {/* Name Fields — only show languages the menu supports */}
+      {/* Name Fields */}
       {languageCount > 0 && (
         <div className={`grid ${gridCols} gap-4`}>
           {showEnglish && (
@@ -203,6 +208,68 @@ function AddDishModal({
                 <span className="text-xs text-error">{errors.arabicName}</span>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Description — tabbed, only shown if there are language tabs */}
+      {descTabs.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-text-600">
+              Description
+              <span className="ml-1 text-xs text-text-400 font-normal">(optional)</span>
+            </label>
+            {/* Language tabs */}
+            {descTabs.length > 1 && (
+              <div className="flex rounded-lg border border-primary-200 overflow-hidden">
+                {descTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveDescTab(tab.key)}
+                    className={`
+                      px-3 py-1 text-xs font-medium transition-colors
+                      ${activeDescTab === tab.key
+                        ? "bg-primary-700 text-cream-500"
+                        : "bg-card-bg text-text-500 hover:bg-beige-100"
+                      }
+                    `}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Single textarea that swaps content based on active tab */}
+          {activeTab && (
+            <textarea
+              key={activeTab.key}
+              value={(form[activeTab.field] as string) ?? ""}
+              placeholder={
+                activeDescTab === "ar"
+                  ? "أضف وصفًا لهذا الطبق (اختياري)"
+                  : activeDescTab === "fr"
+                  ? "Ajoutez une description pour ce plat (facultatif)"
+                  : "Add a description for this dish (optional)"
+              }
+              dir={isActiveArabic ? "rtl" : "ltr"}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, [activeTab.field]: e.target.value }))
+              }
+              rows={2}
+              className="
+                w-full px-4 py-3 rounded-xl
+                bg-card-bg border border-primary-200
+                text-base text-text-800
+                focus:outline-none focus:border-primary-500
+                shadow-(--shadow-card)
+                transition-all duration-200
+                resize-none
+              "
+            />
           )}
         </div>
       )}
@@ -274,70 +341,6 @@ function AddDishModal({
         </div>
       </div>
 
-      {/* Description
-      { showEnglish && <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-text-600">Description</label>
-        <textarea
-          value={form.englishDescription ?? ""}
-          placeholder="Add a description for this dish (optional)"
-          onChange={(e) =>
-            setForm((p) => ({ ...p, englishDescription: e.target.value }))
-          }
-          rows={2}
-          className="
-            w-full px-4 py-3 rounded-xl
-            bg-card-bg border border-primary-200
-            text-base text-text-800
-            focus:outline-none focus:border-primary-500
-            shadow-(--shadow-card)
-            transition-all duration-200
-            resize-none
-          "
-        />
-      </div> } */}
-
-      {/* { showFrench && <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-text-600">Description</label>
-        <textarea
-          value={form.frenchDescription ?? ""}
-          placeholder="Ajoutez une description pour ce plat (facultatif)"
-          onChange={(e) =>
-            setForm((p) => ({ ...p, frenchDescription: e.target.value }))
-          }
-          rows={2}
-          className="
-            w-full px-4 py-3 rounded-xl
-            bg-card-bg border border-primary-200
-            text-base text-text-800
-            focus:outline-none focus:border-primary-500
-            shadow-(--shadow-card)
-            transition-all duration-200
-            resize-none
-          "
-        />
-      </div> } */}
-
-      {/* { showArabic && <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-text-600">الوصف</label>
-        <textarea
-          value={form.arabicDescription ?? ""}
-          placeholder="أضف وصفًا لهذا الطبق (اختياري)"
-          onChange={(e) =>
-            setForm((p) => ({ ...p, arabicDescription: e.target.value }))
-          }
-          rows={2}
-          className="
-            w-full px-4 py-3 rounded-xl
-            bg-card-bg border border-primary-200
-            text-base text-text-800
-            focus:outline-none focus:border-primary-500
-            shadow-(--shadow-card)
-            transition-all duration-200
-            resize-none
-          "
-        />
-      </div> } */}
-
       {/* Availability + Visibility */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
@@ -347,7 +350,7 @@ function AddDishModal({
             onChange={(e) =>
               setForm((p) => ({
                 ...p,
-                available: e.target.value === "available" ? true : false,
+                available: e.target.value === "available",
               }))
             }
             className="
@@ -369,7 +372,7 @@ function AddDishModal({
             onChange={(e) =>
               setForm((p) => ({
                 ...p,
-                visible: e.target.value === "visible" ? true : false,
+                visible: e.target.value === "visible",
               }))
             }
             className="
@@ -384,6 +387,7 @@ function AddDishModal({
           </select>
         </div>
       </div>
+
     </Modal>
   );
 }

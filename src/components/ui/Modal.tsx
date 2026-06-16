@@ -30,11 +30,11 @@ function Modal({ title, isOpen, onClose, isPending, children, footer }: ModalPro
         onClick={onClose}
       />
 
-      {/* panel */}
-      <div className="relative z-10 w-full max-w-lg mx-4 bg-card-bg rounded-2xl shadow-lg flex flex-col">
+      {/* panel — added max-h and overflow-hidden so it never exceeds screen */}
+      <div className="relative z-10 w-full max-w-lg mx-4 bg-card-bg rounded-2xl shadow-lg flex flex-col max-h-[90vh]">
 
-        {/* header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-primary-200">
+        {/* header — stays fixed at top */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-primary-200 shrink-0">
           <h3 className="text-lg font-semibold text-dark-700">{title}</h3>
           <button
             onClick={onClose}
@@ -44,14 +44,14 @@ function Modal({ title, isOpen, onClose, isPending, children, footer }: ModalPro
           </button>
         </div>
 
-        {/* body */}
-        <div className="px-6 py-5 flex flex-col gap-4">
+        {/* body — scrolls when content overflows */}
+        <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
           {children}
         </div>
 
-        {/* footer */}
+        {/* footer — stays fixed at bottom */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-primary-200">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-primary-200 shrink-0">
             {isPending ? (
               <div className="flex w-full justify-center">
                 <LoaderCircle className="size-14 animate-spin" />
@@ -59,7 +59,7 @@ function Modal({ title, isOpen, onClose, isPending, children, footer }: ModalPro
             ) : (
               footer
             )}
-         </div>
+          </div>
         )}
       </div>
     </div>

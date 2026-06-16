@@ -36,6 +36,8 @@ export interface DishUI {
   categoryId: UniqueIdentifier;
 }
 
+
+
 export interface RestaurantFormData {
   restaurantName: string;
   email: string;

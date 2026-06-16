@@ -37,16 +37,21 @@ export function categoryResponseToUI(category: CategoryResponse): CategoryUI {
 
 export function dishResponseToUI(dish: DishResponse): DishUI {
   const en = dish.translations.en ?? dish.translations["en" as Language];
-  console.log("🔥 RAW DISH FROM BACKEND:", dish);
+  const fr = dish.translations.fr ?? dish.translations["fr" as Language];
+  const ar = dish.translations.ar ?? dish.translations["ar" as Language];
+
+  //console.log(" RAW DISH FROM BACKEND:", dish);
 
   return {
     id: dish.id,
     order: dish.order,
     image: dish.imageUrl ?? null,
     english: en?.name ?? "",
-    french: (dish.translations.fr ?? dish.translations["fr" as Language])?.name,
-    arabic: (dish.translations.ar ?? dish.translations["ar" as Language])?.name,
-    description: en?.description,
+    french: fr?.name ?? "",
+    arabic: ar?.name ?? "",
+    englishDescription: en?.description,
+    frenchDescription: fr?.description,
+    arabicDescription: ar?.description,
     price: dish.price,
    available: (dish.isAvailable ?? dish.available)
   ? "available"
@@ -59,33 +64,6 @@ status: (dish.isVisible ?? dish.visible)
     categoryId: dish.categoryId,
   };
 }
-
-/*export function dishResponseToUI(dish: DishResponse): DishUI {
-  console.log("RAW DISH:", dish);
-
-  const en = dish.translations.en ?? dish.translations["en" as Language];
-
-  return {
-    id: dish.id,
-    order: dish.order,
-    image: dish.imageUrl ?? null,
-    english: en?.name ?? "",
-    french:
-      (dish.translations.fr ??
-        dish.translations["fr" as Language])?.name,
-    arabic:
-      (dish.translations.ar ??
-        dish.translations["ar" as Language])?.name,
-    description: en?.description,
-    price: dish.price,
-
-    available: dish.isAvailable ? "available" : "unavailable",
-    status: dish.isVisible ? "visible" : "hidden",
-
-    likes: dish.likesCount,
-    categoryId: dish.categoryId,
-  };
-}*/
 
 export function categoryWithDishesToUI(
   category: CategoryWithDishesResponse

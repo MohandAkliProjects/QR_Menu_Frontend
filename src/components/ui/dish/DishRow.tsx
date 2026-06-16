@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Pencil,
   Trash2,
@@ -10,6 +10,7 @@ import {
   EyeOff,
   Check,
   X,
+  ChevronDown,
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
@@ -29,6 +30,7 @@ interface DishRowProps {
   dish: Dish;
   onDelete: (id: UniqueIdentifier) => void;
   isLast?: boolean;
+  isFirst?: boolean;
   languages: LanguageConfig;
 }
 
@@ -40,15 +42,244 @@ function DishUItoUpdateDishRequest(dish: Dish): UpdateDishRequest {
     englishDescription: dish.englishDescription,
     frenchDescription: dish.frenchDescription,
     arabicDescription: dish.arabicDescription,
-    available: dish.available === "available" ? true : false,
-    visible: dish.status === "visible" ? true : false,
+    available: dish.available === "available",
+    visible: dish.status === "visible",
     price: dish.price,
     dishId: String(dish.id),
-    image: dish.image ?? undefined
-  }
+    image: dish.image ?? undefined,
+  };
 }
 
-function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
+
+interface NamePopoverProps {
+  label: string;
+  dir?: "ltr" | "rtl";
+  isFirst?: boolean;
+}
+
+function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isTruncated = label.length > 14;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (!isTruncated)
+    return <span className="text-sm text-text-600">{label}</span>;
+
+  return (
+    <div ref={ref} className="relative flex justify-center">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-[120px]"
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`
+            absolute z-50 left-1/2 -translate-x-1/2
+            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
+            w-max max-w-[200px] rounded-xl border border-beige-300
+            bg-card-bg shadow-lg px-3 py-2
+          `}
+        >
+          <div
+            className={`
+              absolute left-1/2 -translate-x-1/2
+              w-3 h-3 rotate-45 bg-card-bg border-beige-300
+              ${isFirst
+                ? "-top-[6px] border-l border-t"
+                : "-bottom-[6px] border-r border-b"}
+            `}
+          />
+          <p dir={dir} className="text-sm text-text-700 whitespace-normal break-words">
+            {label}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+interface DescriptionPopoverProps {
+  dish: Dish;
+  languages: LanguageConfig;
+  isFirst?: boolean;
+}
+
+function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const hasAny =
+    dish.englishDescription ||
+    dish.frenchDescription ||
+    dish.arabicDescription;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (!hasAny) {
+    return <span className="text-sm text-text-300 select-none">—</span>;
+  }
+
+  const entries = [
+    languages.showEnglish && dish.englishDescription && {
+      label: "EN",
+      text: dish.englishDescription,
+      dir: "ltr" as const,
+    },
+    languages.showFrench && dish.frenchDescription && {
+      label: "FR",
+      text: dish.frenchDescription,
+      dir: "ltr" as const,
+    },
+    languages.showArabic && dish.arabicDescription && {
+      label: "AR",
+      text: dish.arabicDescription,
+      dir: "rtl" as const,
+    },
+  ].filter(Boolean) as { label: string; text: string; dir: "ltr" | "rtl" }[];
+
+  return (
+    <div ref={ref} className="relative flex justify-center">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-[140px]"
+        title="Click to see descriptions"
+      >
+        <span className="truncate">
+          {dish.englishDescription || dish.frenchDescription || dish.arabicDescription}
+        </span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`
+            absolute z-50 left-1/2 -translate-x-1/2
+            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
+            w-64 rounded-xl border border-beige-300
+            bg-card-bg shadow-lg p-3
+            flex flex-col gap-3
+          `}
+        >
+          <div
+            className={`
+              absolute left-1/2 -translate-x-1/2
+              w-3 h-3 rotate-45 bg-card-bg border-beige-300
+              ${isFirst
+                ? "-top-[6px] border-l border-t"
+                : "-bottom-[6px] border-r border-b"}
+            `}
+          />
+          {entries.map((entry) => (
+            <div key={entry.label} className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold tracking-widest uppercase text-text-400">
+                {entry.label}
+              </span>
+              <p dir={entry.dir} className="text-sm text-text-700 leading-relaxed wrap-break-words">
+                {entry.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+interface DescriptionEditProps {
+  form: UpdateDishRequest;
+  setForm: React.Dispatch<React.SetStateAction<UpdateDishRequest>>;
+  languages: LanguageConfig;
+}
+
+function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
+  const tabs = [
+    languages.showEnglish && { key: "en", label: "EN", field: "englishDescription" as const, dir: "ltr" as const, placeholder: "Description…" },
+    languages.showFrench  && { key: "fr", label: "FR", field: "frenchDescription" as const,  dir: "ltr" as const, placeholder: "Description…" },
+    languages.showArabic  && { key: "ar", label: "AR", field: "arabicDescription" as const,   dir: "rtl" as const, placeholder: "وصف…" },
+  ].filter(Boolean) as { key: string; label: string; field: keyof UpdateDishRequest; dir: "ltr" | "rtl"; placeholder: string }[];
+
+  const [activeTab, setActiveTab] = useState(tabs[0]?.key ?? "en");
+  const active = tabs.find((t) => t.key === activeTab);
+
+  if (!tabs.length) return null;
+
+  return (
+    <div className="flex flex-col gap-1 w-full">
+      {tabs.length > 1 && (
+        <div className="flex rounded-md border border-beige-300 overflow-hidden self-start">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`
+                px-2 py-0.5 text-[10px] font-semibold transition-colors
+                ${activeTab === tab.key
+                  ? "bg-primary-700 text-cream-500"
+                  : "bg-card-bg text-text-500 hover:bg-beige-100"}
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {active && (
+        <textarea
+          key={active.key}
+          value={(form[active.field] as string) ?? ""}
+          placeholder={active.placeholder}
+          dir={active.dir}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, [active.field]: e.target.value }))
+          }
+          rows={2}
+          className="
+            w-full px-3 py-2 rounded-lg border border-beige-400
+            text-sm text-dark-700 bg-cream-200
+            focus:outline-none focus:border-primary-500
+            resize-none overflow-y-auto max-h-20
+          "
+        />
+      )}
+    </div>
+  );
+}
+
+
+function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<UpdateDishRequest>(DishUItoUpdateDishRequest(dish));
   const [error, setError] = useState("");
@@ -73,30 +304,22 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
   const { restaurantId } = useAuth();
   const queryClient = useQueryClient();
   const dishesKey = ["dishes", restaurantId];
+
   const updateMutation = useMutation({
-    mutationFn: ({
-      payload,
-    }: {
-      payload: UpdateDishRequest;
-    }) => dishService.updateDish(payload),
+    mutationFn: ({ payload }: { payload: UpdateDishRequest }) =>
+      dishService.updateDish(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
-      showToast(
-        "success",
-        "Dish Updated",
-        "Dish has been updated successfully.",
-      );
+      showToast("success", "Dish Updated", "Dish has been updated successfully.");
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
 
   const toggleVisibleMutation = useMutation({
     mutationFn: (id: string) => dishService.toggleDishVisible(id),
-  
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: dishesKey });
       const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-  
       queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
         if (!old) return old;
         return {
@@ -105,38 +328,27 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
             ...menu,
             categories: menu.categories.map((cat) => ({
               ...cat,
-              dishes: cat.dishes.map((dish) =>
-                dish.id === id
-                  ? { ...dish, isVisible: !dish.isVisible }
-                  : dish
+              dishes: cat.dishes.map((d) =>
+                d.id === id ? { ...d, isVisible: !d.isVisible } : d
               ),
             })),
           })),
         };
       });
-  
       return { previous };
-    },
-  
-    onSuccess: () => {
-      //showToast("success", "Visibility Updated", "Dish visibility has been updated.");
     },
     onError: (err, _variables, context) => {
       queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
       showToast("error", "Update Failed", getErrorMessage(err));
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
   });
-  
+
   const toggleAvailableMutation = useMutation({
     mutationFn: (id: string) => dishService.toggleDishAvailable(id),
-  
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: dishesKey });
       const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-  
       queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
         if (!old) return old;
         return {
@@ -145,38 +357,24 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
             ...menu,
             categories: menu.categories.map((cat) => ({
               ...cat,
-              dishes: cat.dishes.map((dish) =>
-                dish.id === id
-                  ? { ...dish, isAvailable: !dish.isAvailable }
-                  : dish
+              dishes: cat.dishes.map((d) =>
+                d.id === id ? { ...d, isAvailable: !d.isAvailable } : d
               ),
             })),
           })),
         };
       });
-  
       return { previous };
-    },
-  
-    onSuccess: () => {
-      //showToast("success", "Availability Updated", "Dish availability has been updated.");
     },
     onError: (err, _variables, context) => {
       queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
       showToast("error", "Update Failed", getErrorMessage(err));
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dishesKey });
-    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
   });
 
-  const handleToggleStatus = () => {
-    toggleVisibleMutation.mutate(String(dish.id));
-  }
-
-  const handleToggleAvailable = () => {
-    toggleAvailableMutation.mutate(String(dish.id));
-  }
+  const handleToggleStatus = () => toggleVisibleMutation.mutate(String(dish.id));
+  const handleToggleAvailable = () => toggleAvailableMutation.mutate(String(dish.id));
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -187,28 +385,16 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
     reader.readAsDataURL(file);
   };
 
-  const isMissingEnglish =
-    languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
-  const isMissingFrench =
-    languages.showFrench && (form.frenchName?.trim().length ?? 0) < 1;
-  const isMissingArabic =
-    languages.showArabic && (form.arabicName?.trim().length ?? 0) < 1;
+  const isMissingEnglish = languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
+  const isMissingFrench  = languages.showFrench  && (form.frenchName?.trim().length ?? 0) < 1;
+  const isMissingArabic  = languages.showArabic  && (form.arabicName?.trim().length ?? 0) < 1;
 
   const handleSave = () => {
-    if (languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1) {
-      setError("English name is required.");
-      return;
-    }
-    if (languages.showFrench && (form.frenchName?.trim().length ?? 0) < 1) {
-      setError("French name is required.");
-      return;
-    }
-    if (languages.showArabic && (form.arabicName?.trim().length ?? 0) < 1) {
-      setError("Arabic name is required.");
-      return;
-    }
+    if (isMissingEnglish) { setError("English name is required."); return; }
+    if (isMissingFrench)  { setError("French name is required.");  return; }
+    if (isMissingArabic)  { setError("Arabic name is required.");  return; }
     setError("");
-    updateMutation.mutate({payload: form});
+    updateMutation.mutate({ payload: form });
     setIsEditing(false);
   };
 
@@ -250,11 +436,7 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
           {form.image ? (
-            <img
-              src={form.image}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            <img src={form.image} alt="" className="w-full h-full object-cover" />
           ) : isEditing ? (
             <Upload size={16} className="text-text-400" />
           ) : (
@@ -278,22 +460,16 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
           <div className="flex flex-col gap-1">
             <input
               value={form.englishName ?? ""}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, englishName: e.target.value }))
-              }
+              onChange={(e) => setForm((p) => ({ ...p, englishName: e.target.value }))}
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
-            {error && (
-              <span className="text-xs text-error text-center">{error}</span>
-            )}
+            {error && <span className="text-xs text-error text-center">{error}</span>}
           </div>
+        ) : dish.english ? (
+          <NamePopover label={dish.english} dir="ltr" isFirst={isFirst} />
         ) : (
-          <span
-            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${
-              !dish.english ? `text-warning ${missingClass}` : "text-text-600"
-            }`}
-          >
-            {dish.english || "Missing"}
+          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+            Missing
           </span>
         )}
       </TableCell>
@@ -306,13 +482,11 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
             onChange={(e) => setForm((p) => ({ ...p, frenchName: e.target.value }))}
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
+        ) : dish.french ? (
+          <NamePopover label={dish.french} dir="ltr" isFirst={isFirst} />
         ) : (
-          <span
-            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${
-              !dish.french ? `text-warning ${missingClass}` : "text-text-600"
-            }`}
-          >
-            {dish.french || "Missing"}
+          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+            Missing
           </span>
         )}
       </TableCell>
@@ -326,41 +500,24 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
             dir="rtl"
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
+        ) : dish.arabic ? (
+          <NamePopover label={dish.arabic} dir="rtl" isFirst={isFirst} />
         ) : (
-          <span
-            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${
-              !dish.arabic ? `text-warning ${missingClass}` : "text-text-600"
-            }`}
-            dir={languages.showArabic ? "rtl" : undefined}
-          >
-            {dish.arabic || "Missing"}
+          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+            Missing
           </span>
         )}
       </TableCell>
 
       {/* Description */}
       <TableCell>
-        {isEditing ? (
-          <textarea
-            value={form.englishDescription ?? ""}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, englishDescription: e.target.value }))
-            }
-            rows={2}
-            className="
-              w-full px-3 py-2 rounded-lg border border-beige-400
-              text-sm text-dark-700 bg-cream-200
-              focus:outline-none focus:border-primary-500
-              resize-none overflow-y-auto max-h-20
-            "
-          />
-        ) : (
-          <div className="max-w-35 mx-auto">
-            <p className="text-sm text-text-600 text-center overflow-y-auto max-h-12 leading-6 wrap-break-words">
-              {dish.englishDescription || "—"}
-            </p>
-          </div>
-        )}
+        <div className="flex justify-center">
+          {isEditing ? (
+            <DescriptionEdit form={form} setForm={setForm} languages={languages} />
+          ) : (
+            <DescriptionPopover dish={dish} languages={languages} isFirst={isFirst} />
+          )}
+        </div>
       </TableCell>
 
       {/* Price */}
@@ -373,9 +530,7 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
               min={0}
               step="0.01"
               value={form.price}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, price: Number(e.target.value) }))
-              }
+              onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))}
               className="w-20 h-9 px-2 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
             />
           </div>
@@ -384,14 +539,14 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
         )}
       </TableCell>
 
-      {/* Available — clickable badge */}
+      {/* Available */}
       <TableCell>
         <div className="flex justify-center">
           <Badge variant={dish.available === "available" ? "available" : "hidden"} />
         </div>
       </TableCell>
 
-      {/* Status — clickable badge */}
+      {/* Status */}
       <TableCell>
         <div className="flex justify-center">
           <Badge variant={dish.status === "visible" ? "visible" : "hidden"} />
@@ -403,9 +558,7 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
         <div className="flex items-center justify-center gap-1">
           <Heart
             size={15}
-            className={
-              dish.likes > 0 ? "text-error fill-error" : "text-text-300"
-            }
+            className={dish.likes > 0 ? "text-error fill-error" : "text-text-300"}
           />
           <span className="text-sm text-text-400">{dish.likes}</span>
         </div>
@@ -436,28 +589,14 @@ function DishRow({ dish, onDelete, isLast, languages }: DishRowProps) {
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
               title={dish.status === "visible" ? "Hide dish" : "Show dish"}
             >
-              {dish.status === "visible" ? (
-                <Eye size={17} />
-              ) : (
-                <EyeOff size={17} />
-              )}
+              {dish.status === "visible" ? <Eye size={17} /> : <EyeOff size={17} />}
             </button>
-
-            {/* Availability */}
             <button
               onClick={handleToggleAvailable}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
-              title={
-                dish.available === "available"
-                  ? "Mark unavailable"
-                  : "Mark available"
-              }
+              title={dish.available === "available" ? "Mark unavailable" : "Mark available"}
             >
-              {dish.available === "available" ? (
-                <Check size={17} />
-              ) : (
-                <X size={17} />
-              )}
+              {dish.available === "available" ? <Check size={17} /> : <X size={17} />}
             </button>
             <button
               onClick={() => setIsEditing(true)}

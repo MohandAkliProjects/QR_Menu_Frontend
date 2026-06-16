@@ -322,7 +322,6 @@ const reorderMutation = useMutation({
     ? "No restaurant found. Please log in again."
     : null;
 
-  // ── Render ────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
@@ -397,6 +396,7 @@ const reorderMutation = useMutation({
                       dish={dish}
                       onDelete={handleDelete}
                       isLast={index === paginatedDishes.length - 1}
+                      isFirst={index === 0}
                       languages={languages}
                     />
                   ))}

@@ -18,6 +18,7 @@ interface AddCategoryModalProps {
   ) => void;
   editData?: Category | null;
   supportedLanguages: Language[];
+  isPending: boolean;
 }
 
 type FormState = Omit<Category, "id" | "order"> & {
@@ -39,6 +40,7 @@ function AddCategoryModal({
   onConfirm,
   editData,
   supportedLanguages,
+  isPending,
 }: AddCategoryModalProps) {
   const [form, setForm] = useState<FormState>(
     editData
@@ -79,15 +81,14 @@ function AddCategoryModal({
     missingLanguages.push("Arabic");
   }
 
-  const handleConfirm = () => {
-    if (missingLanguages.length > 0) {
-      setShowValidationError(true);
-      return;
-    }
+const handleConfirm = () => {
+  if (missingLanguages.length > 0) {
+    setShowValidationError(true);
+    return;
+  }
 
-    onConfirm(form);
-    onClose();
-  };
+  onConfirm(form);
+};
 
   return (
     <Modal
@@ -98,6 +99,7 @@ function AddCategoryModal({
       }
       isOpen={isOpen}
       onClose={onClose}
+      isPending={isPending}
       footer={
         <div className="flex gap-4 w-full">
           <Button

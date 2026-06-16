@@ -58,8 +58,6 @@ function CategoriesPage() {
   const [editTarget, setEditTarget] = useState<Category | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // For drag reorder — we keep a local reordered list only during/after drag
-  // until invalidation resolves
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -93,8 +91,10 @@ function CategoriesPage() {
       iconFile: File | null;
     }) => categoryService.createCategory(menuId!, data, iconFile),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
       setCurrentPage(1);
+      //add for now then ask moh if he want to change them 
+  setModalOpen(false);
+  setEditTarget(null);
       showToast(
         "success",
         "Category Added",
@@ -102,6 +102,9 @@ function CategoriesPage() {
       );
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+    onSettled() {
+      queryClient.invalidateQueries({queryKey: categoriesKey});
+    },
   });
 
   const updateMutation = useMutation({
@@ -423,17 +426,18 @@ const reorderMutation = useMutation({
         </>
       )}
 
-      <AddCategoryModal
-        key={editTarget?.id ?? "new"}
-        isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditTarget(null);
-        }}
-        onConfirm={handleConfirm}
-        editData={editTarget}
-        supportedLanguages={supportedLanguages}
-      />
+     <AddCategoryModal
+  key={editTarget?.id ?? "new"}
+  isOpen={modalOpen}
+  onClose={() => {
+    setModalOpen(false);
+    setEditTarget(null);
+  }}
+  onConfirm={handleConfirm}
+  editData={editTarget}
+  supportedLanguages={supportedLanguages}
+  isPending={createMutation.isPending}
+/>
     </div>
   );
 }

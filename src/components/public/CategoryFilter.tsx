@@ -16,10 +16,6 @@ interface CategoryFilterProps {
 const ACTIVE_RING = "0 0 0 2.5px var(--menu-accent), 0 3px 12px rgba(182,141,55,0.35)";
 const INACTIVE_RING = "0 2px 6px rgba(0,0,0,0.08)";
 
-/**
- * Returns the language key that was actually used for the fallback,
- * or null if the requested language was available.
- */
 function getFallbackLanguage(
   translations: Partial<Record<Language, { name: string }>>,
   language: Language
@@ -40,15 +36,14 @@ function CategoryFilter({ categories, activeCategoryId, language, onSelect, allI
   }, [activeCategoryId]);
 
   return (
-    // py-2 + px-1 give the scaled-up pill room to breathe without clipping.
-    // overflow-x-auto on the outer wrapper, overflow-visible on the inner
-    // flex row so the box-shadow / scale transform aren't cut off.
+    // px-2 (instead of px-1) gives the scaled-up active pill (scale 1.1)
+    // enough room on both ends so the ring shadow isn't clipped by overflow-x-auto.
     <div
       ref={containerRef}
       className="overflow-x-auto menu-scroll-x"
       style={{ scrollbarWidth: "none" }}
     >
-      <div className="flex gap-3 px-1 py-2 w-max">
+      <div className="flex gap-3 px-2 py-2 w-max">
         {/* "All" pill */}
         <button
           type="button"
@@ -103,7 +98,6 @@ function CategoryFilter({ categories, activeCategoryId, language, onSelect, allI
                   )}
                 </div>
 
-                {/* Language fallback badge */}
                 {fallbackLang && (
                   <span
                     className="absolute -bottom-0.5 -end-1 px-1 rounded text-[8px] font-bold uppercase leading-tight"

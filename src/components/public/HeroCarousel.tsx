@@ -9,14 +9,6 @@ interface HeroCarouselProps {
 const AUTOPLAY_MS = 5000;
 const SWIPE_THRESHOLD_PX = 50;
 
-/**
- * Replaces the Figma `HeroCarousel`. The Figma version had per-slide
- * title/subtitle/CTA text, but `BannerResponse` only carries an image,
- * so this renders a clean image carousel. Hidden banners (`visible: false`)
- * are skipped, and the whole component renders nothing if there's nothing
- * to show (the page already guards on `banners.length > 0`, this is just
- * a defensive second check after filtering).
- */
 function HeroCarousel({ banners }: HeroCarouselProps) {
   const slides = banners.filter((banner) => banner.visible);
   const [current, setCurrent] = useState(0);
@@ -52,7 +44,7 @@ function HeroCarousel({ banners }: HeroCarouselProps) {
     >
       {slides.map((banner, i) => (
         <div
-          key={banner.id}
+          key={i}
           className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: i === current ? 1 : 0 }}
         >

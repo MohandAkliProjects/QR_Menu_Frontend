@@ -93,12 +93,14 @@ function AddDishModal({
   const createMutation = useMutation({
     mutationFn: ({ payload }: { payload: CreateDishRequest }) => createDish(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dishes", restaurantId] });
       setForm(EMPTY);
       onClose();
       showToast("success", "Dish Added", "New dish has been added successfully.");
     },
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+    onSettled() {
+      queryClient.invalidateQueries({ queryKey: ["dishes", restaurantId] });
+    },
   });
 
   const languageCount = [showEnglish, showFrench, showArabic].filter(Boolean).length;

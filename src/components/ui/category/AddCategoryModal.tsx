@@ -117,6 +117,12 @@ function AddCategoryModal({
         </div>
       }
     >
+
+      <div>
+
+
+        
+      </div>
       {missingLanguages.length > 0 && (
         <Notification
           variant={

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Eye,
   EyeOff,
@@ -7,6 +7,7 @@ import {
   Save,
   Upload,
   Image as ImageIcon,
+  ChevronDown,
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
@@ -35,14 +36,82 @@ interface CategoryRowProps {
   onSave: (updated: Category, iconFile: File | null) => void;
   onDelete: (id: UniqueIdentifier) => void;
   isLast?: boolean;
+  isFirst?: boolean;
   languages: LanguageConfig;
 }
+
+
+interface NamePopoverProps {
+  label: string;
+  dir?: "ltr" | "rtl";
+  isFirst?: boolean;
+}
+
+function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isTruncated = label.length > 14;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (!isTruncated)
+    return <span className="text-sm text-text-600">{label}</span>;
+
+  return (
+    <div ref={ref} className="relative flex justify-center">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-30"
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`
+            absolute z-50 left-1/2 -translate-x-1/2
+            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
+            w-max max-w-50 rounded-xl border border-beige-300
+            bg-card-bg shadow-lg px-3 py-2
+          `}
+        >
+          <div
+            className={`
+              absolute left-1/2 -translate-x-1/2
+              w-3 h-3 rotate-45 bg-card-bg border-beige-300
+              ${isFirst
+                ? "-top-1.5 border-l border-t"
+                : "-bottom-1.5 border-r border-b"}
+            `}
+          />
+          <p dir={dir} className="text-sm text-text-700 whitespace-normal wrap-break-words">
+            {label}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function CategoryRow({
   category,
   onSave,
   onDelete,
   isLast,
+  isFirst,
   languages,
 }: CategoryRowProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -76,12 +145,9 @@ function CategoryRow({
     reader.readAsDataURL(file);
   };
 
-  const isMissingEnglish =
-    languages.showEnglish && form.english.trim().length < 3;
-  const isMissingFrench =
-    languages.showFrench && (form.french?.trim().length ?? 0) < 3;
-  const isMissingArabic =
-    languages.showArabic && (form.arabic?.trim().length ?? 0) < 3;
+  const isMissingEnglish = languages.showEnglish && form.english.trim().length < 3;
+  const isMissingFrench  = languages.showFrench  && (form.french?.trim().length ?? 0) < 3;
+  const isMissingArabic  = languages.showArabic  && (form.arabic?.trim().length ?? 0) < 3;
 
   const handleSave = () => {
     if (languages.showEnglish && form.english.trim().length < 3) {
@@ -99,8 +165,8 @@ function CategoryRow({
 
     const hasAny =
       (languages.showEnglish && form.english.trim().length >= 3) ||
-      (languages.showFrench && (form.french?.trim().length ?? 0) >= 3) ||
-      (languages.showArabic && (form.arabic?.trim().length ?? 0) >= 3);
+      (languages.showFrench  && (form.french?.trim().length ?? 0) >= 3) ||
+      (languages.showArabic  && (form.arabic?.trim().length ?? 0) >= 3);
 
     if (!hasAny) {
       setError("At least one translation is required.");
@@ -112,6 +178,7 @@ function CategoryRow({
     setIconFile(null);
     setIsEditing(false);
   };
+
   const handleCancel = () => {
     setForm(category);
     setIconFile(null);
@@ -159,11 +226,7 @@ function CategoryRow({
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
           {form.icon ? (
-            <img
-              src={form.icon}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            <img src={form.icon} alt="" className="w-full h-full object-cover" />
           ) : isEditing ? (
             <Upload size={16} className="text-text-400" />
           ) : (
@@ -187,20 +250,16 @@ function CategoryRow({
           <div className="flex flex-col gap-1">
             <input
               value={form.english}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, english: e.target.value }))
-              }
+              onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
-            {error && (
-              <span className="text-xs text-error text-center">{error}</span>
-            )}
+            {error && <span className="text-xs text-error text-center">{error}</span>}
           </div>
+        ) : category.english ? (
+          <NamePopover label={category.english} dir="ltr" isFirst={isFirst} />
         ) : (
-          <span
-            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${!category.english ? `text-warning ${missingClass}` : "text-text-600"}`}
-          >
-            {category.english || "Missing"}
+          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+            Missing
           </span>
         )}
       </TableCell>
@@ -213,11 +272,11 @@ function CategoryRow({
             onChange={(e) => setForm((p) => ({ ...p, french: e.target.value }))}
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
+        ) : category.french ? (
+          <NamePopover label={category.french} dir="ltr" isFirst={isFirst} />
         ) : (
-          <span
-            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${!category.french ? `text-warning ${missingClass}` : "text-text-600"}`}
-          >
-            {category.french || "Missing"}
+          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+            Missing
           </span>
         )}
       </TableCell>
@@ -231,12 +290,11 @@ function CategoryRow({
             dir="rtl"
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
+        ) : category.arabic ? (
+          <NamePopover label={category.arabic} dir="rtl" isFirst={isFirst} />
         ) : (
-          <span
-            className={`text-sm truncate block max-w-35 mx-auto px-2 py-1 rounded-lg ${!category.arabic ? `text-warning ${missingClass}` : "text-text-600"}`}
-            dir={languages.showArabic ? "rtl" : undefined}
-          >
-            {category.arabic || "Missing"}
+          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+            Missing
           </span>
         )}
       </TableCell>
@@ -244,9 +302,7 @@ function CategoryRow({
       {/* Status */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge
-            variant={category.status === "visible" ? "visible" : "hidden"}
-          />
+          <Badge variant={category.status === "visible" ? "visible" : "hidden"} />
         </div>
       </TableCell>
 
@@ -274,11 +330,7 @@ function CategoryRow({
               onClick={handleToggleStatus}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
             >
-              {category.status === "visible" ? (
-                <Eye size={17} />
-              ) : (
-                <EyeOff size={17} />
-              )}
+              {category.status === "visible" ? <Eye size={17} /> : <EyeOff size={17} />}
             </button>
             <button
               onClick={() => setIsEditing(true)}

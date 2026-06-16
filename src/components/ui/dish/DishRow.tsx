@@ -79,7 +79,7 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
     <div ref={ref} className="relative flex justify-center">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-[120px]"
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-30"
       >
         <span className="truncate">{label}</span>
         <ChevronDown
@@ -93,7 +93,7 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
           className={`
             absolute z-50 left-1/2 -translate-x-1/2
             ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
-            w-max max-w-[200px] rounded-xl border border-beige-300
+            w-max max-w-50 rounded-xl border border-beige-300
             bg-card-bg shadow-lg px-3 py-2
           `}
         >
@@ -102,11 +102,11 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
               absolute left-1/2 -translate-x-1/2
               w-3 h-3 rotate-45 bg-card-bg border-beige-300
               ${isFirst
-                ? "-top-[6px] border-l border-t"
-                : "-bottom-[6px] border-r border-b"}
+                ? "-top-1.5 border-l border-t"
+                : "-bottom-1.5 border-r border-b"}
             `}
           />
-          <p dir={dir} className="text-sm text-text-700 whitespace-normal break-words">
+          <p dir={dir} className="text-sm text-text-700 whitespace-normal wrap-break-words">
             {label}
           </p>
         </div>
@@ -168,7 +168,7 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
     <div ref={ref} className="relative flex justify-center">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-[140px]"
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-35"
         title="Click to see descriptions"
       >
         <span className="truncate">
@@ -195,8 +195,8 @@ function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProp
               absolute left-1/2 -translate-x-1/2
               w-3 h-3 rotate-45 bg-card-bg border-beige-300
               ${isFirst
-                ? "-top-[6px] border-l border-t"
-                : "-bottom-[6px] border-r border-b"}
+                ? "-top-1.5 border-l border-t"
+                : "-bottom-1.5 border-r border-b"}
             `}
           />
           {entries.map((entry) => (

@@ -11,19 +11,18 @@ import {
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
-import type { UniqueIdentifier } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../../context/AuthContext";
+import useToast from "../../../hooks/useToast";
+import { getErrorMessage } from "../../../api/errors";
+import * as categoryService from "../../../services/category.service";
+import type { CategoriesPageData } from "../../../types/ui.ts"
+import ToastContainer from "../../../components/ui/ToastContainer";
+import type { UpdateCategoryRequest } from "../../../types/api";
+import type { CategoryUI as Category } from "../../../types/ui.ts";
 
-export interface Category {
-  id: UniqueIdentifier;
-  order: number;
-  icon: string | null;
-  english: string;
-  french?: string;
-  arabic?: string;
-  status: "visible" | "hidden";
-}
 
 export interface LanguageConfig {
   showEnglish: boolean;
@@ -33,8 +32,6 @@ export interface LanguageConfig {
 
 interface CategoryRowProps {
   category: Category;
-  onSave: (updated: Category, iconFile: File | null) => void;
-  onDelete: (id: UniqueIdentifier) => void;
   isLast?: boolean;
   isFirst?: boolean;
   languages: LanguageConfig;
@@ -108,17 +105,17 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
 
 function CategoryRow({
   category,
-  onSave,
-  onDelete,
   isLast,
   isFirst,
   languages,
 }: CategoryRowProps) {
+  const { menuId, restaurantId } = useAuth();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Category>(category);
-  const [iconFile, setIconFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const { toasts, showToast, removeToast } = useToast();
 
   const {
     attributes,
@@ -138,19 +135,18 @@ function CategoryRow({
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setIconFile(file);
     const reader = new FileReader();
     reader.onload = () =>
       setForm((prev) => ({ ...prev, icon: reader.result as string }));
     reader.readAsDataURL(file);
   };
 
-  const isMissingEnglish = languages.showEnglish && form.english.trim().length < 3;
+  const isMissingEnglish = languages.showEnglish && (form.english?.trim().length ?? 0) < 3;
   const isMissingFrench  = languages.showFrench  && (form.french?.trim().length ?? 0) < 3;
   const isMissingArabic  = languages.showArabic  && (form.arabic?.trim().length ?? 0) < 3;
 
   const handleSave = () => {
-    if (languages.showEnglish && form.english.trim().length < 3) {
+    if (languages.showEnglish && (form.english?.trim().length ?? 0) < 3) {
       setError("English name must be at least 3 characters.");
       return;
     }
@@ -164,7 +160,7 @@ function CategoryRow({
     }
 
     const hasAny =
-      (languages.showEnglish && form.english.trim().length >= 3) ||
+      (languages.showEnglish && (form.english?.trim().length ?? 0) >= 3) ||
       (languages.showFrench  && (form.french?.trim().length ?? 0) >= 3) ||
       (languages.showArabic  && (form.arabic?.trim().length ?? 0) >= 3);
 
@@ -174,25 +170,110 @@ function CategoryRow({
     }
 
     setError("");
-    onSave(form, iconFile);
-    setIconFile(null);
+    updateMutation.mutate({
+          data: {
+            categoryId: String(category.id),
+            visible: category.status === "visible",
+            image: form.icon ?? undefined,
+            arabicName: form.arabic,
+            frenchName: form.french,
+            englishName: form.english
+          }
+        });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setForm(category);
-    setIconFile(null);
     setError("");
     setIsEditing(false);
   };
 
   const handleToggleStatus = () => {
-    const updated = {
-      ...category,
-      status: category.status === "visible" ? "hidden" : "visible",
-    } as Category;
-    onSave(updated, null);
+    toggleMutation.mutate(String(category.id));
   };
+
+  const categoriesKey = ["categories", restaurantId, menuId];
+  
+const deleteMutation = useMutation({
+  mutationFn: (id: string) => categoryService.deleteCategory(id),
+
+  onMutate: async (id: string) => {
+    await queryClient.cancelQueries({ queryKey: categoriesKey });
+    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        categories: old.categories.filter((cat) => cat.id !== id),
+      };
+    });
+
+    return { previous };
+  },
+
+  onError: (err, _variables, context) => {
+    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+    showToast("error", "Delete Failed", getErrorMessage(err));
+  },
+
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: categoriesKey });
+  },
+});
+
+const updateMutation = useMutation({
+    mutationFn: ({
+      data
+    }: {
+      data: UpdateCategoryRequest;
+    }) => categoryService.updateCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      showToast(
+        "success",
+        "Category Updated",
+        "Category has been updated successfully.",
+      );
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+  });
+
+
+  const handleDelete = () => {
+    deleteMutation.mutate(String(category.id));
+  };
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
+  
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: categoriesKey });
+      const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+  
+      queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          categories: old.categories.map((cat) =>
+            cat.id === id ? { ...cat, isVisible: !cat.isVisible } : cat
+          ),
+        };
+      });
+  
+      return { previous };
+    },
+  
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+      showToast("error", "Save Failed", getErrorMessage(err));
+    },
+  
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+    },
+  });
 
   const missingClass = "border-warning bg-warning/10";
   const inputClass =
@@ -208,6 +289,8 @@ function CategoryRow({
         ${isDragging ? "opacity-40" : ""}
       `}
     >
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+
       {/* Order */}
       <TableCell>
         <div
@@ -312,13 +395,13 @@ function CategoryRow({
           <div className="flex items-center justify-center gap-2">
             <button
               onClick={handleCancel}
-              className="h-9 px-3 rounded-lg border border-beige-400 text-sm text-text-600 hover:bg-beige-200 transition-colors"
+              className="h-9 px-3 rounded-lg border border-beige-400 text-sm text-text-600 hover:bg-beige-200 transition-colors hover:cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="h-9 px-4 flex items-center gap-2 rounded-lg bg-primary-700 text-cream-500 text-sm font-medium hover:bg-primary-700/90 transition-colors"
+              className="h-9 px-4 flex items-center gap-2 rounded-lg bg-primary-700 text-cream-500 text-sm font-medium hover:bg-primary-700/90 transition-colors hover:cursor-pointer"
             >
               <Save size={15} />
               Save
@@ -339,7 +422,7 @@ function CategoryRow({
               <Pencil size={17} />
             </button>
             <button
-              onClick={() => onDelete(category.id)}
+              onClick={handleDelete}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-error hover:bg-error-bg transition-colors hover:cursor-pointer"
             >
               <Trash2 size={17} />

@@ -10,8 +10,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useToast from "../../../hooks/useToast";
 import { getErrorMessage } from "../../../api/errors";
 import { createDish } from "../../../services/dish.service";
-import type { CreateDishRequest } from "../../../services/dish.service";
+import type { CreateDishRequest } from "../../../types";
 import { useAuth } from "../../../context/AuthContext";
+import ToastContainer from "../../../components/ui/ToastContainer";
 
 interface Category {
   id: UniqueIdentifier;
@@ -86,7 +87,7 @@ function AddDishModal({
     onClose();
   };
 
-  const { showToast } = useToast();
+  const { toasts, showToast, removeToast } = useToast();
   const queryClient = useQueryClient();
   const { restaurantId } = useAuth();
 
@@ -115,7 +116,9 @@ function AddDishModal({
   const isActiveArabic = activeDescTab === "ar";
 
   return (
-    <Modal
+    <>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      <Modal
       title={"Add New Dish"}
       isOpen={isOpen}
       isPending={createMutation.isPending}
@@ -391,6 +394,7 @@ function AddDishModal({
       </div>
 
     </Modal>
+    </>
   );
 }
 

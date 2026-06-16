@@ -1,4 +1,6 @@
 import type { UniqueIdentifier } from "@dnd-kit/core";
+import type { CategoryResponse } from "../types/api";
+import type { Language } from "../types/enums";
 
 export type VisibilityStatus = "visible" | "hidden";
 export type AvailabilityStatus = "available" | "unavailable";
@@ -13,11 +15,16 @@ export interface CategoryUI {
   id: UniqueIdentifier;
   order: number;
   icon: string | null;
-  english: string;
+  english?: string;
   french?: string;
   arabic?: string;
   status: VisibilityStatus;
 }
+
+export type CategoriesPageData = {
+  categories: CategoryResponse[];
+  supportedLanguages: Language[];
+};
 
 export interface DishUI {
   id: UniqueIdentifier;

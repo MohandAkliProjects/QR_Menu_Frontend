@@ -147,44 +147,6 @@ function DishesPage() {
     [dishes, languages],
   );
 
-
-
-const deleteMutation = useMutation({
-  mutationFn: (id: string) => dishService.deleteDish(id),
-
-  onMutate: async (id) => {
-    await queryClient.cancelQueries({ queryKey: dishesKey });
-    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        menus: old.menus.map((menu) => ({
-          ...menu,
-          categories: menu.categories.map((cat) => ({
-            ...cat,
-            dishes: cat.dishes.filter((dish) => dish.id !== id),
-          })),
-        })),
-      };
-    });
-
-    return { previous };
-  },
-
-  onSuccess: () => {
-    showToast("success", "Dish Deleted", "Dish has been deleted successfully.");
-  },
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-    showToast("error", "Delete Failed", getErrorMessage(err));
-  },
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: dishesKey });
-  },
-});
-
 const reorderMutation = useMutation({
   mutationFn: ({ categoryId, orderedIds }: { categoryId: string; orderedIds: string[] }) =>
     dishService.reorderDishes(categoryId, { orderedDishesIds: orderedIds }),
@@ -226,10 +188,6 @@ const reorderMutation = useMutation({
   },
 });
 
-
-  const handleDelete = (id: UniqueIdentifier) => {
-    deleteMutation.mutate(String(id));
-  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -394,7 +352,6 @@ const reorderMutation = useMutation({
                     <DishRow
                       key={dish.id}
                       dish={dish}
-                      onDelete={handleDelete}
                       isLast={index === paginatedDishes.length - 1}
                       isFirst={index === 0}
                       languages={languages}

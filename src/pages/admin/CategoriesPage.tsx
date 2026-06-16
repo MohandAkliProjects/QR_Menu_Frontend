@@ -14,7 +14,6 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import type { UniqueIdentifier } from "@dnd-kit/core";
 
 import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
@@ -26,7 +25,6 @@ import Pagination from "../../components/ui/Pagination";
 import Table from "../../components/ui/table/Table";
 import type { Column } from "../../components/ui/table/Table";
 import CategoryRow, {
-  type Category,
   type LanguageConfig,
 } from "../../components/ui/category/CategoryRow";
 import AddCategoryModal from "../../components/ui/category/AddCategoryModal";
@@ -34,20 +32,16 @@ import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
 import {
-  categoryResponseToUI,
-  categoryUIToTranslations,
+  categoryResponseToUI
 } from "../../lib/mappers";
 import * as categoryService from "../../services/category.service";
 import type { Language } from "../../types/enums";
-
+import type { CategoryUI as Category } from "../../types/ui.ts";
 import type { CategoryResponse } from "../../types/api";
+import type { CategoriesPageData } from "../../types/ui.ts"
 
 const ITEMS_PER_PAGE = 1000;
 
-type CategoriesPageData = {
-  categories: CategoryResponse[];
-  supportedLanguages: Language[];
-};
 
 function CategoriesPage() {
   const { menuId, restaurantId } = useAuth();
@@ -55,7 +49,6 @@ function CategoriesPage() {
   const { toasts, showToast, removeToast } = useToast();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Category | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
 
@@ -80,119 +73,6 @@ function CategoriesPage() {
     showArabic: supportedLanguages.includes("AR" as Language),
   };
 
-  //this part is for the mutation
-
-  const createMutation = useMutation({
-    mutationFn: ({
-      data,
-      iconFile,
-    }: {
-      data: Parameters<typeof categoryService.createCategory>[1];
-      iconFile: File | null;
-    }) => categoryService.createCategory(menuId!, data, iconFile),
-    onSuccess: () => {
-      setCurrentPage(1);
-      //add for now then ask moh if he want to change them 
-  setModalOpen(false);
-  setEditTarget(null);
-      showToast(
-        "success",
-        "Category Added",
-        "New category has been added successfully.",
-      );
-    },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
-    onSettled() {
-      queryClient.invalidateQueries({queryKey: categoriesKey});
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-      iconFile,
-    }: {
-      id: string;
-      data: Parameters<typeof categoryService.updateCategory>[1];
-      iconFile: File | null;
-    }) => categoryService.updateCategory(id, data, iconFile),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-      showToast(
-        "success",
-        "Category Updated",
-        "Category has been updated successfully.",
-      );
-    },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
-  });
-
-const toggleMutation = useMutation({
-  mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
-
-  onMutate: async (id: string) => {
-    await queryClient.cancelQueries({ queryKey: categoriesKey });
-    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
-
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        categories: old.categories.map((cat) =>
-          cat.id === id ? { ...cat, isVisible: !cat.isVisible } : cat
-        ),
-      };
-    });
-
-    return { previous };
-  },
-
-  onSuccess: () => {
-    //showToast("success", "Category Saved", "Your changes have been saved.");
-  },
-
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
-    showToast("error", "Save Failed", getErrorMessage(err));
-  },
-
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: categoriesKey });
-  },
-});
-
-const deleteMutation = useMutation({
-  mutationFn: (id: string) => categoryService.deleteCategory(id),
-
-  onMutate: async (id: string) => {
-    await queryClient.cancelQueries({ queryKey: categoriesKey });
-    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
-
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        categories: old.categories.filter((cat) => cat.id !== id),
-      };
-    });
-
-    return { previous };
-  },
-
-  onSuccess: () => {
-    showToast("success", "Category Deleted", "Category has been removed.");
-  },
-
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
-    showToast("error", "Delete Failed", getErrorMessage(err));
-  },
-
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: categoriesKey });
-  },
-});
 
 const reorderMutation = useMutation({
   mutationFn: (orderedIds: string[]) =>
@@ -212,10 +92,6 @@ const reorderMutation = useMutation({
     });
 
     return { previous };
-  },
-
-  onSuccess: () => {
-    //showToast("success", "Order Updated", "Category order has been saved.");
   },
 
   onError: (err, _variables, context) => {
@@ -241,62 +117,6 @@ const reorderMutation = useMutation({
     }));
 
     reorderMutation.mutate(reordered.map((c) => String(c.id)));
-  };
-
-  const handleConfirm = (
-    formData: Omit<Category, "id" | "order"> & { iconFile: File | null },
-  ) => {
-    if (!menuId) return;
-
-    if (editTarget) {
-      updateMutation.mutate({
-        id: String(editTarget.id),
-        data: {
-          translations: categoryUIToTranslations(formData),
-          isVisible: formData.status === "visible",
-        },
-        iconFile: formData.iconFile,
-      });
-    } else {
-      createMutation.mutate({
-        data: {
-          translations: categoryUIToTranslations(formData),
-          isVisible: formData.status === "visible",
-        },
-        iconFile: formData.iconFile,
-      });
-    }
-    setEditTarget(null);
-  };
-
-  const handleEdit = (category: Category, iconFile: File | null) => {
-    const previous = categories.find((c) => c.id === category.id);
-    if (!previous) return;
-
-    const onlyStatusChanged =
-      previous.english === category.english &&
-      previous.french === category.french &&
-      previous.arabic === category.arabic &&
-      previous.icon === category.icon &&
-      previous.status !== category.status &&
-      !iconFile;
-
-    if (onlyStatusChanged) {
-      toggleMutation.mutate(String(category.id));
-    } else {
-      updateMutation.mutate({
-        id: String(category.id),
-        data: {
-          translations: categoryUIToTranslations(category),
-          isVisible: category.status === "visible",
-        },
-        iconFile,
-      });
-    }
-  };
-
-  const handleDelete = (id: UniqueIdentifier) => {
-    deleteMutation.mutate(String(id));
   };
 
   const categoriesWithMissing = categories.filter((c) => {
@@ -360,7 +180,6 @@ const reorderMutation = useMutation({
           label="Add Category"
           icon={Plus}
           onClick={() => {
-            setEditTarget(null);
             setModalOpen(true);
           }}
           disabled={isLoading || isError || !!noMenuError}
@@ -406,9 +225,7 @@ const reorderMutation = useMutation({
                   {paginatedCategories.map((category, index) => (
                     <CategoryRow
                       key={category.id}
-                      category={category}
-                      onSave={handleEdit}
-                      onDelete={handleDelete}
+                      category={category}    
                       isLast={index === paginatedCategories.length - 1}
                       languages={languages}
                     />
@@ -427,16 +244,14 @@ const reorderMutation = useMutation({
       )}
 
      <AddCategoryModal
-  key={editTarget?.id ?? "new"}
   isOpen={modalOpen}
   onClose={() => {
     setModalOpen(false);
-    setEditTarget(null);
   }}
-  onConfirm={handleConfirm}
-  editData={editTarget}
+  onSuccess={() => {
+    setCurrentPage(1);
+  }}
   supportedLanguages={supportedLanguages}
-  isPending={createMutation.isPending}
 />
     </div>
   );

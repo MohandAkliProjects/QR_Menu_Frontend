@@ -1,4 +1,3 @@
-import type { BaseDishRequest } from "../services/dish.service";
 import type {
   CategoryResponse,
   CategoryWithDishesResponse,
@@ -8,6 +7,8 @@ import type {
   RestaurantResponse,
   RestaurantUpdateRequest,
   TranslationsMap,
+  BaseDishRequest,
+  BaseCategoryRequest
 } from "../types/api";
 import type { Devise, Language } from "../types/enums";
 import type { CategoryUI, DishUI } from "../types/ui";
@@ -85,19 +86,19 @@ export function categoryWithDishesToUI(
 }
 
 
-export function categoryUIToTranslations(
-  ui: Pick<CategoryUI, "english" | "french" | "arabic">
+export function categoryRequestToTranslations(
+  request: BaseCategoryRequest
 ): TranslationsMap<string> {
   const translations: TranslationsMap<string> = {};
 
-  if (ui.english?.trim()) {
-    translations["EN" as Language] = ui.english.trim();
+  if (request.englishName?.trim()) {
+    translations["EN" as Language] = request.englishName.trim();
   }
-  if (ui.french?.trim()) {
-    translations["FR" as Language] = ui.french.trim();
+  if (request.frenchName?.trim()) {
+    translations["FR" as Language] = request.frenchName.trim();
   }
-  if (ui.arabic?.trim()) {
-    translations["AR" as Language] = ui.arabic.trim();
+  if (request.arabicName?.trim()) {
+    translations["AR" as Language] = request.arabicName.trim();
   }
 
   return translations;

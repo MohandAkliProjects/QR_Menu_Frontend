@@ -5,58 +5,39 @@ import Input from "../Input";
 import CategoryImageUpload from "./CategoryImageUpload";
 import Notification from "../../shared/Notification";
 import { Trash2, Check } from "lucide-react";
-import type { Category } from "./CategoryRow";
 import type { Language } from "../../../types/enums";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useToast from "../../../hooks/useToast";
+import { useAuth } from "../../../context/AuthContext";
+import { getErrorMessage } from "../../../api/errors";
+import * as categoryService from "../../../services/category.service";
+import type { CreateCategoryRequest } from "../../../types";
+import ToastContainer from "../../../components/ui/ToastContainer";
 
 interface AddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (
-    data: Omit<Category, "id" | "order"> & {
-      iconFile: File | null;
-    }
-  ) => void;
-  editData?: Category | null;
+  onSuccess: () => void;
   supportedLanguages: Language[];
-  isPending: boolean;
 }
 
-type FormState = Omit<Category, "id" | "order"> & {
-  iconFile: File | null;
-};
-
-const EMPTY: FormState = {
-  english: "",
-  french: "",
-  arabic: "",
-  icon: null,
-  iconFile: null,
-  status: "visible",
+const EMPTY: CreateCategoryRequest = {
+  englishName: "",
+  frenchName: "",
+  arabicName: "",
+  image: undefined,
+  visible: true,
+  menuId: ""
 };
 
 function AddCategoryModal({
   isOpen,
   onClose,
-  onConfirm,
-  editData,
-  supportedLanguages,
-  isPending,
+  onSuccess,
+  supportedLanguages
 }: AddCategoryModalProps) {
-  const [form, setForm] = useState<FormState>(
-    editData
-      ? {
-          english: editData.english,
-          french: editData.french ?? "",
-          arabic: editData.arabic ?? "",
-          icon: editData.icon,
-          iconFile: null,
-          status: editData.status,
-        }
-      : EMPTY
-  );
-
-  const [showValidationError, setShowValidationError] =
-    useState(false);
+  const [form, setForm] = useState<CreateCategoryRequest>(EMPTY);
+  const [showValidationError, setShowValidationError] = useState(false);
 
   const showEnglish =
     supportedLanguages.includes("EN" as Language);
@@ -69,17 +50,22 @@ function AddCategoryModal({
 
   const missingLanguages: string[] = [];
 
-  if (showEnglish && !form.english.trim()) {
-    missingLanguages.push("English");
+  if (showEnglish  && !form.englishName?.trim()) {
+      missingLanguages.push("English");
   }
 
-  if (showFrench && !form.french?.trim()) {
-    missingLanguages.push("French");
+  if (showFrench && !form.frenchName?.trim()) {
+      missingLanguages.push("French");
   }
 
-  if (showArabic && !form.arabic?.trim()) {
-    missingLanguages.push("Arabic");
+  if (showArabic && !form.arabicName?.trim()) {
+      missingLanguages.push("Arabic");
   }
+
+const { menuId, restaurantId } = useAuth();
+const { toasts, showToast, removeToast } = useToast();
+const queryClient = useQueryClient();
+const categoriesKey = ["categories", restaurantId, menuId];
 
 const handleConfirm = () => {
   if (missingLanguages.length > 0) {
@@ -87,19 +73,40 @@ const handleConfirm = () => {
     return;
   }
 
-  onConfirm(form);
+  if (!menuId) return;
+  createMutation.mutate({ data: { ...form, menuId: menuId } });
 };
 
+const createMutation = useMutation({
+    mutationFn: ({
+      data
+    }: {
+      data: CreateCategoryRequest;
+    }) => categoryService.createCategory(data),
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+      setForm(EMPTY);
+      showToast(
+        "success",
+        "Category Added",
+        "New category has been added successfully.",
+      );
+    },
+    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+    onSettled() {
+      queryClient.invalidateQueries({queryKey: categoriesKey});
+    },
+  });
+
   return (
-    <Modal
-      title={
-        editData
-          ? "Edit Category"
-          : "Add New Category"
-      }
+    <>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      <Modal
+      title={"Add New Category"}
       isOpen={isOpen}
       onClose={onClose}
-      isPending={isPending}
+      isPending={createMutation.isPending}
       footer={
         <div className="flex gap-4 w-full">
           <Button
@@ -121,8 +128,6 @@ const handleConfirm = () => {
     >
 
       <div>
-
-
         
       </div>
       {missingLanguages.length > 0 && (
@@ -142,12 +147,11 @@ const handleConfirm = () => {
       <div className="flex justify-center w-full">
         <div className="w-full max-w-105">
           <CategoryImageUpload
-            preview={form.icon}
-            onChange={(file, preview) =>
+            preview={form.image ?? null}
+            onChange={(_, preview) =>
               setForm((prev) => ({
                 ...prev,
-                icon: preview,
-                iconFile: file,
+                image: preview
               }))
             }
           />
@@ -162,14 +166,14 @@ const handleConfirm = () => {
             </label>
 
             <Input
-              value={form.english}
+              value={form.englishName}
               placeholder="name"
               onChange={(e) => {
                 setShowValidationError(false);
 
                 setForm((prev) => ({
                   ...prev,
-                  english: e.target.value,
+                  englishName: e.target.value,
                 }));
               }}
             />
@@ -183,14 +187,14 @@ const handleConfirm = () => {
             </label>
 
             <Input
-              value={form.french ?? ""}
+              value={form.frenchName ?? ""}
               placeholder="name"
               onChange={(e) => {
                 setShowValidationError(false);
 
                 setForm((prev) => ({
                   ...prev,
-                  french: e.target.value,
+                  frenchName: e.target.value,
                 }));
               }}
             />
@@ -204,14 +208,14 @@ const handleConfirm = () => {
             </label>
 
             <Input
-              value={form.arabic ?? ""}
+              value={form.arabicName ?? ""}
               placeholder="name"
               onChange={(e) => {
                 setShowValidationError(false);
 
                 setForm((prev) => ({
                   ...prev,
-                  arabic: e.target.value,
+                  arabicName: e.target.value,
                 }));
               }}
             />
@@ -219,6 +223,7 @@ const handleConfirm = () => {
         )}
       </div>
     </Modal>
+    </>
   );
 }
 

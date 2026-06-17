@@ -1,35 +1,12 @@
 import { apiRequest } from "../api/client";
 import type { DishResponse, DishTranslation, FullMenuResponse } from "../types";
-import type { DishUI } from "../types/ui";
 import { dishRequestToTranslations } from "../lib/mappers";
 import { dataUrlToFile, isDataUrl } from "../lib/files";
+import type {
+  CreateDishRequest,
+  UpdateDishRequest,
+} from "../types/api";
 
-export type DishFormPayload = Partial<DishUI> & {
-  imageFile?: File;
-  wantToDeleteImage?: boolean;
-};
-
-export type BaseDishRequest = {
-  englishName?: string,
-  frenchName?: string,
-  arabicName?: string,
-  englishDescription?: string,
-  frenchDescription?: string,
-  arabicDescription?: string,
-  available: boolean,
-  visible: boolean
-  image?: string,
-  price: number,
-}
-
-export type CreateDishRequest = BaseDishRequest & {
-  categoryId: string,
-}
-
-export type UpdateDishRequest = BaseDishRequest & {
-  dishId: string,
-  wantToDeleteImage?: boolean;
-}
 
 export interface AllDishesResponse {
   menus: FullMenuResponse[];

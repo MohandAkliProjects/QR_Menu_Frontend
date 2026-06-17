@@ -183,34 +183,8 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface CreateCategoryRequest {
-  translations: TranslationsMap<string>;
-  isVisible?: boolean;
-}
-
-export interface UpdateCategoryRequest {
-  translations?: TranslationsMap<string>;
-  isVisible: boolean;
-  wantToDeleteIcon?: boolean;
-}
-
 export interface ReorderCategoriesRequest {
   orderedCategoriesIds: string[];
-}
-
-export interface CreateDishRequest {
-  translations: TranslationsMap<DishTranslation>;
-  price: number;
-  isAvailable?: boolean;
-  isVisible?: boolean;
-}
-
-export interface UpdateDishRequest {
-  translations?: TranslationsMap<DishTranslation>;
-  price: number;
-  isAvailable: boolean;
-  isVisible: boolean;
-  wantToDeleteImage?: boolean;
 }
 
 export interface ReorderDishesRequest {
@@ -240,4 +214,43 @@ export interface RestaurantUpdateRequest {
   googleMapsLink?: string;
   deleteLogo?: boolean;
   deletePublicImage?: boolean;
+}
+
+export interface BaseCategoryRequest {
+  englishName?: string,
+  frenchName?: string,
+  arabicName?: string,
+  visible: boolean,
+  image?: string
+}
+
+export interface CreateCategoryRequest extends BaseCategoryRequest {
+  menuId: string,
+}
+
+export interface UpdateCategoryRequest extends BaseCategoryRequest {
+  categoryId: string,
+  wantToDeleteImage?: boolean;
+}
+
+export interface BaseDishRequest {
+  englishName?: string,
+  frenchName?: string,
+  arabicName?: string,
+  englishDescription?: string,
+  frenchDescription?: string,
+  arabicDescription?: string,
+  available: boolean,
+  visible: boolean
+  image?: string,
+  price: number,
+}
+
+export interface CreateDishRequest extends BaseDishRequest {
+  categoryId: string,
+}
+
+export interface UpdateDishRequest extends BaseDishRequest {
+  dishId: string,
+  wantToDeleteImage?: boolean;
 }

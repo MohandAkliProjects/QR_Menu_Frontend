@@ -14,7 +14,6 @@ import {
 import { CircleCheck, CircleX } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
-import type { UniqueIdentifier } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Dish } from "../../../types/dish";
@@ -23,15 +22,15 @@ import useToast from "../../../hooks/useToast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getErrorMessage } from "../../../api/errors";
 import * as dishService from "../../../services/dish.service";
-import type {
-  AllDishesResponse,
-  UpdateDishRequest,
-} from "../../../services/dish.service";
+import type { AllDishesResponse } from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
+import ToastContainer from "../../../components/ui/ToastContainer";
+import type {
+  UpdateDishRequest,
+} from "../../../types/api";
 
 interface DishRowProps {
   dish: Dish;
-  onDelete: (id: UniqueIdentifier) => void;
   isLast?: boolean;
   isFirst?: boolean;
   languages: LanguageConfig;
@@ -321,7 +320,8 @@ function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
   );
 }
 
-function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
+
+function DishRow({ dish, isLast, isFirst, languages }: DishRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<UpdateDishRequest>(
     DishUItoUpdateDishRequest(dish),
@@ -344,10 +344,50 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const { showToast } = useToast();
+  const { toasts, showToast, removeToast } = useToast();
   const { restaurantId } = useAuth();
   const queryClient = useQueryClient();
   const dishesKey = ["dishes", restaurantId];
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dishService.deleteDish(id),
+  
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["dishes", restaurantId] });
+      const previous = queryClient.getQueryData<AllDishesResponse>(["dishes", restaurantId]);
+  
+      queryClient.setQueryData<AllDishesResponse>(["dishes", restaurantId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          menus: old.menus.map((menu) => ({
+            ...menu,
+            categories: menu.categories.map((cat) => ({
+              ...cat,
+              dishes: cat.dishes.filter((dish) => dish.id !== id),
+            })),
+          })),
+        };
+      });
+  
+      return { previous };
+    },
+  
+    onSuccess: () => {
+      showToast("success", "Dish Deleted", "Dish has been deleted successfully.");
+    },
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<AllDishesResponse>(["dishes", restaurantId], context?.previous);
+      showToast("error", "Delete Failed", getErrorMessage(err));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["dishes", restaurantId] });
+    },
+  });
+
+  const handleDelete = () => {
+      deleteMutation.mutate(String(dish.id));
+    };
 
   const updateMutation = useMutation({
     mutationFn: ({ payload }: { payload: UpdateDishRequest }) =>
@@ -480,6 +520,7 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
         ${isDragging ? "opacity-40" : ""}
       `}
     >
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       {/* Order */}
       <TableCell>
         <div
@@ -667,13 +708,13 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
           <div className="flex items-center justify-center gap-2">
             <button
               onClick={handleCancel}
-              className="h-9 px-3 rounded-lg border border-beige-400 text-sm text-text-600 hover:bg-beige-200 transition-colors"
+              className="h-9 px-3 rounded-lg border border-beige-400 text-sm text-text-600 hover:bg-beige-200 transition-colors hover:cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="h-9 px-4 flex items-center gap-2 rounded-lg bg-primary-700 text-cream-500 text-sm font-medium hover:bg-primary-700/90 transition-colors"
+              className="h-9 px-4 flex items-center gap-2 rounded-lg bg-primary-700 text-cream-500 text-sm font-medium hover:bg-primary-700/90 transition-colors hover:cursor-pointer"
             >
               <Save size={15} />
               Save
@@ -715,7 +756,7 @@ function DishRow({ dish, onDelete, isLast, isFirst, languages }: DishRowProps) {
               <Pencil size={17} />
             </button>
             <button
-              onClick={() => onDelete(dish.id)}
+              onClick={handleDelete}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-error/10 hover:text-error transition-colors hover:cursor-pointer"
               title="Delete dish"
             >

@@ -4,38 +4,66 @@ import type {
   CreateCategoryRequest,
   ReorderCategoriesRequest,
   UpdateCategoryRequest,
-  AllCategoriesResponse,
+  AllCategoriesResponse
 } from "../types/api";
 import type { Language } from "../types/enums";
+import { categoryRequestToTranslations } from "../lib/mappers";
+import { dataUrlToFile, isDataUrl } from "../lib/files";
 
-function appendCategoryFormData(
-  formData: FormData,
-  data: {
-    translations?: Record<string, string>;
-    isVisible?: boolean;
-  },
-  iconFile?: File | null,
-  wantToDeleteIcon?: boolean
-) {
-  if (data.translations) {
-    for (const [lang, value] of Object.entries(data.translations)) {
-      if (typeof value === "string" && value.trim()) {
-        formData.append(`translations[${lang.toLowerCase()}]`, value.trim());
-      }
+
+
+function appendCreateCategoryFormData(
+  request: CreateCategoryRequest
+): FormData {
+  const formData = new FormData()
+
+  const translations = categoryRequestToTranslations(request);
+
+  for (const [lang, value] of Object.entries(translations) as [
+      string,
+      string,
+    ][]) {
+      formData.append(`translations[${lang.toLowerCase()}]`, value);
     }
+
+  if (request.visible !== undefined) {
+    formData.append("isVisible", String(request.visible));
   }
 
-  if (data.isVisible !== undefined) {
-    formData.append("isVisible", String(data.isVisible));
+  if (request.image && isDataUrl(request.image)) {
+      formData.append("icon", dataUrlToFile(request.image, "category-image.png"));
+    }
+
+  return formData;
+}
+
+function appendUpdateCategoryFormData(
+  request: UpdateCategoryRequest
+): FormData {
+  const formData = new FormData()
+
+  const translations = categoryRequestToTranslations(request);
+
+  for (const [lang, value] of Object.entries(translations) as [
+      string,
+      string,
+    ][]) {
+      formData.append(`translations[${lang.toLowerCase()}]`, value);
+    }
+
+  if (request.visible !== undefined) {
+    formData.append("isVisible", String(request.visible));
   }
 
-  if (iconFile) {
-    formData.append("icon", iconFile);
+  if (request.wantToDeleteImage !== undefined) {
+    formData.append("wantToDeleteIcon", String(request.wantToDeleteImage));
   }
 
-  if (wantToDeleteIcon) {
-    formData.append("wantToDeleteIcon", "true");
-  }
+  if (request.image && isDataUrl(request.image)) {
+      formData.append("icon", dataUrlToFile(request.image, "category-image.png"));
+    }
+
+  return formData;
 }
 
 
@@ -66,14 +94,12 @@ export async function loadCategoriesPageData(
 }
 
 export async function createCategory(
-  menuId: string,
   data: CreateCategoryRequest,
-  iconFile?: File | null
 ): Promise<CategoryResponse> {
-  const formData = new FormData();
-  appendCategoryFormData(formData, data, iconFile);
 
-  return apiRequest<CategoryResponse>(`/api/categories/menu/${menuId}`, {
+  const formData = appendCreateCategoryFormData(data);
+
+  return apiRequest<CategoryResponse>(`/api/categories/menu/${data.menuId}`, {
     method: "POST",
     body: formData,
   });
@@ -81,15 +107,11 @@ export async function createCategory(
 
 
 export async function updateCategory(
-  categoryId: string,
   data: UpdateCategoryRequest,
-  iconFile?: File | null,
-  wantToDeleteIcon?: boolean
 ): Promise<CategoryResponse> {
-  const formData = new FormData();
-  appendCategoryFormData(formData, data, iconFile, wantToDeleteIcon);
+  const formData = appendUpdateCategoryFormData(data);
 
-  return apiRequest<CategoryResponse>(`/api/categories/menu/${categoryId}`, {
+  return apiRequest<CategoryResponse>(`/api/categories/menu/${data.categoryId}`, {
     method: "PUT",
     body: formData,
   });

@@ -32,17 +32,17 @@ function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-full bg-primary-900 flex flex-col px-4 py-6 rounded-r-xl">
-
-    
+    <aside className="w-64 h-full bg-primary-900 flex flex-col px-4 py-6 rounded-r-xl overflow-hidden">
       <div className="flex flex-col items-center shrink-0 py-4">
         <img src={logo} alt="Spectral QR" className="w-48" />
       </div>
 
-   
       <div className="shrink-0 h-px bg-primary-700 my-4" />
 
-      <nav className="flex flex-col gap-2.5 flex-1 pt-2">
+      <nav
+        className="flex flex-col gap-2.5 flex-1 pt-2 overflow-y-auto"
+        style={{ scrollbarWidth: "none" }}
+      >
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}

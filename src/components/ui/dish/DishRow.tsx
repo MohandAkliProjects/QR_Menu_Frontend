@@ -8,7 +8,6 @@ import {
   Heart,
   Eye,
   EyeOff,
- 
   ChevronDown,
 } from "lucide-react";
 import { CircleCheck, CircleX } from "lucide-react";
@@ -25,15 +24,16 @@ import * as dishService from "../../../services/dish.service";
 import type { AllDishesResponse } from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
 import ToastContainer from "../../../components/ui/ToastContainer";
-import type {
-  UpdateDishRequest,
-} from "../../../types/api";
+import type { UpdateDishRequest } from "../../../types/api";
+import type { Devise } from "../../../types";
+import { DEVISE_SYMBOLS } from "../../../lib/constants/devise";
 
 interface DishRowProps {
   dish: Dish;
   isLast?: boolean;
   isFirst?: boolean;
   languages: LanguageConfig;
+  devise: Devise;
 }
 
 function DishUItoUpdateDishRequest(dish: Dish): UpdateDishRequest {
@@ -320,8 +320,7 @@ function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
   );
 }
 
-
-function DishRow({ dish, isLast, isFirst, languages }: DishRowProps) {
+function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<UpdateDishRequest>(
     DishUItoUpdateDishRequest(dish),
@@ -351,33 +350,46 @@ function DishRow({ dish, isLast, isFirst, languages }: DishRowProps) {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dishService.deleteDish(id),
-  
+
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ["dishes", restaurantId] });
-      const previous = queryClient.getQueryData<AllDishesResponse>(["dishes", restaurantId]);
-  
-      queryClient.setQueryData<AllDishesResponse>(["dishes", restaurantId], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          menus: old.menus.map((menu) => ({
-            ...menu,
-            categories: menu.categories.map((cat) => ({
-              ...cat,
-              dishes: cat.dishes.filter((dish) => dish.id !== id),
+      const previous = queryClient.getQueryData<AllDishesResponse>([
+        "dishes",
+        restaurantId,
+      ]);
+
+      queryClient.setQueryData<AllDishesResponse>(
+        ["dishes", restaurantId],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            menus: old.menus.map((menu) => ({
+              ...menu,
+              categories: menu.categories.map((cat) => ({
+                ...cat,
+                dishes: cat.dishes.filter((dish) => dish.id !== id),
+              })),
             })),
-          })),
-        };
-      });
-  
+          };
+        },
+      );
+
       return { previous };
     },
-  
+
     onSuccess: () => {
-      showToast("success", "Dish Deleted", "Dish has been deleted successfully.");
+      showToast(
+        "success",
+        "Dish Deleted",
+        "Dish has been deleted successfully.",
+      );
     },
     onError: (err, _variables, context) => {
-      queryClient.setQueryData<AllDishesResponse>(["dishes", restaurantId], context?.previous);
+      queryClient.setQueryData<AllDishesResponse>(
+        ["dishes", restaurantId],
+        context?.previous,
+      );
       showToast("error", "Delete Failed", getErrorMessage(err));
     },
     onSettled: () => {
@@ -386,8 +398,8 @@ function DishRow({ dish, isLast, isFirst, languages }: DishRowProps) {
   });
 
   const handleDelete = () => {
-      deleteMutation.mutate(String(dish.id));
-    };
+    deleteMutation.mutate(String(dish.id));
+  };
 
   const updateMutation = useMutation({
     mutationFn: ({ payload }: { payload: UpdateDishRequest }) =>
@@ -653,7 +665,9 @@ function DishRow({ dish, isLast, isFirst, languages }: DishRowProps) {
       <TableCell>
         {isEditing ? (
           <div className="flex items-center gap-1 justify-center">
-            <span className="text-sm text-text-400">$</span>
+            <span className="text-sm text-text-400">
+              {DEVISE_SYMBOLS[devise]}
+            </span>{" "}
             <input
               type="number"
               min={0}
@@ -666,7 +680,9 @@ function DishRow({ dish, isLast, isFirst, languages }: DishRowProps) {
             />
           </div>
         ) : (
-          <span className="text-sm text-text-600">$ {dish.price}</span>
+          <span className="text-sm text-text-600">
+            {DEVISE_SYMBOLS[devise]} {dish.price}
+          </span>
         )}
       </TableCell>
 

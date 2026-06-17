@@ -34,7 +34,7 @@ import { categoryWithDishesToUI } from "../../lib/mappers";
 import * as dishService from "../../services/dish.service";
 import type { Dish } from "../../types/dish";
 import type { LanguageConfig } from "../../components/ui/category/CategoryRow";
-import type { Language } from "../../types/enums";
+import type { Devise, Language } from "../../types/enums";
 import type { AllDishesResponse } from "../../services/dish.service";
 
 const ITEMS_PER_PAGE = 1000;
@@ -66,7 +66,7 @@ function DishesPage() {
     enabled: !!restaurantId,
   });
 
-  const { categoryOptions, dishes, supportedLanguages } = useMemo(() => {
+  const { categoryOptions, dishes, supportedLanguages , devise} = useMemo(() => {
     const menus = allDishesData?.menus ?? [];
 
     const activeMenu =
@@ -122,6 +122,7 @@ function DishesPage() {
       categoryOptions: categoryOpts,
       dishes: allDishes,
       supportedLanguages: langs,
+      devise: (activeMenu?.devise ?? "usd") as Devise,
     };
   }, [allDishesData, menuId]);
 
@@ -352,6 +353,7 @@ const reorderMutation = useMutation({
                     <DishRow
                       key={dish.id}
                       dish={dish}
+                      devise={devise}  
                       isLast={index === paginatedDishes.length - 1}
                       isFirst={index === 0}
                       languages={languages}
@@ -377,6 +379,7 @@ const reorderMutation = useMutation({
         }}
         categories={categoryOptions}
         supportedLanguages={supportedLanguages}
+        devise={devise}  
       />
     </div>
   );

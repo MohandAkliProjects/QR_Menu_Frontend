@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X, Upload,  Check } from "lucide-react";
+import { X, Upload, Check } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getErrorMessage } from "../../api/errors";
@@ -24,7 +24,9 @@ interface Banner {
   visible: boolean;
 }
 
-function mapBanners(data: Awaited<ReturnType<typeof restaurantService.getBanners>>): Banner[] {
+function mapBanners(
+  data: Awaited<ReturnType<typeof restaurantService.getBanners>>,
+): Banner[] {
   return (data.banners ?? []).map((b) => ({
     id: b.id,
     src: b.imageUrl,
@@ -67,8 +69,7 @@ function BannersPage() {
       handleDeletePreview();
       showToast("success", "Banner Added", "Your banner has been uploaded.");
     },
-    onError: (err) =>
-      showToast("error", "Upload Failed", getErrorMessage(err)),
+    onError: (err) => showToast("error", "Upload Failed", getErrorMessage(err)),
   });
 
   const deleteBannerMutation = useMutation({
@@ -78,8 +79,7 @@ function BannersPage() {
       queryClient.invalidateQueries({ queryKey: bannersKey });
       showToast("success", "Banner Deleted", "Banner has been removed.");
     },
-    onError: (err) =>
-      showToast("error", "Delete Failed", getErrorMessage(err)),
+    onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
   });
 
   const toggleVisibilityMutation = useMutation({
@@ -88,8 +88,7 @@ function BannersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bannersKey });
     },
-    onError: (err) =>
-      showToast("error", "Update Failed", getErrorMessage(err)),
+    onError: (err) => showToast("error", "Update Failed", getErrorMessage(err)),
   });
 
   const isLimitReached = banners.length >= MAX_BANNERS;
@@ -156,7 +155,9 @@ function BannersPage() {
                   >
                     <Upload
                       size={56}
-                      className={isLimitReached ? "text-gold-500" : "text-primary-500"}
+                      className={
+                        isLimitReached ? "text-gold-500" : "text-primary-500"
+                      }
                     />
                     <p
                       className={`text-base font-medium ${
@@ -175,24 +176,30 @@ function BannersPage() {
                       alt="Banner preview"
                       className="w-full max-h-75 object-cover rounded-2xl"
                     />
-                   <div className="flex gap-4 w-full">
-  <Button
-    label="Cancel"
-    icon={X}
-    onClick={handleDeletePreview}
-    disabled={addBannerMutation.isPending}
-    variant="secondary"
-    className="flex-1"
-  />
-  <Button
-    label={addBannerMutation.isPending ? "Uploading..." : "Confirm"}
-    icon={Check}
-    onClick={() => pendingFile && addBannerMutation.mutate(pendingFile)}
-    disabled={addBannerMutation.isPending}
-    variant="primary"
-    className="flex-1"
-  />
-</div>
+                    <div className="flex gap-4 w-full">
+                      <Button
+                        label="Cancel"
+                        icon={X}
+                        onClick={handleDeletePreview}
+                        disabled={addBannerMutation.isPending}
+                        variant="secondary"
+                        className="flex-1"
+                      />
+                      <Button
+                        label={
+                          addBannerMutation.isPending
+                            ? "Uploading..."
+                            : "Confirm"
+                        }
+                        icon={Check}
+                        onClick={() =>
+                          pendingFile && addBannerMutation.mutate(pendingFile)
+                        }
+                        disabled={addBannerMutation.isPending}
+                        variant="primary"
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
                 </div>
               )}

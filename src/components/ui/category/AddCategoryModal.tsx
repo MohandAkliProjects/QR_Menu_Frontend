@@ -4,7 +4,7 @@ import Button from "../Button";
 import Input from "../Input";
 import CategoryImageUpload from "./CategoryImageUpload";
 import Notification from "../../shared/Notification";
-import { Trash2, Check } from "lucide-react";
+import { X, Check } from "lucide-react";
 import type { Language } from "../../../types/enums";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useToast from "../../../hooks/useToast";
@@ -108,22 +108,24 @@ const createMutation = useMutation({
       onClose={onClose}
       isPending={createMutation.isPending}
       footer={
-        <div className="flex gap-4 w-full">
-          <Button
-            label="Cancel"
-            icon={Trash2}
-            onClick={onClose}
-            fullWidth
-            className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
-          />
 
-          <Button
-            label="Confirm"
-            icon={Check}
-            onClick={handleConfirm}
-            fullWidth
-          />
-        </div>
+          <div className="flex gap-4 w-full">
+            <Button
+              label="Cancel"
+              icon={X}
+              onClick={onClose}
+              disabled={createMutation.isPending}
+              variant="secondary"
+              fullWidth
+            />
+            <Button
+              label={createMutation.isPending ? "Adding..." : "Confirm"}
+              icon={Check}
+              disabled={createMutation.isPending}
+              onClick={handleConfirm}
+              fullWidth
+            />
+          </div>
       }
     >
 

@@ -1,11 +1,14 @@
 import type { RestaurantInfo } from "../../types/api";
+import type { Language } from "../../types/enums";
+import { getMenuStrings } from "../../lib/constants/menu-strings";
 
 interface FooterProps {
   restaurant: RestaurantInfo;
+  language?: Language | null;
 }
 
-/** New component. Generic "powered by" footer, branded with the restaurant's logo/name. */
-function Footer({ restaurant }: FooterProps) {
+function Footer({ restaurant, language }: FooterProps) {
+  const t = getMenuStrings(language ?? null);
   return (
     <div className="px-1 py-7 border-t border-[var(--menu-border)] text-center">
       {restaurant.logoUrl ? (
@@ -21,7 +24,7 @@ function Footer({ restaurant }: FooterProps) {
       )}
       <p className="text-xs font-semibold text-[var(--menu-primary)] mb-0.5">{restaurant.name}</p>
       <p className="text-[10px] text-[var(--menu-muted)]">
-        Powered by <span className="font-bold text-[var(--menu-accent)]">QR Menu</span>
+        {t.poweredBy} <span className="font-bold text-[var(--menu-accent)]">QR Menu</span>
       </p>
     </div>
   );

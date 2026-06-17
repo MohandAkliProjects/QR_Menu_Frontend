@@ -30,12 +30,10 @@ import {
 } from "../../utils/menu-display";
 import "../../styles/public-menu.css";
 import { loadLikedToday, pruneOldLikes, saveLikedToday } from "../../lib/likes-storage";
+import { getMenuStrings } from "../../lib/constants/menu-strings";
 
 const ALL_ID = "all";
-/** Fallback height for the sticky search/category bar before it's measured. */
 const STICKY_OFFSET_FALLBACK = 132;
-
-/** Base URL for all API calls — adjust to match your env config. */
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export default function PublicMenuPage() {
@@ -48,12 +46,10 @@ export default function PublicMenuPage() {
   const [activeCategoryId, setActiveCategoryId] = useState<string>(ALL_ID);
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishResponse | null>(null);
-  // liked: Set of dish ids toggled on by this visitor in this session
- const [liked, setLiked] = useState<Set<string>>(() => {
-  pruneOldLikes();
-  return loadLikedToday();
-});
-  // likeLoading: tracks in-flight like/dislike requests to prevent double-taps
+  const [liked, setLiked] = useState<Set<string>>(() => {
+    pruneOldLikes();
+    return loadLikedToday();
+  });
   const [likeLoading, setLikeLoading] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
@@ -64,13 +60,13 @@ export default function PublicMenuPage() {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
-//effects 
-useEffect(() => {
-  if (!menu?.id) return;
-  if (!shouldRecordView(menu.id)) return; // ← skip if already viewed today
 
-  fetch(`${API_BASE}/api/menus/${menu.id}/addView`, { method: "PATCH" }).catch(() => {});
-}, [menu?.id]);
+  useEffect(() => {
+    if (!menu?.id) return;
+    if (!shouldRecordView(menu.id)) return;
+    fetch(`${API_BASE}/api/menus/${menu.id}/addView`, { method: "PATCH" }).catch(() => {});
+  }, [menu?.id]);
+
   const availableLanguages = useMemo(
     () => (menu ? (Object.keys(menu.translations) as Language[]) : []),
     [menu],
@@ -83,8 +79,8 @@ useEffect(() => {
     return availableLanguages[0] ?? null;
   }, [selectedLanguage, availableLanguages]);
 
-  // Only visible categories, with only their visible dishes, dropping any
-  // category left with nothing to show.
+  const t = getMenuStrings(language);
+
   const categoriesWithDishes = useMemo<CategoryWithDishesResponse[]>(() => {
     return (menu?.categories ?? [])
       .filter(isCategoryVisible)
@@ -95,71 +91,70 @@ useEffect(() => {
       .filter((category) => category.dishes.length > 0);
   }, [menu]);
 
-const toggleLike = useCallback(
-  async (dishId: string) => {
-    if (likeLoading.has(dishId)) return;
+  const toggleLike = useCallback(
+    async (dishId: string) => {
+      if (likeLoading.has(dishId)) return;
 
-    const wasLiked = liked.has(dishId);
-    const endpoint = wasLiked ? "dislike" : "like";
+      const wasLiked = liked.has(dishId);
+      const endpoint = wasLiked ? "dislike" : "like";
 
-    // Optimistic update + persist
-    setLiked((prev) => {
-      const next = new Set(prev);
-      if (wasLiked) next.delete(dishId);
-      else next.add(dishId);
-      saveLikedToday(next);
-      return next;
-    });
-
-    setSelectedDish((prev) => {
-      if (!prev || prev.id !== dishId) return prev;
-      return {
-        ...prev,
-        likesCount: wasLiked ? Math.max(0, prev.likesCount - 1) : prev.likesCount + 1,
-      };
-    });
-
-    setLikeLoading((prev) => new Set(prev).add(dishId));
-
-    try {
-      const res = await fetch(`${API_BASE}/api/dishes/${dishId}/${endpoint}`, {
-        method: "PATCH",
-      });
-
-      if (!res.ok) throw new Error("Request failed");
-
-      const updated: DishResponse = await res.json();
-      setSelectedDish((prev) => {
-        if (!prev || prev.id !== dishId) return prev;
-        return { ...prev, likesCount: updated.likesCount };
-      });
-    } catch {
-      // Roll back optimistic update + persist rollback
       setLiked((prev) => {
         const next = new Set(prev);
-        if (wasLiked) next.add(dishId);
-        else next.delete(dishId);
+        if (wasLiked) next.delete(dishId);
+        else next.add(dishId);
         saveLikedToday(next);
         return next;
       });
+
       setSelectedDish((prev) => {
         if (!prev || prev.id !== dishId) return prev;
         return {
           ...prev,
-          likesCount: wasLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
+          likesCount: wasLiked ? Math.max(0, prev.likesCount - 1) : prev.likesCount + 1,
         };
       });
-      showToast("error", "Oops", "Could not save your like. Please try again.");
-    } finally {
-      setLikeLoading((prev) => {
-        const next = new Set(prev);
-        next.delete(dishId);
-        return next;
-      });
-    }
-  },
-  [liked, likeLoading, showToast],
-);
+
+      setLikeLoading((prev) => new Set(prev).add(dishId));
+
+      try {
+        const res = await fetch(`${API_BASE}/api/dishes/${dishId}/${endpoint}`, {
+          method: "PATCH",
+        });
+
+        if (!res.ok) throw new Error("Request failed");
+
+        const updated: DishResponse = await res.json();
+        setSelectedDish((prev) => {
+          if (!prev || prev.id !== dishId) return prev;
+          return { ...prev, likesCount: updated.likesCount };
+        });
+      } catch {
+        setLiked((prev) => {
+          const next = new Set(prev);
+          if (wasLiked) next.add(dishId);
+          else next.delete(dishId);
+          saveLikedToday(next);
+          return next;
+        });
+        setSelectedDish((prev) => {
+          if (!prev || prev.id !== dishId) return prev;
+          return {
+            ...prev,
+            likesCount: wasLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
+          };
+        });
+        showToast("error", "Oops", "Could not save your like. Please try again.");
+      } finally {
+        setLikeLoading((prev) => {
+          const next = new Set(prev);
+          next.delete(dishId);
+          return next;
+        });
+      }
+    },
+    [liked, likeLoading, showToast],
+  );
+
   const scrollToCategory = useCallback((id: string) => {
     setActiveCategoryId(id);
 
@@ -176,8 +171,6 @@ const toggleLike = useCallback(
     window.scrollTo({ top, behavior: "smooth" });
   }, []);
 
-  // Scroll-spy: highlight whichever category section is currently under the
-  // sticky bar. Disabled while searching, since the category strip is hidden.
   useEffect(() => {
     if (search.trim()) return;
 
@@ -216,14 +209,17 @@ const toggleLike = useCallback(
 
   const isClosed = error instanceof ApiClientError && error.status === 403;
 
-  if (isClosed) return <RestaurantClosed />;
+  if (isClosed) return <RestaurantClosed language={language} />;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--menu-bg)" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--menu-bg)" }}
+      >
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-[var(--menu-accent)] border-t-transparent animate-spin" />
-          <p className="text-sm text-[var(--menu-muted)]">Loading menu…</p>
+          <p className="text-sm text-[var(--menu-muted)]">{t.loading}</p>
         </div>
       </div>
     );
@@ -231,10 +227,11 @@ const toggleLike = useCallback(
 
   if (error && !isClosed) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "var(--menu-bg)" }}>
-        <p className="text-base text-[var(--menu-muted)] text-center">
-          Menu not found or unavailable.
-        </p>
+      <div
+        className="min-h-screen flex items-center justify-center px-6"
+        style={{ background: "var(--menu-bg)" }}
+      >
+        <p className="text-base text-[var(--menu-muted)] text-center">{t.notFound}</p>
       </div>
     );
   }
@@ -291,7 +288,11 @@ const toggleLike = useCallback(
           style={{ background: "var(--menu-bg)" }}
         >
           <div className="mb-3">
-            <SearchBar value={search} onChange={setSearch} />
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder={t.searchPlaceholder}
+            />
           </div>
           {!search && (
             <CategoryFilter
@@ -307,7 +308,7 @@ const toggleLike = useCallback(
         {searchResults !== null ? (
           <div className="pt-4">
             <p className="text-xs text-[var(--menu-muted)] mb-3">
-              {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for &ldquo;{search}&rdquo;
+              {t.searchResults(searchResults.length, search)}
             </p>
 
             {searchResults.length > 0 ? (
@@ -328,9 +329,9 @@ const toggleLike = useCallback(
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">🔍</div>
                 <p className="text-base font-semibold text-[var(--menu-primary)] menu-font-display">
-                  No results found
+                  {t.noResults}
                 </p>
-                <p className="text-xs text-[var(--menu-muted)] mt-1">Try a different search term</p>
+                <p className="text-xs text-[var(--menu-muted)] mt-1">{t.noResultsHint}</p>
               </div>
             )}
           </div>
@@ -369,7 +370,11 @@ const toggleLike = useCallback(
               })}
 
               {categoriesWithDishes.length === 0 && (
-                <EmptyCategory message="No dishes available at the moment." />
+                <EmptyCategory
+                  title={t.noItemsTitle}
+                  message={t.noDishes}
+                  hint={t.noItemsHint}
+                />
               )}
             </div>
 
@@ -377,7 +382,7 @@ const toggleLike = useCallback(
 
             <RestaurantInfoCard restaurant={menu.restaurant} />
 
-            <Footer restaurant={menu.restaurant} />
+            <Footer restaurant={menu.restaurant} language={language} />
           </>
         )}
       </div>

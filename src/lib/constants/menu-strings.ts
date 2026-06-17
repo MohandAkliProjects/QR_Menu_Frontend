@@ -1,7 +1,7 @@
 import type { Language } from "../../types/enums";
 
 export const MENU_STRINGS = {
-  EN: {
+  en: {
     loading: "Loading menu…",
     notFound: "Menu not found or unavailable.",
     noResults: "No results found",
@@ -17,8 +17,16 @@ export const MENU_STRINGS = {
     closedMessage:
       "This restaurant's menu is not available right now. Please check back later or contact the restaurant directly.",
     poweredBy: "Powered by",
+    allCategories: "All",
+    item: "item",
+    items: "items",
+    unavailable: "Unavailable",
+    shownIn: "Shown in",
+    close: "Close",
+    like: "Like",
+    likes: "likes",
   },
-  FR: {
+  fr: {
     loading: "Chargement du menu…",
     notFound: "Menu introuvable ou indisponible.",
     noResults: "Aucun résultat",
@@ -34,8 +42,16 @@ export const MENU_STRINGS = {
     closedMessage:
       "Le menu de ce restaurant n'est pas disponible pour le moment. Revenez plus tard ou contactez le restaurant directement.",
     poweredBy: "Propulsé par",
+    allCategories: "Tout",
+    item: "article",
+    items: "articles",
+    unavailable: "Indisponible",
+    shownIn: "Affiché en",
+    close: "Fermer",
+    like: "J'aime",
+    likes: "j'aime",
   },
-  AR: {
+  ar: {
     loading: "جارٍ تحميل القائمة…",
     notFound: "القائمة غير موجودة أو غير متاحة.",
     noResults: "لا توجد نتائج",
@@ -51,11 +67,22 @@ export const MENU_STRINGS = {
     closedMessage:
       "قائمة هذا المطعم غير متاحة الآن. يرجى المراجعة لاحقاً أو التواصل مع المطعم مباشرة.",
     poweredBy: "مدعوم من",
+    allCategories: "الكل",
+    item: "عنصر",
+    items: "عناصر",
+    unavailable: "غير متاح",
+    shownIn: "معروض بـ",
+    close: "إغلاق",
+    like: "إعجاب",
+    likes: "إعجاب",
   },
-} satisfies Record<string, object>;
+} satisfies Record<Language, object>;
 
-export type MenuStrings = (typeof MENU_STRINGS)[keyof typeof MENU_STRINGS];
+export type MenuStrings = (typeof MENU_STRINGS)[Language];
 
 export function getMenuStrings(language: Language | null): MenuStrings {
-  return MENU_STRINGS[(language ?? "EN") as keyof typeof MENU_STRINGS] ?? MENU_STRINGS.EN;
+  if (language && language in MENU_STRINGS) {
+    return MENU_STRINGS[language as Language];
+  }
+  return MENU_STRINGS.en;
 }

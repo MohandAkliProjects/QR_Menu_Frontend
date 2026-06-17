@@ -4,6 +4,8 @@ import { Heart, X } from "lucide-react";
 import type { DishResponse } from "../../types/api";
 import type { Devise, Language } from "../../types/enums";
 import { formatPrice, getDishText, isDishAvailable } from "../../utils/menu-display";
+import type { MenuStrings } from "../../lib/constants/menu-strings";
+import Button from "../ui/Button";
 
 interface DishModalProps {
   dish: DishResponse;
@@ -12,6 +14,7 @@ interface DishModalProps {
   liked: boolean;
   onLike: () => void;
   onClose: () => void;
+  t: MenuStrings;
 }
 
 function getActiveLang(
@@ -23,7 +26,7 @@ function getActiveLang(
   return fallback ?? null;
 }
 
-function DishModal({ dish, devise, language, liked, onLike, onClose }: DishModalProps) {
+function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishModalProps) {
   const { name, description } = getDishText(dish, language);
   const available = isDishAvailable(dish);
   const fallbackLang = getActiveLang(dish.translations, language);
@@ -54,22 +57,20 @@ function DishModal({ dish, devise, language, liked, onLike, onClose }: DishModal
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/25 to-transparent" />
 
-          {/* Close */}
           <button
             type="button"
             onClick={onClose}
             className="absolute top-4 end-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white"
-            aria-label="Close"
+            aria-label={t.close}
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Like */}
           <button
             type="button"
             onClick={onLike}
             className="absolute top-4 start-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center"
-            aria-label="Like"
+            aria-label={t.like}
           >
             <Heart
               className="w-4 h-4"
@@ -79,20 +80,18 @@ function DishModal({ dish, devise, language, liked, onLike, onClose }: DishModal
             />
           </button>
 
-          {/* Unavailable badge */}
           {!available && (
             <div className="absolute bottom-3 start-4 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-500 text-white">
-              Unavailable
+              {t.unavailable}
             </div>
           )}
 
-          {/* Language fallback badge */}
           {fallbackLang && (
             <div
               className="absolute bottom-3 end-4 px-2 py-1 rounded text-[10px] font-bold uppercase"
               style={{ background: "var(--menu-accent)", color: "#fff", letterSpacing: "0.04em" }}
             >
-              Shown in: {fallbackLang}
+              {t.shownIn}: {fallbackLang}
             </div>
           )}
         </div>
@@ -120,20 +119,19 @@ function DishModal({ dish, devise, language, liked, onLike, onClose }: DishModal
           {dish.likesCount > 0 && (
             <div className="flex items-center gap-1.5 text-sm text-[var(--menu-muted)] mb-4">
               <Heart className="w-4 h-4" fill="var(--menu-danger)" stroke="var(--menu-danger)" />
-              {dish.likesCount} {dish.likesCount === 1 ? "like" : "likes"}
+              {dish.likesCount} {t.likes}
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-[var(--menu-border)] bg-[var(--menu-card)] flex-shrink-0">
-          <button
-            type="button"
+          <Button
+            label={t.close}
             onClick={onClose}
-            className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] bg-[var(--menu-primary)]"
-          >
-            Close
-          </button>
+            variant="secondary"
+            fullWidth
+          />
         </div>
       </div>
     </div>

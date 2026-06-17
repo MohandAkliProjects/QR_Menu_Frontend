@@ -4,6 +4,7 @@ import { LayoutGrid } from "lucide-react";
 import type { CategoryWithDishesResponse } from "../../types/api";
 import type { Language } from "../../types/enums";
 import { getCategoryName } from "../../utils/menu-display";
+import type { MenuStrings } from "../../lib/constants/menu-strings";
 
 interface CategoryFilterProps {
   categories: CategoryWithDishesResponse[];
@@ -11,6 +12,7 @@ interface CategoryFilterProps {
   language: Language;
   onSelect: (id: string) => void;
   allId: string;
+  t: MenuStrings;
 }
 
 const ACTIVE_RING = "0 0 0 2.5px var(--menu-accent), 0 3px 12px rgba(182,141,55,0.35)";
@@ -25,7 +27,7 @@ function getFallbackLanguage(
   return fallback ?? null;
 }
 
-function CategoryFilter({ categories, activeCategoryId, language, onSelect, allId }: CategoryFilterProps) {
+function CategoryFilter({ categories, activeCategoryId, language, onSelect, allId, t }: CategoryFilterProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,15 +38,12 @@ function CategoryFilter({ categories, activeCategoryId, language, onSelect, allI
   }, [activeCategoryId]);
 
   return (
-    // px-2 (instead of px-1) gives the scaled-up active pill (scale 1.1)
-    // enough room on both ends so the ring shadow isn't clipped by overflow-x-auto.
     <div
       ref={containerRef}
       className="overflow-x-auto menu-scroll-x"
       style={{ scrollbarWidth: "none" }}
     >
       <div className="flex gap-3 px-2 py-2 w-max">
-        {/* "All" pill */}
         <button
           type="button"
           data-catid={allId}
@@ -64,7 +63,7 @@ function CategoryFilter({ categories, activeCategoryId, language, onSelect, allI
             className="text-[11px] font-bold whitespace-nowrap transition-colors duration-200"
             style={{ color: activeCategoryId === allId ? "var(--menu-accent)" : "var(--menu-primary)" }}
           >
-            All
+            {t.allCategories}
           </p>
         </button>
 
@@ -119,7 +118,7 @@ function CategoryFilter({ categories, activeCategoryId, language, onSelect, allI
                 {name}
               </p>
               <p className="text-[9px] text-[var(--menu-muted)] -mt-0.5">
-                {category.dishes.length} {category.dishes.length === 1 ? "item" : "items"}
+                {category.dishes.length} {category.dishes.length === 1 ? t.item : t.items}
               </p>
             </button>
           );

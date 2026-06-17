@@ -3,6 +3,7 @@ import { Heart } from "lucide-react";
 import type { DishResponse } from "../../types/api";
 import type { Devise, Language } from "../../types/enums";
 import { formatPrice, getDishText, isDishAvailable } from "../../utils/menu-display";
+import type { MenuStrings } from "../../lib/constants/menu-strings";
 
 interface DishCardProps {
   dish: DishResponse;
@@ -11,11 +12,9 @@ interface DishCardProps {
   liked: boolean;
   onLike: () => void;
   onClick: () => void;
+  t: MenuStrings;
 }
 
-/**
- * Returns the language key actually used, or null if the requested one was available.
- */
 function getActiveLang(
   translations: Partial<Record<Language, unknown>>,
   language: Language
@@ -25,7 +24,7 @@ function getActiveLang(
   return fallback ?? null;
 }
 
-function DishCard({ dish, devise, language, liked, onLike, onClick }: DishCardProps) {
+function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCardProps) {
   const { name, description } = getDishText(dish, language);
   const available = isDishAvailable(dish);
   const fallbackLang = getActiveLang(dish.translations, language);
@@ -51,15 +50,12 @@ function DishCard({ dish, devise, language, liked, onLike, onClick }: DishCardPr
           </div>
         )}
 
-        {/* Unavailable badge */}
         {!available && (
           <div className="absolute top-2 start-2 px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-500 text-white">
-            Unavailable
+            {t.unavailable}
           </div>
         )}
 
-        {/* Language fallback badge — shown when we had to fall back to a
-            different language than the visitor selected */}
         {fallbackLang && (
           <div
             className="absolute bottom-2 start-2 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase"
@@ -69,7 +65,6 @@ function DishCard({ dish, devise, language, liked, onLike, onClick }: DishCardPr
           </div>
         )}
 
-        {/* Like button */}
         <button
           type="button"
           className="absolute top-2 end-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-sm flex items-center justify-center shadow-sm transition-transform active:scale-90"
@@ -77,7 +72,7 @@ function DishCard({ dish, devise, language, liked, onLike, onClick }: DishCardPr
             e.stopPropagation();
             onLike();
           }}
-          aria-label="Like"
+          aria-label={t.like}
         >
           <Heart
             className="w-3.5 h-3.5 transition-colors"
@@ -102,7 +97,7 @@ function DishCard({ dish, devise, language, liked, onLike, onClick }: DishCardPr
           {dish.likesCount > 0 && (
             <span className="flex items-center gap-1 text-[11px] text-[var(--menu-muted)]">
               <Heart className="w-3 h-3" fill="var(--menu-danger)" stroke="var(--menu-danger)" />
-              {dish.likesCount}
+              {dish.likesCount} {t.likes}
             </span>
           )}
         </div>

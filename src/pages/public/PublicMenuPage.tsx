@@ -29,7 +29,11 @@ import {
   isRTL,
 } from "../../utils/menu-display";
 import "../../styles/public-menu.css";
-import { loadLikedToday, pruneOldLikes, saveLikedToday } from "../../lib/likes-storage";
+import {
+  loadLikedToday,
+  pruneOldLikes,
+  saveLikedToday,
+} from "../../lib/likes-storage";
 import { getMenuStrings } from "../../lib/constants/menu-strings";
 
 const ALL_ID = "all";
@@ -44,7 +48,9 @@ export default function PublicMenuPage() {
   const stickyRef = useRef<HTMLDivElement | null>(null);
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>(ALL_ID);
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(
+    null,
+  );
   const [selectedDish, setSelectedDish] = useState<DishResponse | null>(null);
   const [liked, setLiked] = useState<Set<string>>(() => {
     pruneOldLikes();
@@ -53,7 +59,11 @@ export default function PublicMenuPage() {
   const [likeLoading, setLikeLoading] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
-  const { data: menu, isLoading, error } = useQuery({
+  const {
+    data: menu,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["public-menu", slug],
     queryFn: () => getFullMenuBySlug(slug!),
     enabled: !!slug,
@@ -64,7 +74,9 @@ export default function PublicMenuPage() {
   useEffect(() => {
     if (!menu?.id) return;
     if (!shouldRecordView(menu.id)) return;
-    fetch(`${API_BASE}/api/menus/${menu.id}/addView`, { method: "PATCH" }).catch(() => {});
+    fetch(`${API_BASE}/api/menus/${menu.id}/addView`, {
+      method: "PATCH",
+    }).catch(() => {});
   }, [menu?.id]);
 
   const availableLanguages = useMemo(
@@ -110,16 +122,21 @@ export default function PublicMenuPage() {
         if (!prev || prev.id !== dishId) return prev;
         return {
           ...prev,
-          likesCount: wasLiked ? Math.max(0, prev.likesCount - 1) : prev.likesCount + 1,
+          likesCount: wasLiked
+            ? Math.max(0, prev.likesCount - 1)
+            : prev.likesCount + 1,
         };
       });
 
       setLikeLoading((prev) => new Set(prev).add(dishId));
 
       try {
-        const res = await fetch(`${API_BASE}/api/dishes/${dishId}/${endpoint}`, {
-          method: "PATCH",
-        });
+        const res = await fetch(
+          `${API_BASE}/api/dishes/${dishId}/${endpoint}`,
+          {
+            method: "PATCH",
+          },
+        );
 
         if (!res.ok) throw new Error("Request failed");
 
@@ -140,10 +157,16 @@ export default function PublicMenuPage() {
           if (!prev || prev.id !== dishId) return prev;
           return {
             ...prev,
-            likesCount: wasLiked ? prev.likesCount + 1 : Math.max(0, prev.likesCount - 1),
+            likesCount: wasLiked
+              ? prev.likesCount + 1
+              : Math.max(0, prev.likesCount - 1),
           };
         });
-        showToast("error", "Oops", "Could not save your like. Please try again.");
+        showToast(
+          "error",
+          "Oops",
+          "Could not save your like. Please try again.",
+        );
       } finally {
         setLikeLoading((prev) => {
           const next = new Set(prev);
@@ -167,7 +190,8 @@ export default function PublicMenuPage() {
     if (!target) return;
 
     const offset = stickyRef.current?.offsetHeight ?? STICKY_OFFSET_FALLBACK;
-    const top = target.getBoundingClientRect().top + window.scrollY - offset - 8;
+    const top =
+      target.getBoundingClientRect().top + window.scrollY - offset - 8;
     window.scrollTo({ top, behavior: "smooth" });
   }, []);
 
@@ -175,7 +199,8 @@ export default function PublicMenuPage() {
     if (search.trim()) return;
 
     const handleScroll = () => {
-      const offset = (stickyRef.current?.offsetHeight ?? STICKY_OFFSET_FALLBACK) + 16;
+      const offset =
+        (stickyRef.current?.offsetHeight ?? STICKY_OFFSET_FALLBACK) + 16;
 
       for (let i = categoriesWithDishes.length - 1; i >= 0; i--) {
         const category = categoriesWithDishes[i];
@@ -231,7 +256,9 @@ export default function PublicMenuPage() {
         className="min-h-screen flex items-center justify-center px-6"
         style={{ background: "var(--menu-bg)" }}
       >
-        <p className="text-base text-[var(--menu-muted)] text-center">{t.notFound}</p>
+        <p className="text-base text-[var(--menu-muted)] text-center">
+          {t.notFound}
+        </p>
       </div>
     );
   }
@@ -249,7 +276,10 @@ export default function PublicMenuPage() {
     <div
       dir={isRTL(language) ? "rtl" : "ltr"}
       className="min-h-screen"
-      style={{ background: "var(--menu-bg)", fontFamily: '"Nunito", system-ui, sans-serif' }}
+      style={{
+        background: "var(--menu-bg)",
+        fontFamily: '"Nunito", system-ui, sans-serif',
+      }}
     >
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
@@ -261,11 +291,10 @@ export default function PublicMenuPage() {
           liked={liked.has(selectedDish.id)}
           onLike={() => toggleLike(selectedDish.id)}
           onClose={() => setSelectedDish(null)}
+          t={t}
         />
       )}
-
       <div className="w-full sm:max-w-2xl lg:max-w-5xl mx-auto px-4 pb-24">
-
         {banners.length > 0 && (
           <div className="pt-4">
             <HeroCarousel banners={banners} />
@@ -301,6 +330,7 @@ export default function PublicMenuPage() {
               language={language}
               onSelect={scrollToCategory}
               allId={ALL_ID}
+              t={t}
             />
           )}
         </div>
@@ -322,6 +352,7 @@ export default function PublicMenuPage() {
                     liked={liked.has(dish.id)}
                     onLike={() => toggleLike(dish.id)}
                     onClick={() => setSelectedDish(dish)}
+                    t={t}
                   />
                 ))}
               </div>
@@ -331,7 +362,9 @@ export default function PublicMenuPage() {
                 <p className="text-base font-semibold text-[var(--menu-primary)] menu-font-display">
                   {t.noResults}
                 </p>
-                <p className="text-xs text-[var(--menu-muted)] mt-1">{t.noResultsHint}</p>
+                <p className="text-xs text-[var(--menu-muted)] mt-1">
+                  {t.noResultsHint}
+                </p>
               </div>
             )}
           </div>
@@ -344,7 +377,9 @@ export default function PublicMenuPage() {
                 return (
                   <section
                     key={category.id}
-                    ref={(el) => { sectionRefs.current[category.id] = el; }}
+                    ref={(el) => {
+                      sectionRefs.current[category.id] = el;
+                    }}
                     style={{ scrollMarginTop: STICKY_OFFSET_FALLBACK + 8 }}
                     className="pb-4"
                   >
@@ -362,6 +397,7 @@ export default function PublicMenuPage() {
                           liked={liked.has(dish.id)}
                           onLike={() => toggleLike(dish.id)}
                           onClick={() => setSelectedDish(dish)}
+                          t={t}
                         />
                       ))}
                     </div>

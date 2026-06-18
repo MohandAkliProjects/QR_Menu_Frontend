@@ -50,10 +50,10 @@ export interface DishResponse {
   imageUrl?: string;
   likesCount: number;
   isAvailable: boolean;
-      /** @deprecated */
+  /** @deprecated */
   available: boolean;
   isVisible: boolean;
-      /** @deprecated */
+  /** @deprecated */
   visible: boolean;
   order: number;
   translations: TranslationsMap<DishTranslation>;
@@ -75,7 +75,7 @@ export interface CategoryWithDishesResponse {
   iconUrl?: string;
   order: number;
   isVisible: boolean;
-    /** @deprecated */
+  /** @deprecated */
   visible: boolean;
   translations: TranslationsMap<CategoryTranslation>;
   dishes: DishResponse[];
@@ -101,6 +101,7 @@ export interface RestaurantInfo {
   tiktokLink?: string;
   snapchatLink?: string;
   googleMapsLink?: string;
+  googleMapsReviewLink?: string;
   emailAddress?: string;
   phones?: string[];
   banners?: BannerResponse[];
@@ -140,6 +141,7 @@ export interface RestaurantResponse {
   facebookLink?: string;
   tiktokLink?: string;
   googleMapsLink?: string;
+  googleMapsReviewLink?: string;
   qrCode?: string;
   defaultMenuId?: string;
   ville: string;
@@ -212,6 +214,7 @@ export interface RestaurantUpdateRequest {
   tiktokLink?: string;
   emailAddress?: string;
   googleMapsLink?: string;
+  googleMapsReviewLink?: string;
   deleteLogo?: boolean;
   deletePublicImage?: boolean;
 }

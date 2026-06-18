@@ -25,6 +25,11 @@ export const MENU_STRINGS = {
     close: "Close",
     like: "Like",
     likes: "likes",
+    reviewTitle: "Leave a Review",
+    reviewPlaceholder: "Share your experience…",
+    reviewHint: "Your review will be copied — just paste it on Google Maps.",
+    reviewShareButton: "Share on Google Maps",
+    reviewCopied: "Copied! Opening Google Maps…",
   },
   fr: {
     loading: "Chargement du menu…",
@@ -50,6 +55,11 @@ export const MENU_STRINGS = {
     close: "Fermer",
     like: "J'aime",
     likes: "j'aime",
+    reviewTitle: "Laisser un avis",
+    reviewPlaceholder: "Partagez votre expérience…",
+    reviewHint: "Votre avis sera copié — collez-le simplement sur Google Maps.",
+    reviewShareButton: "Partager sur Google Maps",
+    reviewCopied: "Copié ! Ouverture de Google Maps…",
   },
   ar: {
     loading: "جارٍ تحميل القائمة…",
@@ -75,6 +85,11 @@ export const MENU_STRINGS = {
     close: "إغلاق",
     like: "إعجاب",
     likes: "إعجاب",
+    reviewTitle: "اترك تقييمًا",
+    reviewPlaceholder: "شاركنا تجربتك…",
+    reviewHint: "سيتم نسخ تقييمك — فقط الصقه على خرائط Google.",
+    reviewShareButton: "مشاركة على خرائط Google",
+    reviewCopied: "تم النسخ! جارٍ فتح خرائط Google…",
   },
 } satisfies Record<Language, object>;
 

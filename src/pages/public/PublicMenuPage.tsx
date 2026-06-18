@@ -35,6 +35,7 @@ import {
   saveLikedToday,
 } from "../../lib/likes-storage";
 import { getMenuStrings } from "../../lib/constants/menu-strings";
+import ReviewFab from "../../components/public/Reviewfab";
 
 const ALL_ID = "all";
 const STICKY_OFFSET_FALLBACK = 132;
@@ -424,6 +425,9 @@ export default function PublicMenuPage() {
       </div>
 
       <SocialFab restaurant={menu.restaurant} />
+
+      <ReviewFab restaurant={menu.restaurant} language={language} />
+      
     </div>
   );
 }

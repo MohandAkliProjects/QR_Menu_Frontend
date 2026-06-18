@@ -37,6 +37,7 @@ export async function updateRestaurant(
   if (data.tiktokLink) formData.append("tiktokLink", data.tiktokLink);
   if (data.snapchatLink) formData.append("snapchatLink", data.snapchatLink);
   if (data.googleMapsLink) formData.append("googleMapsLink", data.googleMapsLink);
+  if(data.googleMapsReviewLink) formData.append("googleMapsReviewLink", data.googleMapsReviewLink);
 
   if (data.phones && data.phones.length > 0) {
     data.phones.forEach((phone) => formData.append("phones", phone));

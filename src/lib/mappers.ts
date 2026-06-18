@@ -41,8 +41,6 @@ export function dishResponseToUI(dish: DishResponse): DishUI {
   const fr = dish.translations.fr ?? dish.translations["fr" as Language];
   const ar = dish.translations.ar ?? dish.translations["ar" as Language];
 
-  //console.log(" RAW DISH FROM BACKEND:", dish);
-
   return {
     id: dish.id,
     order: dish.order,
@@ -54,13 +52,12 @@ export function dishResponseToUI(dish: DishResponse): DishUI {
     frenchDescription: fr?.description,
     arabicDescription: ar?.description,
     price: dish.price,
-   available: (dish.isAvailable ?? dish.available)
-  ? "available"
-  : "unavailable",
-
-status: (dish.isVisible ?? dish.visible)
-  ? "visible"
-  : "hidden",
+    available: (dish.isAvailable ?? dish.available)
+      ? "available"
+      : "unavailable",
+    status: (dish.isVisible ?? dish.visible)
+      ? "visible"
+      : "hidden",
     likes: dish.likesCount,
     categoryId: dish.categoryId,
   };
@@ -84,7 +81,6 @@ export function categoryWithDishesToUI(
     dishes: category.dishes.map(dishResponseToUI),
   };
 }
-
 
 export function categoryRequestToTranslations(
   request: BaseCategoryRequest
@@ -154,7 +150,6 @@ export function menuResponseToForm(menu: MenuResponse): MenuFormState {
   };
 }
 
-
 export function menuFormToUpdateRequest(
   form: MenuFormState,
   supportedLanguages: string[]
@@ -182,8 +177,8 @@ export function restaurantResponseToForm(restaurant: RestaurantResponse) {
   pushSocial("FaceBook", restaurant.facebookLink);
   pushSocial("Instagram", restaurant.instagramLink);
   pushSocial("TikTok", restaurant.tiktokLink);
- // pushSocial("WebSite", restaurant.googleMapsLink);
   pushSocial("Google Maps", restaurant.googleMapsLink);
+  pushSocial("Google Maps Review", restaurant.googleMapsReviewLink);
   pushSocial("Snapchat", restaurant.snapchatLink);
 
   return {
@@ -227,8 +222,8 @@ export function restaurantFormToUpdateRequest(
     if (social.platform === "FaceBook") request.facebookLink = url;
     if (social.platform === "Instagram") request.instagramLink = url;
     if (social.platform === "TikTok") request.tiktokLink = url;
-    //if (social.platform === "WebSite") request.googleMapsLink = url;
     if (social.platform === "Google Maps") request.googleMapsLink = url;
+    if (social.platform === "Google Maps Review") request.googleMapsReviewLink = url;
     if (social.platform === "Snapchat") request.snapchatLink = url;
   }
 

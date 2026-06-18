@@ -10,6 +10,6 @@ export default defineConfig({
     svgr(),
   ],
   server: {
-    host: "localhost",
+    host: true,
   },
 });

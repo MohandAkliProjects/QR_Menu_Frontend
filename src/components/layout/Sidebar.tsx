@@ -22,7 +22,11 @@ const links = [
   { to: "/dashboard/information", label: "Information", icon: Info, end: false },
 ];
 
-function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+function Sidebar({ onClose }: SidebarProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -48,6 +52,7 @@ function Sidebar() {
             key={to}
             to={to}
             end={end}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3.5 rounded-[10px] no-underline
               font-sans text-base text-cream-500 transition-all duration-200

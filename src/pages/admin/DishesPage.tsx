@@ -45,9 +45,9 @@ function DishesPage() {
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
-  const [selectedCategory, setSelectedCategory] = useState<
-    UniqueIdentifier | "all"
-  >("all");
+  const [selectedCategory, setSelectedCategory] =
+    useState<UniqueIdentifier | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -230,14 +230,27 @@ function DishesPage() {
     });
   };
 
+  // Resolve the category that is *actually* driving the filter:
+  // - if the user picked one and it still exists, use it
+  // - otherwise fall back to the first available category
+  const activeCategory: UniqueIdentifier | null = useMemo(() => {
+    if (
+      selectedCategory != null &&
+      categoryOptions.some((c) => c.id === selectedCategory)
+    ) {
+      return selectedCategory;
+    }
+    return categoryOptions[0]?.id ?? null;
+  }, [selectedCategory, categoryOptions]);
+
   const filteredDishes = useMemo(
     () =>
-      selectedCategory === "all"
-        ? dishes
+      activeCategory == null
+        ? []
         : dishes.filter(
-            (d) => String(d.categoryId) === String(selectedCategory),
+            (d) => String(d.categoryId) === String(activeCategory),
           ),
-    [dishes, selectedCategory],
+    [dishes, activeCategory],
   );
 
   const totalPages = Math.max(
@@ -343,12 +356,11 @@ function DishesPage() {
           <div className="mb-4">
             <CategoryFilterBar
               categories={categoryOptions}
-              selected={selectedCategory}
+              selected={activeCategory}
               onSelect={(id) => {
                 setSelectedCategory(id);
                 setCurrentPage(1);
               }}
-              hideAll
             />
           </div>
 

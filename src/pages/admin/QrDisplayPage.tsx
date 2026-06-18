@@ -27,7 +27,7 @@ function QrDisplayPage() {
     enabled: !!restaurantId,
     staleTime: Infinity,
     select: (restaurant) => ({
-  qrUrl: `https://qrmenubackend-production-5ad2.up.railway.app/api/restaurants/r/${restaurantId!}`,
+qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`,
   qrDisplayUrl: restaurant.slug
     ? `${window.location.origin}${ROUTES.publicMenu(restaurant.slug)}`
     : "",

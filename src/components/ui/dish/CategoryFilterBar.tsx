@@ -9,24 +9,27 @@ interface CategoryFilterBarProps {
   categories: FilterCategory[];
   selected: UniqueIdentifier | "all";
   onSelect: (id: UniqueIdentifier | "all") => void;
+  hideAll?: boolean;
 }
 
-function CategoryFilterBar({ categories, selected, onSelect }: CategoryFilterBarProps) {
+function CategoryFilterBar({ categories, selected, onSelect, hideAll = false }: CategoryFilterBarProps) {
   return (
     <div className="overflow-x-auto pb-1">
       <div className="flex gap-2 min-w-max">
-        <button
-          onClick={() => onSelect("all")}
-          className={`
-            px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap hover:cursor-pointer
-            ${selected === "all"
-              ? "bg-primary-700 text-cream-500 border-primary-700"
-              : "bg-transparent border-beige-400 text-text-500 hover:bg-beige-200"
-            }
-          `}
-        >
-          All
-        </button>
+        {!hideAll && (
+          <button
+            onClick={() => onSelect("all")}
+            className={`
+              px-4 py-2 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap hover:cursor-pointer
+              ${selected === "all"
+                ? "bg-primary-700 text-cream-500 border-primary-700"
+                : "bg-transparent border-beige-400 text-text-500 hover:bg-beige-200"
+              }
+            `}
+          >
+            All
+          </button>
+        )}
         {categories.map((cat) => (
           <button
             key={cat.id}

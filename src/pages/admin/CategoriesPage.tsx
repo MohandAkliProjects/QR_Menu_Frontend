@@ -5,6 +5,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -31,17 +32,14 @@ import AddCategoryModal from "../../components/ui/category/AddCategoryModal";
 import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
-import {
-  categoryResponseToUI
-} from "../../lib/mappers";
+import { categoryResponseToUI } from "../../lib/mappers";
 import * as categoryService from "../../services/category.service";
 import type { Language } from "../../types/enums";
 import type { CategoryUI as Category } from "../../types/ui.ts";
 import type { CategoryResponse } from "../../types/api";
-import type { CategoriesPageData } from "../../types/ui.ts"
+import type { CategoriesPageData } from "../../types/ui.ts";
 
 const ITEMS_PER_PAGE = 1000;
-
 
 function CategoriesPage() {
   const { menuId, restaurantId } = useAuth();
@@ -51,8 +49,17 @@ function CategoriesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  //const sensors = useSensors(useSensor(PointerSensor));
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+  );
 
   const categoriesKey = ["categories", restaurantId, menuId];
 
@@ -63,7 +70,8 @@ function CategoriesPage() {
     enabled: !!menuId && !!restaurantId,
   });
 
-  const categories: Category[] = data?.categories.map(categoryResponseToUI) ?? [];
+  const categories: Category[] =
+    data?.categories.map(categoryResponseToUI) ?? [];
 
   const supportedLanguages: Language[] = data?.supportedLanguages ?? [];
 
@@ -73,37 +81,44 @@ function CategoriesPage() {
     showArabic: supportedLanguages.includes("AR" as Language),
   };
 
+  const reorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      categoryService.reorderCategories(menuId!, {
+        orderedCategoriesIds: orderedIds,
+      }),
 
-const reorderMutation = useMutation({
-  mutationFn: (orderedIds: string[]) =>
-    categoryService.reorderCategories(menuId!, { orderedCategoriesIds: orderedIds }),
+    onMutate: async (orderedIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: categoriesKey });
+      const previous =
+        queryClient.getQueryData<CategoriesPageData>(categoriesKey);
 
-  onMutate: async (orderedIds: string[]) => {
-    await queryClient.cancelQueries({ queryKey: categoriesKey });
-    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+      queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+        if (!old) return old;
+        const map = new Map(old.categories.map((cat) => [cat.id, cat]));
+        return {
+          ...old,
+          categories: orderedIds
+            .map((id) => map.get(id))
+            .filter(Boolean) as CategoryResponse[],
+        };
+      });
 
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
-      if (!old) return old;
-      const map = new Map(old.categories.map((cat) => [cat.id, cat]));
-      return {
-        ...old,
-        categories: orderedIds.map((id) => map.get(id)).filter(Boolean) as CategoryResponse[],
-      };
-    });
+      return { previous };
+    },
 
-    return { previous };
-  },
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<CategoriesPageData>(
+        categoriesKey,
+        context?.previous,
+      );
+      showToast("error", "Reorder Failed", getErrorMessage(err));
+    },
 
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
-    showToast("error", "Reorder Failed", getErrorMessage(err));
-  },
-
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: categoriesKey });
-  },
-});
-//this part is for the handlers
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+    },
+  });
+  //this part is for the handlers
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -131,7 +146,7 @@ const reorderMutation = useMutation({
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );*/
-   const paginatedCategories = categories;
+  const paginatedCategories = categories;
 
   const columns: Column[] = [
     { key: "order", label: "Order", center: true, width: "min-w-[80px]" },
@@ -225,7 +240,7 @@ const reorderMutation = useMutation({
                   {paginatedCategories.map((category, index) => (
                     <CategoryRow
                       key={category.id}
-                      category={category}    
+                      category={category}
                       isLast={index === paginatedCategories.length - 1}
                       languages={languages}
                     />
@@ -235,7 +250,7 @@ const reorderMutation = useMutation({
             </DndContext>
           </div>
 
-         <Pagination
+          <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
@@ -243,16 +258,16 @@ const reorderMutation = useMutation({
         </>
       )}
 
-     <AddCategoryModal
-  isOpen={modalOpen}
-  onClose={() => {
-    setModalOpen(false);
-  }}
-  onSuccess={() => {
-    setCurrentPage(1);
-  }}
-  supportedLanguages={supportedLanguages}
-/>
+      <AddCategoryModal
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+        }}
+        onSuccess={() => {
+          setCurrentPage(1);
+        }}
+        supportedLanguages={supportedLanguages}
+      />
     </div>
   );
 }

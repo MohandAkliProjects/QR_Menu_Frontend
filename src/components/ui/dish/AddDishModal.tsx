@@ -12,8 +12,10 @@ import { getErrorMessage } from "../../../api/errors";
 import { createDish } from "../../../services/dish.service";
 import type { CreateDishRequest } from "../../../types";
 import { useAuth } from "../../../context/AuthContext";
-import ToastContainer from "../../../components/ui/ToastContainer";
+import { useLanguage } from "../../../i18n/useLanguage";
+import ToastContainer from "../ToastContainer";
 import { DEVISE_SYMBOLS } from "../../../lib/constants/devise";
+import { addDishModalText } from "../text/AddDishModal.text";
 
 interface Category {
   id: UniqueIdentifier;
@@ -49,37 +51,22 @@ function AddDishModal({
   supportedLanguages,
   devise,
 }: AddDishModalProps) {
+  const { language } = useLanguage();
+  const t = addDishModalText[language];
+
   const showEnglish = supportedLanguages.includes("EN" as Language);
   const showFrench = supportedLanguages.includes("FR" as Language);
   const showArabic = supportedLanguages.includes("AR" as Language);
 
   const [form, setForm] = useState<CreateDishRequest>(EMPTY);
   const [priceDisplay, setPriceDisplay] = useState<string>("");
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof CreateDishRequest, string>>
-  >({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CreateDishRequest, string>>>({});
 
   const descTabs = [
-    showEnglish && {
-      key: "en",
-      label: "EN",
-      field: "englishDescription" as const,
-    },
-    showFrench && {
-      key: "fr",
-      label: "FR",
-      field: "frenchDescription" as const,
-    },
-    showArabic && {
-      key: "ar",
-      label: "AR",
-      field: "arabicDescription" as const,
-    },
-  ].filter(Boolean) as {
-    key: string;
-    label: string;
-    field: keyof CreateDishRequest;
-  }[];
+    showEnglish && { key: "en", label: "EN", field: "englishDescription" as const },
+    showFrench  && { key: "fr", label: "FR", field: "frenchDescription" as const },
+    showArabic  && { key: "ar", label: "AR", field: "arabicDescription" as const },
+  ].filter(Boolean) as { key: string; label: string; field: keyof CreateDishRequest }[];
 
   const [activeDescTab, setActiveDescTab] = useState<string>(
     descTabs[0]?.key ?? "en",
@@ -87,15 +74,11 @@ function AddDishModal({
 
   const validate = () => {
     const newErrors: Partial<Record<keyof CreateDishRequest, string>> = {};
-    if (showEnglish && !form.englishName?.trim())
-      newErrors.englishName = "English name is required.";
-    if (showFrench && !form.frenchName?.trim())
-      newErrors.frenchName = "French name is required.";
-    if (showArabic && !form.arabicName?.trim())
-      newErrors.arabicName = "Arabic name is required.";
-    if (!form.price || form.price <= 0)
-      newErrors.price = "Price must be greater than 0.";
-    if (!form.categoryId) newErrors.categoryId = "Please select a category.";
+    if (showEnglish && !form.englishName?.trim()) newErrors.englishName = t.errorEnglishRequired;
+    if (showFrench  && !form.frenchName?.trim())  newErrors.frenchName  = t.errorFrenchRequired;
+    if (showArabic  && !form.arabicName?.trim())  newErrors.arabicName  = t.errorArabicRequired;
+    if (!form.price || form.price <= 0)           newErrors.price       = t.errorPriceRequired;
+    if (!form.categoryId)                         newErrors.categoryId  = t.errorCategoryRequired;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,21 +106,15 @@ function AddDishModal({
       setForm(EMPTY);
       setPriceDisplay("");
       onClose();
-      showToast(
-        "success",
-        "Dish Added",
-        "New dish has been added successfully.",
-      );
+      showToast("success", t.toastSuccessTitle, t.toastSuccessMessage);
     },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+    onError: (err) => showToast("error", t.toastErrorTitle, getErrorMessage(err)),
     onSettled() {
       queryClient.invalidateQueries({ queryKey: ["dishes", restaurantId] });
     },
   });
 
-  const languageCount = [showEnglish, showFrench, showArabic].filter(
-    Boolean,
-  ).length;
+  const languageCount = [showEnglish, showFrench, showArabic].filter(Boolean).length;
   const gridCols =
     languageCount === 3
       ? "grid-cols-1 sm:grid-cols-3"
@@ -145,21 +122,28 @@ function AddDishModal({
         ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-1";
 
-  const activeTab = descTabs.find((t) => t.key === activeDescTab);
+  const activeTab = descTabs.find((tab) => tab.key === activeDescTab);
   const isActiveArabic = activeDescTab === "ar";
+
+  const descPlaceholder =
+    isActiveArabic
+      ? t.descriptionPlaceholderAr
+      : activeDescTab === "fr"
+        ? t.descriptionPlaceholderFr
+        : t.descriptionPlaceholderEn;
 
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <Modal
-        title="Add New Dish"
+        title={t.title}
         isOpen={isOpen}
         isPending={createMutation.isPending}
         onClose={onClose}
         footer={
           <div className="flex gap-4 w-full">
             <Button
-              label="Cancel"
+              label={t.cancel}
               icon={X}
               onClick={handleCancel}
               disabled={createMutation.isPending}
@@ -167,7 +151,7 @@ function AddDishModal({
               fullWidth
             />
             <Button
-              label={createMutation.isPending ? "Adding..." : "Confirm"}
+              label={createMutation.isPending ? t.adding : t.confirm}
               icon={Check}
               disabled={createMutation.isPending}
               onClick={handleConfirm}
@@ -193,60 +177,54 @@ function AddDishModal({
               {showEnglish && (
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-text-600">
-                    English <span className="text-error">*</span>
+                    {t.labelEnglish} <span className="text-error">*</span>
                   </label>
                   <Input
                     value={form.englishName}
-                    placeholder="Dish name"
+                    placeholder={t.placeholderEnglish}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, englishName: e.target.value }))
                     }
                     error={errors.englishName}
                   />
                   {errors.englishName && (
-                    <span className="text-xs text-error">
-                      {errors.englishName}
-                    </span>
+                    <span className="text-xs text-error">{errors.englishName}</span>
                   )}
                 </div>
               )}
               {showFrench && (
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-text-600">
-                    Français <span className="text-error">*</span>
+                    {t.labelFrench} <span className="text-error">*</span>
                   </label>
                   <Input
                     value={form.frenchName}
-                    placeholder="Nom du plat"
+                    placeholder={t.placeholderFrench}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, frenchName: e.target.value }))
                     }
                     error={errors.frenchName}
                   />
                   {errors.frenchName && (
-                    <span className="text-xs text-error">
-                      {errors.frenchName}
-                    </span>
+                    <span className="text-xs text-error">{errors.frenchName}</span>
                   )}
                 </div>
               )}
               {showArabic && (
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-text-600">
-                    العربية <span className="text-error">*</span>
+                    {t.labelArabic} <span className="text-error">*</span>
                   </label>
                   <Input
                     value={form.arabicName}
-                    placeholder="اسم الطبق"
+                    placeholder={t.placeholderArabic}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, arabicName: e.target.value }))
                     }
                     error={errors.arabicName}
                   />
                   {errors.arabicName && (
-                    <span className="text-xs text-error">
-                      {errors.arabicName}
-                    </span>
+                    <span className="text-xs text-error">{errors.arabicName}</span>
                   )}
                 </div>
               )}
@@ -258,9 +236,9 @@ function AddDishModal({
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-text-600">
-                  Description
+                  {t.descriptionLabel}
                   <span className="ml-1 text-xs text-text-400 font-normal">
-                    (optional)
+                    {t.descriptionOptional}
                   </span>
                 </label>
                 {descTabs.length > 1 && (
@@ -290,19 +268,10 @@ function AddDishModal({
                 <textarea
                   key={activeTab.key}
                   value={(form[activeTab.field] as string) ?? ""}
-                  placeholder={
-                    activeDescTab === "ar"
-                      ? "أضف وصفًا لهذا الطبق (اختياري)"
-                      : activeDescTab === "fr"
-                        ? "Ajoutez une description pour ce plat (facultatif)"
-                        : "Add a description for this dish (optional)"
-                  }
+                  placeholder={descPlaceholder}
                   dir={isActiveArabic ? "rtl" : "ltr"}
                   onChange={(e) =>
-                    setForm((p) => ({
-                      ...p,
-                      [activeTab.field]: e.target.value,
-                    }))
+                    setForm((p) => ({ ...p, [activeTab.field]: e.target.value }))
                   }
                   rows={2}
                   className="
@@ -323,7 +292,7 @@ function AddDishModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-600">
-                Price <span className="text-error">*</span>
+                {t.priceLabel} <span className="text-error">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-400">
@@ -370,7 +339,7 @@ function AddDishModal({
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-600">
-                Category <span className="text-error">*</span>
+                {t.categoryLabel} <span className="text-error">*</span>
               </label>
               <select
                 value={String(form.categoryId)}
@@ -389,7 +358,7 @@ function AddDishModal({
                   }
                 `}
               >
-                <option value="">Select a category</option>
+                <option value="">{t.categoryPlaceholder}</option>
                 {categories.map((cat) => (
                   <option key={String(cat.id)} value={String(cat.id)}>
                     {cat.label}
@@ -406,7 +375,7 @@ function AddDishModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-600">
-                Availability
+                {t.availabilityLabel}
               </label>
               <select
                 value={form.available ? "available" : "unavailable"}
@@ -423,14 +392,14 @@ function AddDishModal({
                   shadow-(--shadow-card) transition-all duration-200
                 "
               >
-                <option value="available">Available</option>
-                <option value="unavailable">Unavailable</option>
+                <option value="available">{t.availableOption}</option>
+                <option value="unavailable">{t.unavailableOption}</option>
               </select>
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-text-600">
-                Visibility
+                {t.visibilityLabel}
               </label>
               <select
                 value={form.visible ? "visible" : "hidden"}
@@ -447,8 +416,8 @@ function AddDishModal({
                   shadow-(--shadow-card) transition-all duration-200
                 "
               >
-                <option value="visible">Visible</option>
-                <option value="hidden">Hidden</option>
+                <option value="visible">{t.visibleOption}</option>
+                <option value="hidden">{t.hiddenOption}</option>
               </select>
             </div>
           </div>

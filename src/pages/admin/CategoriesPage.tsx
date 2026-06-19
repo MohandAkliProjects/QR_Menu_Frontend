@@ -31,6 +31,7 @@ import CategoryRow, {
 import AddCategoryModal from "../../components/ui/category/AddCategoryModal";
 import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import { categoryResponseToUI } from "../../lib/mappers";
 import * as categoryService from "../../services/category.service";
@@ -38,6 +39,7 @@ import type { Language } from "../../types/enums";
 import type { CategoryUI as Category } from "../../types/ui.ts";
 import type { CategoryResponse } from "../../types/api";
 import type { CategoriesPageData } from "../../types/ui.ts";
+import { categoriesText } from "./text/CategoriesPage.text.ts";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -45,11 +47,11 @@ function CategoriesPage() {
   const { menuId, restaurantId } = useAuth();
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
+  const { language } = useLanguage();
+  const t = categoriesText[language];
 
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
-  //const sensors = useSensors(useSensor(PointerSensor));
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -111,14 +113,13 @@ function CategoriesPage() {
         categoriesKey,
         context?.previous,
       );
-      showToast("error", "Reorder Failed", getErrorMessage(err));
+      showToast("error", t.reorderFailedTitle, getErrorMessage(err));
     },
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: categoriesKey });
     },
   });
-  //this part is for the handlers
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -142,61 +143,53 @@ function CategoriesPage() {
   });
 
   const totalPages = Math.max(1, Math.ceil(categories.length / ITEMS_PER_PAGE));
-  /*const paginatedCategories = categories.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );*/
   const paginatedCategories = categories;
 
   const columns: Column[] = [
-    { key: "order", label: "Order", center: true, width: "min-w-[80px]" },
-    { key: "icon", label: "Icon", center: true, width: "min-w-[80px]" },
+    { key: "order", label: t.colOrder, center: true, width: "min-w-[80px]" },
+    { key: "icon", label: t.colIcon, center: true, width: "min-w-[80px]" },
     {
       key: "english",
-      label: "English",
+      label: t.colEnglish,
       center: true,
       width: "min-w-[140px]",
       hidden: !languages.showEnglish,
     },
     {
       key: "french",
-      label: "Français",
+      label: t.colFrench,
       center: true,
       width: "min-w-[140px]",
       hidden: !languages.showFrench,
     },
     {
       key: "arabic",
-      label: "Arabic",
+      label: t.colArabic,
       center: true,
       width: "min-w-[140px]",
       hidden: !languages.showArabic,
     },
-    { key: "status", label: "Status", center: true, width: "min-w-[120px]" },
-    { key: "actions", label: "Actions", center: true, width: "min-w-[140px]" },
+    { key: "status", label: t.colStatus, center: true, width: "min-w-[120px]" },
+    { key: "actions", label: t.colActions, center: true, width: "min-w-[140px]" },
   ];
 
   const noMenuError =
-    !menuId || !restaurantId
-      ? "No menu found for this restaurant. Please create a menu first."
-      : null;
+    !menuId || !restaurantId ? t.noMenuError : null;
 
   return (
-    <div className="flex flex-col  p-6 sm:p-8 lg:p-10 w-full">
+    <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <PageHeader
-          title="Category Manager"
-          description="Organize and manage your menu categories"
+          title={t.pageTitle}
+          description={t.pageDescription}
           showDescription
         />
         <Button
-          label="Add Category"
+          label={t.addCategory}
           icon={Plus}
-          onClick={() => {
-            setModalOpen(true);
-          }}
+          onClick={() => setModalOpen(true)}
           disabled={isLoading || isError || !!noMenuError}
         />
       </div>
@@ -207,10 +200,12 @@ function CategoriesPage() {
         categoriesWithMissing.length > 0 && (
           <Notification
             variant="warning"
-            title="Missing Translations"
-            message={`${categoriesWithMissing.length} categor${
-              categoriesWithMissing.length > 1 ? "ies have" : "y has"
-            } missing translations. Edit them to add all required languages.`}
+            title={t.missingTranslationsTitle}
+            message={`${categoriesWithMissing.length} ${
+              categoriesWithMissing.length > 1
+                ? t.missingTranslationsPlural
+                : t.missingTranslationsSingle
+            }`}
             className="mb-6"
           />
         )}
@@ -218,10 +213,10 @@ function CategoriesPage() {
       {noMenuError ? (
         <PageErrorState message={noMenuError} />
       ) : isLoading ? (
-        <PageLoadingState message="Loading categories..." />
+        <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(error, "Could not load categories.")}
+          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       ) : (
@@ -260,12 +255,8 @@ function CategoriesPage() {
 
       <AddCategoryModal
         isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-        }}
-        onSuccess={() => {
-          setCurrentPage(1);
-        }}
+        onClose={() => setModalOpen(false)}
+        onSuccess={() => setCurrentPage(1)}
         supportedLanguages={supportedLanguages}
       />
     </div>

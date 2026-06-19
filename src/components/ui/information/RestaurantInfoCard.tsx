@@ -4,7 +4,8 @@ import Card from "../../ui/Card";
 import Input from "../../ui/Input";
 import SectionHeader from "../../shared/SectionHeader";
 import AvatarUpload from "../../ui/AvatarUpload";
-
+import { useLanguage } from "../../../i18n/useLanguage";
+import { restaurantInfoText } from "../text/RestaurantInfoCard.text";
 
 export interface RestaurantInfoFields {
   restaurantName: string;
@@ -31,7 +32,6 @@ interface RestaurantInfoCardProps {
   onDeleteLogo: () => void;
 }
 
-
 function RestaurantInfoCard({
   isEditing,
   fields,
@@ -41,6 +41,9 @@ function RestaurantInfoCard({
   onFileSelected,
   onDeleteLogo,
 }: RestaurantInfoCardProps) {
+  const { language } = useLanguage();
+  const t = restaurantInfoText[language];
+
   const field =
     (key: keyof Omit<RestaurantInfoFields, "logoUrl">) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -50,8 +53,8 @@ function RestaurantInfoCard({
     <Card className="flex flex-col gap-5">
       <SectionHeader
         icon={Building2}
-        title="Business Information"
-        description="Restaurant profile details"
+        title={t.sectionTitle}
+        description={t.sectionDescription}
       />
 
       <div className="flex flex-col gap-4">
@@ -67,12 +70,12 @@ function RestaurantInfoCard({
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-600">
-            Restaurant Name
+            {t.restaurantNameLabel}
           </label>
           <Input
             value={fields.restaurantName}
             readOnly={!isEditing}
-            placeholder="Restaurant name"
+            placeholder={t.restaurantNamePlaceholder}
             onChange={field("restaurantName")}
           />
           {errors.restaurantName && (
@@ -82,29 +85,29 @@ function RestaurantInfoCard({
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-600">
-            Restaurant Contact Email
+            {t.emailLabel}
           </label>
           <Input
             value={fields.emailAddress}
             readOnly={!isEditing}
-            placeholder="contact@restaurant.com"
+            placeholder={t.emailPlaceholder}
             onChange={field("emailAddress")}
           />
           {errors.emailAddress && (
             <p className="text-xs text-error">{errors.emailAddress}</p>
           )}
-          <p className="text-xs text-text-400">
-            This email is shown to customers, not used for login.
-          </p>
+          <p className="text-xs text-text-400">{t.emailHint}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-600">Address</label>
+            <label className="text-sm font-medium text-text-600">
+              {t.addressLabel}
+            </label>
             <Input
               value={fields.address}
               readOnly={!isEditing}
-              placeholder="Street address"
+              placeholder={t.addressPlaceholder}
               onChange={field("address")}
             />
             {errors.address && (
@@ -113,11 +116,13 @@ function RestaurantInfoCard({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-600">City</label>
+            <label className="text-sm font-medium text-text-600">
+              {t.cityLabel}
+            </label>
             <Input
               value={fields.city}
               readOnly={!isEditing}
-              placeholder="City"
+              placeholder={t.cityPlaceholder}
               onChange={field("city")}
             />
             {errors.city && (

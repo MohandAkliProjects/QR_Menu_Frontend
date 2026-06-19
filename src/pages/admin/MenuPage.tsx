@@ -25,6 +25,7 @@ import SelectDropdown from "../../components/ui/SelectDropdown";
 import ToastContainer from "../../components/ui/ToastContainer";
 import Modal from "../../components/ui/Modal";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import {
   menuFormToUpdateRequest,
@@ -35,6 +36,7 @@ import * as menuService from "../../services/menu.service";
 import { ROUTES } from "../../types/routes";
 import type { Devise } from "../../types/enums";
 import * as restaurantService from "../../services/restaurant.service";
+import { menuText } from "./text/MenuPage.text";
 
 const DEVISE_OPTIONS: Devise[] = [
   "eur",
@@ -80,20 +82,23 @@ interface MenuFormErrors {
 function validateMenuForm(
   form: MenuFormState,
   supportedLanguages: SupportedLang[],
+  t: (typeof menuText)["en"],
 ): MenuFormErrors {
   const errors: MenuFormErrors = {};
   for (const lang of supportedLanguages) {
     const field = LANGUAGE_FIELD[lang];
     if (!form[field]?.trim()) {
-      errors[field] = `${LANGUAGE_LABELS[lang]} title is required.`;
+      errors[field] = t.requiredTitle(LANGUAGE_LABELS[lang]);
     }
   }
-  if (!form.devise) errors.devise = "Currency is required.";
+  if (!form.devise) errors.devise = t.currencyRequired;
   return errors;
 }
 
 function MenuPage() {
   const { restaurantId, menuId } = useAuth();
+  const { language } = useLanguage();
+  const t = menuText[language];
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
@@ -159,9 +164,10 @@ function MenuPage() {
       setIsEditing(false);
       setErrors({});
       setForm(null);
-      showToast("success", "Menu Saved", "Your menu has been updated.");
+      showToast("success", t.toastMenuSavedTitle, t.toastMenuSavedMessage);
     },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+    onError: (err) =>
+      showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
   });
 
   {
@@ -187,13 +193,13 @@ function MenuPage() {
 
       showToast(
         "success",
-        "Menu Deleted",
-        "The menu has been deleted successfully.",
+        t.toastMenuDeletedTitle,
+        t.toastMenuDeletedMessage,
       );
     },
 
     onError: (err) => {
-      showToast("error", "Delete Failed", getErrorMessage(err));
+      showToast("error", t.toastDeleteFailedTitle, getErrorMessage(err));
     },
   });
 
@@ -215,13 +221,13 @@ function MenuPage() {
 
   const handleSave = () => {
     if (!activeForm) return;
-    const validationErrors = validateMenuForm(activeForm, activeLangs);
+    const validationErrors = validateMenuForm(activeForm, activeLangs, t);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
       showToast(
         "error",
-        "Validation Error",
-        "Please fill in all required fields.",
+        t.toastValidationTitle,
+        t.toastValidationMessage,
       );
       return;
     }
@@ -249,9 +255,7 @@ function MenuPage() {
   const isError = menuIsError;
 
   const noMenuError =
-    !restaurantId || !menuId
-      ? "No default menu found for this restaurant."
-      : null;
+    !restaurantId || !menuId ? t.noMenuError : null;
 
   const gridCols =
     activeLangs.length === 1
@@ -266,15 +270,15 @@ function MenuPage() {
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <PageHeader
-          title="Menu"
-          description="Manage your restaurant default menu"
+          title={t.pageTitle}
+          description={t.pageDescription}
           showDescription
         />
 
         <div className="flex items-center gap-3 flex-wrap">
           {previewUrl && (
             <Button
-              label="Preview"
+              label={t.preview}
               icon={ExternalLink}
               variant="secondary"
               onClick={() =>
@@ -285,16 +289,16 @@ function MenuPage() {
           )}
 
           {!isEditing ? (
-            <Button label="Edit" icon={Edit2} onClick={handleEdit} />
+            <Button label={t.edit} icon={Edit2} onClick={handleEdit} />
           ) : (
             <>
               <Button
-                label="Cancel"
+                label={t.cancel}
                 variant="secondary"
                 onClick={handleCancel}
               />
               <Button
-                label={saveMutation.isPending ? "Saving..." : "Save Changes"}
+                label={saveMutation.isPending ? t.saving : t.saveChanges}
                 icon={Save}
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
@@ -307,8 +311,8 @@ function MenuPage() {
       {!isLoading && !isError && (
         <Notification
           variant="info"
-          title="Default Menu"
-          message="This restaurant uses one default menu. Multi-menu support will be added later."
+          title={t.defaultMenuTitle}
+          message={t.defaultMenuMessage}
           className="mb-6"
         />
       )}
@@ -316,10 +320,10 @@ function MenuPage() {
       {noMenuError ? (
         <PageErrorState message={noMenuError} />
       ) : isLoading ? (
-        <PageLoadingState message="Loading menu..." />
+        <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(menuError, "Could not load menu.")}
+          message={getErrorMessage(menuError, t.loadError)}
           onRetry={refetchMenu}
         />
       ) : activeForm ? (
@@ -330,8 +334,8 @@ function MenuPage() {
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <SectionHeader
                   icon={UtensilsCrossed}
-                  title="Menu Titles"
-                  description="One title per supported language"
+                  title={t.menuTitlesTitle}
+                  description={t.menuTitlesDescription}
                 />
                 {isEditing && availableToAdd.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
@@ -344,7 +348,7 @@ function MenuPage() {
                         className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-primary-400 text-xs font-medium text-primary-700 hover:bg-primary-50"
                       >
                         <Plus size={13} />
-                        Add {LANGUAGE_LABELS[lang]}
+                        {t.addLabel} {LANGUAGE_LABELS[lang]}
                       </button>
                     ))}
                   </div>
@@ -398,8 +402,8 @@ function MenuPage() {
             <Card className="flex flex-col gap-4">
               <SectionHeader
                 icon={UtensilsCrossed}
-                title="Currency"
-                description="The currency shown to customers on your public menu"
+                title={t.currencyTitle}
+                description={t.currencyDescription}
               />
               <div className="max-w-50">
                 <SelectDropdown
@@ -427,12 +431,12 @@ function MenuPage() {
           {/* RIGHT */}
           <div className="flex flex-col gap-6">
             <Card className="flex flex-col gap-4">
-              <SectionHeader icon={LayoutList} title="Menu Summary" />
+              <SectionHeader icon={LayoutList} title={t.menuSummaryTitle} />
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-primary-50 px-4 py-3">
                   <div className="flex items-center gap-2 text-primary-700 mb-1">
                     <LayoutGrid className="w-4 h-4" />
-                    <span className="text-sm">Categories</span>
+                    <span className="text-sm">{t.categories}</span>
                   </div>
                   <span className="text-2xl font-semibold text-dark-800">
                     {categoryCount}
@@ -441,7 +445,7 @@ function MenuPage() {
                 <div className="rounded-xl bg-beige-100 px-4 py-3">
                   <div className="flex items-center gap-2 text-primary-700 mb-1">
                     <UtensilsCrossed className="w-4 h-4" />
-                    <span className="text-sm">Dishes</span>
+                    <span className="text-sm">{t.dishes}</span>
                   </div>
                   <span className="text-2xl font-semibold text-dark-800">
                     {dishCount}
@@ -451,13 +455,12 @@ function MenuPage() {
             </Card>
 
             <Card className="flex flex-col gap-4">
-              <SectionHeader icon={Trash2} title="Danger Zone" />
+              <SectionHeader icon={Trash2} title={t.dangerZoneTitle} />
               <p className="text-sm text-text-400">
-                Deleting this menu will permanently remove all categories and
-                dishes associated with it.
+                {t.dangerZoneDescription}
               </p>
               <Button
-                label="Delete Menu"
+                label={t.deleteMenu}
                 icon={Trash2}
                 onClick={() => setShowDeleteModal(true)}
                 className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
@@ -492,21 +495,21 @@ function MenuPage() {
         />
       </Modal> */}
       <Modal
-        title="Delete Menu"
+        title={t.deleteMenuModalTitle}
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         isPending={deleteMutation.isPending}
         footer={
           <>
             <Button
-              label="Cancel"
+              label={t.cancel}
               variant="secondary"
               onClick={() => setShowDeleteModal(false)}
               fullWidth
             />
 
             <Button
-              label={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
+              label={deleteMutation.isPending ? t.deleting : t.yesDelete}
               icon={Trash2}
               onClick={() => deleteMutation.mutate()}
               fullWidth
@@ -517,8 +520,8 @@ function MenuPage() {
       >
         <Notification
           variant="error"
-          title="This action cannot be undone"
-          message="Deleting this menu will permanently remove all categories, dishes, translations, and menu settings."
+          title={t.deleteWarningTitle}
+          message={t.deleteWarningMessage}
         />
       </Modal>
     </div>

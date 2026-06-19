@@ -13,12 +13,17 @@ import Button from "../../components/ui/Button";
 import SubTitle from "../../components/shared/SubTitle";
 import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import { ROUTES } from "../../types/routes";
 import * as restaurantService from "../../services/restaurant.service";
+import { qrDisplayText } from "./text/QrDisplayPage.text";
 
 function QrDisplayPage() {
+  
   const { restaurantId } = useAuth();
+  const { language } = useLanguage();
+  const t = qrDisplayText[language];
   const { toasts, showToast, removeToast } = useToast();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -41,11 +46,11 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
     if (!qrDisplayUrl) return;
     try {
       await navigator.clipboard.writeText(qrDisplayUrl);
-      showToast("success", "Copied", "Public menu URL copied to clipboard.");
+      showToast("success", t.toastCopiedTitle, t.toastCopiedMessage);
     } catch {
-      showToast("error", "Copy Failed", "Could not copy the URL.");
+      showToast("error", t.toastCopyFailedTitle, t.toastCopyFailedMessage);
     }
-  }, [qrDisplayUrl, showToast]);
+  }, [qrDisplayUrl, showToast, t]);
 
   function handleTest() {
     if (!qrDisplayUrl) return;
@@ -54,19 +59,23 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
 
   function handleDownload() {
     if (!qrUrl) {
-      showToast("error", "No QR Code", "No QR code has been generated yet.");
+      showToast("error", t.toastNoQrTitle, t.toastNoQrMessage);
       return;
     }
     const canvas = document.querySelector<HTMLCanvasElement>("canvas");
     if (!canvas) {
-      showToast("error", "Download Failed", "Could not find QR code canvas.");
+      showToast(
+        "error",
+        t.toastDownloadFailedTitle,
+        t.toastDownloadFailedMessage,
+      );
       return;
     }
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
     link.download = "restaurant-qr.png";
     link.click();
-    showToast("success", "Downloaded", "QR image download started.");
+    showToast("success", t.toastDownloadedTitle, t.toastDownloadedMessage);
   }
 
   return (
@@ -74,21 +83,21 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="w-full flex flex-col gap-8">
-        <PageHeader title="QR Display" showDescription={false} />
+        <PageHeader title={t.pageTitle} showDescription={false} />
 
         {isLoading ? (
-          <PageLoadingState message="Loading QR display..." />
+          <PageLoadingState message={t.loading} />
         ) : isError ? (
           <PageErrorState
-            message={getErrorMessage(error, "Could not load QR information.")}
+            message={getErrorMessage(error, t.loadError)}
             onRetry={refetch}
           />
         ) : (
           <>
             <div className="flex flex-col gap-8 w-full">
               <SubTitle
-                title="Your QR Code"
-                description="Guests scan this code to open your public menu in their browser."
+                title={t.yourQrCodeTitle}
+                description={t.yourQrCodeDescription}
                 showDescription={true}
               />
               <Card
@@ -108,17 +117,17 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
                   />
                 ) : (
                   <p className="text-small text-text-300 text-center">
-                    No QR code available. Please set a default menu first.
+                    {t.noQrCode}
                   </p>
                 )}
                 <p className="text-small text-text-300 text-center truncate w-full px-4">
-                  {qrDisplayUrl || "No public menu URL configured yet."}
+                  {qrDisplayUrl || t.noPublicUrl}
                 </p>
               </Card>
             </div>
 
             <div className="flex flex-col gap-4 w-full">
-              <SubTitle title="Public Menu URL" />
+              <SubTitle title={t.publicMenuUrlTitle} />
               <div
                 className="
                   flex gap-4 w-full
@@ -130,7 +139,7 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
                   <Input value={qrDisplayUrl} readOnly />
                 </div>
                 <Button
-                  label="Copy Menu URL"
+                  label={t.copyMenuUrl}
                   icon={Copy}
                   onClick={handleCopy}
                   className="whitespace-nowrap w-auto shrink-0"
@@ -147,14 +156,14 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
               "
             >
               <Button
-                label="Download QR"
+                label={t.downloadQr}
                 icon={Download}
                 className="flex-1"
                 onClick={handleDownload}
                 disabled={!qrUrl}
               />
               <Button
-                label="Test URL"
+                label={t.testUrl}
                 icon={ExternalLink}
                 className="flex-1"
                 onClick={handleTest}

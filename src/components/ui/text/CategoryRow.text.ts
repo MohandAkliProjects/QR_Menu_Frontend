@@ -1,0 +1,28 @@
+export const categoryRowText = {
+  en: {
+    missing: "Missing",
+    cancel: "Cancel",
+    save: "Save",
+    errorEnglishMin: "English name must be at least 3 characters.",
+    errorFrenchMin: "French name must be at least 3 characters.",
+    errorArabicMin: "Arabic name must be at least 3 characters.",
+    errorAtLeastOne: "At least one translation is required.",
+    toastUpdatedTitle: "Category Updated",
+    toastUpdatedMessage: "Category has been updated successfully.",
+    toastDeleteFailedTitle: "Delete Failed",
+    toastSaveFailedTitle: "Save Failed",
+  },
+  fr: {
+    missing: "Manquant",
+    cancel: "Annuler",
+    save: "Enregistrer",
+    errorEnglishMin: "Le nom en anglais doit contenir au moins 3 caractères.",
+    errorFrenchMin: "Le nom en français doit contenir au moins 3 caractères.",
+    errorArabicMin: "Le nom en arabe doit contenir au moins 3 caractères.",
+    errorAtLeastOne: "Au moins une traduction est requise.",
+    toastUpdatedTitle: "Catégorie mise à jour",
+    toastUpdatedMessage: "La catégorie a été mise à jour avec succès.",
+    toastDeleteFailedTitle: "Échec de la suppression",
+    toastSaveFailedTitle: "Échec de l'enregistrement",
+  },
+} as const;

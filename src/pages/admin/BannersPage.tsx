@@ -13,8 +13,10 @@ import BannerCard from "../../components/ui/banner/BannerCard";
 import ImagePreview from "../../components/ui/ImagePreview";
 import ToastContainer from "../../components/ui/ToastContainer";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import * as restaurantService from "../../services/restaurant.service";
+import { bannersText } from "./text/BannersPage.text";
 
 const MAX_BANNERS = 3;
 
@@ -36,6 +38,8 @@ function mapBanners(
 
 function BannersPage() {
   const { restaurantId } = useAuth();
+  const { language } = useLanguage();
+  const t = bannersText[language];
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
@@ -67,9 +71,10 @@ function BannersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bannersKey });
       handleDeletePreview();
-      showToast("success", "Banner Added", "Your banner has been uploaded.");
+      showToast("success", t.toastAddedTitle, t.toastAddedMessage);
     },
-    onError: (err) => showToast("error", "Upload Failed", getErrorMessage(err)),
+    onError: (err) =>
+      showToast("error", t.toastAddFailedTitle, getErrorMessage(err)),
   });
 
   const deleteBannerMutation = useMutation({
@@ -77,9 +82,10 @@ function BannersPage() {
       restaurantService.deleteBanner(restaurantId!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bannersKey });
-      showToast("success", "Banner Deleted", "Banner has been removed.");
+      showToast("success", t.toastDeletedTitle, t.toastDeletedMessage);
     },
-    onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
+    onError: (err) =>
+      showToast("error", t.toastDeleteFailedTitle, getErrorMessage(err)),
   });
 
   const toggleVisibilityMutation = useMutation({
@@ -88,7 +94,8 @@ function BannersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bannersKey });
     },
-    onError: (err) => showToast("error", "Update Failed", getErrorMessage(err)),
+    onError: (err) =>
+      showToast("error", t.toastUpdateFailedTitle, getErrorMessage(err)),
   });
 
   const isLimitReached = banners.length >= MAX_BANNERS;
@@ -111,29 +118,29 @@ function BannersPage() {
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="w-full flex flex-col gap-8">
-        <PageHeader title="Banners" />
+        <PageHeader title={t.pageTitle} />
 
         {isLoading ? (
-          <PageLoadingState message="Loading banners..." />
+          <PageLoadingState message={t.loading} />
         ) : isError ? (
           <PageErrorState
-            message={getErrorMessage(error, "Could not load banners.")}
+            message={getErrorMessage(error, t.loadError)}
             onRetry={refetch}
           />
         ) : (
           <>
             <div className="flex flex-col gap-4 w-full">
               <SubTitle
-                title="Manage Banners"
-                description="Upload up to 3 banner images for your menu carousel"
+                title={t.manageTitle}
+                description={t.manageDescription}
                 showDescription={true}
               />
 
               {isLimitReached && (
                 <Notification
                   variant="warning"
-                  title="Banner Limit Reached"
-                  message="You have reached the maximum of 3 banners. Remove an existing banner to upload a new one."
+                  title={t.limitReachedTitle}
+                  message={t.limitReachedMessage}
                 />
               )}
 
@@ -164,7 +171,7 @@ function BannersPage() {
                         isLimitReached ? "text-gold-500" : "text-primary-500"
                       }`}
                     >
-                      Tap to select a banner
+                      {t.tapToSelect}
                     </p>
                   </div>
                 </div>
@@ -173,12 +180,12 @@ function BannersPage() {
                   <div className="flex flex-col gap-4 w-full max-w-150">
                     <img
                       src={preview}
-                      alt="Banner preview"
+                      alt={t.bannerPreviewAlt}
                       className="w-full max-h-75 object-cover rounded-2xl"
                     />
                     <div className="flex gap-4 w-full">
                       <Button
-                        label="Cancel"
+                        label={t.cancel}
                         icon={X}
                         onClick={handleDeletePreview}
                         disabled={addBannerMutation.isPending}
@@ -187,9 +194,7 @@ function BannersPage() {
                       />
                       <Button
                         label={
-                          addBannerMutation.isPending
-                            ? "Uploading..."
-                            : "Confirm"
+                          addBannerMutation.isPending ? t.uploading : t.confirm
                         }
                         icon={Check}
                         onClick={() =>
@@ -215,16 +220,16 @@ function BannersPage() {
 
             <div className="flex flex-col gap-4 w-full mx-auto">
               <SubTitle
-                title="Current Banners"
-                description="Hover on the image to edit"
+                title={t.currentBannersTitle}
+                description={t.currentBannersDescription}
                 showDescription={true}
               />
 
               {banners.length === 0 ? (
                 <Notification
                   variant="info"
-                  title="No Banners Yet"
-                  message="Upload your first banner to display promotional content in your menu carousel."
+                  title={t.noBannersTitle}
+                  message={t.noBannersMessage}
                   className="w-full"
                 />
               ) : (

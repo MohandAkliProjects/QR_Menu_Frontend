@@ -6,6 +6,8 @@ import Button from "../../components/ui/Button";
 import IconInput from "../../components/ui/IconInput";
 import { getErrorMessage } from "../../api/errors";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
+import { loginText } from "./text/LoginPage.text";
 
 interface FormState {
   email: string;
@@ -18,17 +20,20 @@ interface FormErrors {
   general?: string;
 }
 
-function validate(form: FormState): FormErrors {
+function validate(
+  form: FormState,
+  t: (typeof loginText)[keyof typeof loginText]
+): FormErrors {
   const errors: FormErrors = {};
   if (!form.email.trim()) {
-    errors.email = "Email is required.";
+    errors.email = t.emailRequired;
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = "Enter a valid email address.";
+    errors.email = t.emailInvalid;
   }
   if (!form.password.trim()) {
-    errors.password = "Password is required.";
+    errors.password = t.passwordRequired;
   } else if (form.password.length < 6) {
-    errors.password = "Password must be at least 6 characters.";
+    errors.password = t.passwordMinLength;
   }
   return errors;
 }
@@ -36,6 +41,9 @@ function validate(form: FormState): FormErrors {
 function LoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
+  const { language } = useLanguage();
+  const t = loginText[language];
+
   const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
@@ -50,7 +58,7 @@ function LoginPage() {
     };
 
   const handleSubmit = async () => {
-    const validationErrors = validate(form);
+    const validationErrors = validate(form, t);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -62,7 +70,7 @@ function LoginPage() {
       navigate("/dashboard");
     } catch (error) {
       setErrors({
-        general: getErrorMessage(error, "Invalid email or password."),
+        general: getErrorMessage(error, t.generalError),
       });
     } finally {
       setLoading(false);
@@ -72,13 +80,13 @@ function LoginPage() {
   return (
     <div className="min-h-screen bg-primary-50 flex flex-col items-center justify-center px-4">
       <div className="flex flex-col items-center gap-1 mb-8">
-        <h1 className="text-3xl font-bold text-primary-800">Spectral QR</h1>
-        <p className="text-base text-text-400">Restaurant Admin Dashboard</p>
+        <h1 className="text-3xl font-bold text-primary-800">{t.appTitle}</h1>
+        <p className="text-base text-text-400">{t.appSubtitle}</p>
       </div>
 
       <Card className="w-full max-w-md flex flex-col gap-6">
         <h2 className="text-xl font-bold text-dark-700 text-center">
-          Welcome Back
+          {t.welcomeBack}
         </h2>
 
         {errors.general && (
@@ -87,15 +95,23 @@ function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); } } className="flex flex-col gap-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          className="flex flex-col gap-4"
+        >
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-600">Email</label>
+            <label className="text-sm font-medium text-text-600">
+              {t.emailLabel}
+            </label>
             <IconInput
               id="email"
               name="email"
               icon={Mail}
               type="email"
-              placeholder="your@email.com"
+              placeholder={t.emailPlaceholder}
               value={form.email}
               onChange={field("email")}
               error={errors.email}
@@ -105,15 +121,15 @@ function LoginPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-600">
-              Password
+              {t.passwordLabel}
             </label>
             <div className="relative">
               <IconInput
                 id="password"
-                name="password"    
+                name="password"
                 icon={Lock}
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
+                placeholder={t.passwordPlaceholder}
                 value={form.password}
                 onChange={field("password")}
                 error={errors.password}
@@ -131,20 +147,17 @@ function LoginPage() {
             </div>
           </div>
 
-           <Button
-          label={loading ? "Signing in..." : "Sign In"}
-          icon={LogIn}
-          // onClick={handleSubmit}
-          disabled={loading}
-          fullWidth
-          type="submit"
-        />
+          <Button
+            label={loading ? t.signingIn : t.signIn}
+            icon={LogIn}
+            disabled={loading}
+            fullWidth
+            type="submit"
+          />
         </form>
       </Card>
 
-      <p className="mt-8 text-sm text-text-400">
-        © 2024 Spectral QR. All rights reserved.
-      </p>
+      <p className="mt-8 text-sm text-text-400">{t.copyright}</p>
     </div>
   );
 }

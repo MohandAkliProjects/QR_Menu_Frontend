@@ -1,0 +1,28 @@
+export const restaurantInfoText = {
+  en: {
+    sectionTitle: "Business Information",
+    sectionDescription: "Restaurant profile details",
+    restaurantNameLabel: "Restaurant Name",
+    restaurantNamePlaceholder: "Restaurant name",
+    emailLabel: "Restaurant Contact Email",
+    emailPlaceholder: "contact@restaurant.com",
+    emailHint: "This email is shown to customers, not used for login.",
+    addressLabel: "Address",
+    addressPlaceholder: "Street address",
+    cityLabel: "City",
+    cityPlaceholder: "City",
+  },
+  fr: {
+    sectionTitle: "Informations professionnelles",
+    sectionDescription: "Détails du profil du restaurant",
+    restaurantNameLabel: "Nom du restaurant",
+    restaurantNamePlaceholder: "Nom du restaurant",
+    emailLabel: "E-mail de contact du restaurant",
+    emailPlaceholder: "contact@restaurant.com",
+    emailHint: "Cet e-mail est affiché aux clients, il n'est pas utilisé pour la connexion.",
+    addressLabel: "Adresse",
+    addressPlaceholder: "Adresse postale",
+    cityLabel: "Ville",
+    cityPlaceholder: "Ville",
+  },
+} as const;

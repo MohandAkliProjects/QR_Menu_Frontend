@@ -17,6 +17,7 @@ import ChangePasswordCard from "../../components/ui/information/ChangePasswordCa
 import RestaurantInfoCard from "../../components/ui/information/RestaurantInfoCard";
 import type { RestaurantInfoFields, RestaurantInfoErrors } from "../../components/ui/information/RestaurantInfoCard";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import { SOCIAL_PLATFORMS } from "../../lib/constants/social";
 import {
@@ -24,6 +25,7 @@ import {
   restaurantResponseToForm,
 } from "../../lib/mappers";
 import * as restaurantService from "../../services/restaurant.service";
+import { informationText } from "./text/InformationPage.text";
 
 interface SocialLink {
   id: number;
@@ -41,17 +43,20 @@ interface RestaurantFormErrors extends RestaurantInfoErrors {
   socials?: Record<number, string | undefined>;
 }
 
-function validateRestaurant(form: RestaurantForm): RestaurantFormErrors {
+function validateRestaurant(
+  form: RestaurantForm,
+  t: (typeof informationText)["en"],
+): RestaurantFormErrors {
   const errors: RestaurantFormErrors = {};
 
   if (!form.restaurantName.trim())
-    errors.restaurantName = "Restaurant name is required.";
+    errors.restaurantName = t.restaurantNameRequired;
   if (form.emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAddress))
-    errors.emailAddress = "Enter a valid email address.";
+    errors.emailAddress = t.invalidEmail;
 
   const phoneErrors: Record<number, string> = {};
   form.phones.forEach((p) => {
-    if (!p.value.trim()) phoneErrors[p.id] = "Phone number cannot be empty.";
+    if (!p.value.trim()) phoneErrors[p.id] = t.phoneRequired;
   });
   if (Object.keys(phoneErrors).length) errors.phones = phoneErrors;
 
@@ -59,14 +64,14 @@ function validateRestaurant(form: RestaurantForm): RestaurantFormErrors {
   const seenPlatforms: Record<string, number> = {};
   form.socials.forEach((s) => {
     if (!s.url.trim()) {
-      socialErrors[s.id] = "URL cannot be empty.";
+      socialErrors[s.id] = t.urlRequired;
     } else if (!/^https?:\/\/.+/.test(s.url.trim())) {
-      socialErrors[s.id] = "URL must start with https://";
+      socialErrors[s.id] = t.urlMustStartWithHttps;
     }
     if (seenPlatforms[s.platform] !== undefined) {
       socialErrors[s.id] =
         (socialErrors[s.id] ? `${socialErrors[s.id]} ` : "") +
-        `${s.platform} is already added.`;
+        t.alreadyAdded(s.platform);
     } else {
       seenPlatforms[s.platform] = s.id;
     }
@@ -78,6 +83,8 @@ function validateRestaurant(form: RestaurantForm): RestaurantFormErrors {
 
 function InformationPage() {
   const { restaurantId, email: userEmail } = useAuth();
+  const { language } = useLanguage();
+  const t = informationText[language];
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
@@ -165,9 +172,14 @@ function InformationPage() {
       setIsEditing(false);
       setErrors({});
       setForm(null);
-      showToast("success", "Profile Saved", "Your restaurant profile has been updated.");
+      showToast(
+        "success",
+        t.toastProfileSavedTitle,
+        t.toastProfileSavedMessage,
+      );
     },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
+    onError: (err) =>
+      showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
   });
 
   const handleEdit = () => {
@@ -187,13 +199,17 @@ function InformationPage() {
 
   const handleSave = () => {
     if (!restaurantId || !activeForm) {
-      showToast("error", "Session Error", "Restaurant session is missing.");
+      showToast(
+        "error",
+        t.toastSessionErrorTitle,
+        t.toastSessionErrorMessage,
+      );
       return;
     }
-    const validationErrors = validateRestaurant(activeForm);
+    const validationErrors = validateRestaurant(activeForm, t);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      showToast("error", "Validation Error", "Please fix the highlighted fields.");
+      showToast("error", t.toastValidationTitle, t.toastValidationMessage);
       return;
     }
     saveMutation.mutate(activeForm);
@@ -251,7 +267,7 @@ function InformationPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6 p-6 w-full">
-        <PageLoadingState message="Loading profile..." />
+        <PageLoadingState message={t.loading} />
       </div>
     );
   }
@@ -261,7 +277,7 @@ function InformationPage() {
       <div className="flex flex-col gap-6 p-6 w-full">
         <ToastContainer toasts={toasts} onClose={removeToast} />
         <PageErrorState
-          message={getErrorMessage(error, "Could not load restaurant profile.")}
+          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       </div>
@@ -276,23 +292,23 @@ function InformationPage() {
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <PageHeader
-          title="Profile Settings"
-          description="Manage your restaurant profile and digital presence"
+          title={t.pageTitle}
+          description={t.pageDescription}
           showDescription
         />
         <div className="flex items-center gap-3">
           {isEditing && (
-            <Button label="Cancel" variant="secondary" onClick={handleCancel} />
+            <Button label={t.cancel} variant="secondary" onClick={handleCancel} />
           )}
           {isEditing ? (
             <Button
-              label={saveMutation.isPending ? "Saving..." : "Save Changes"}
+              label={saveMutation.isPending ? t.saving : t.saveChanges}
               icon={Save}
               onClick={handleSave}
               disabled={saveMutation.isPending}
             />
           ) : (
-            <Button label="Edit" icon={Edit2} onClick={handleEdit} />
+            <Button label={t.edit} icon={Edit2} onClick={handleEdit} />
           )}
         </div>
       </div>
@@ -300,14 +316,14 @@ function InformationPage() {
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={User}
-          title="Personal Information"
-          description="Your account credentials"
+          title={t.personalInfoTitle}
+          description={t.personalInfoDescription}
         />
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-600">Account Email</label>
+          <label className="text-sm font-medium text-text-600">{t.accountEmailLabel}</label>
           <Input value={userEmail ?? ""} readOnly placeholder="your@email.com" />
           <p className="text-xs text-text-400">
-            This is the email you use to log in. Contact support to change it.
+            {t.accountEmailHint}
           </p>
         </div>
       </Card>
@@ -344,18 +360,18 @@ function InformationPage() {
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Phone}
-          title="Phone Numbers"
-          description="Manage contact numbers"
+          title={t.phoneNumbersTitle}
+          description={t.phoneNumbersDescription}
           action={
             isEditing && (
-              <Button label="Add Number" icon={Plus} onClick={addPhone} />
+              <Button label={t.addNumber} icon={Plus} onClick={addPhone} />
             )
           }
         />
         <div className="flex flex-col gap-3">
           {activeForm.phones.length === 0 && (
             <p className="text-sm text-text-400 text-center py-2">
-              No phone numbers added yet.
+              {t.noPhoneNumbers}
             </p>
           )}
           {activeForm.phones.map((phone) => (
@@ -377,18 +393,18 @@ function InformationPage() {
       <Card className="flex flex-col gap-5">
         <SectionHeader
           icon={Globe}
-          title="Social Media"
-          description="Connect your social profiles"
+          title={t.socialMediaTitle}
+          description={t.socialMediaDescription}
           action={
             isEditing && (
-              <Button label="Add Link" icon={Plus} onClick={addSocial} />
+              <Button label={t.addLink} icon={Plus} onClick={addSocial} />
             )
           }
         />
         <div className="flex flex-col gap-3">
           {activeForm.socials.length === 0 && (
             <p className="text-sm text-text-400 text-center py-2">
-              No social links added yet.
+              {t.noSocialLinks}
             </p>
           )}
           {activeForm.socials.map((social) => (

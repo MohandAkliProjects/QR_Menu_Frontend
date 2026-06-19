@@ -15,14 +15,15 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../context/AuthContext";
+import { useLanguage } from "../../../i18n/useLanguage";
 import useToast from "../../../hooks/useToast";
 import { getErrorMessage } from "../../../api/errors";
 import * as categoryService from "../../../services/category.service";
-import type { CategoriesPageData } from "../../../types/ui.ts"
+import type { CategoriesPageData } from "../../../types/ui.ts";
 import ToastContainer from "../../../components/ui/ToastContainer";
 import type { UpdateCategoryRequest } from "../../../types/api";
 import type { CategoryUI as Category } from "../../../types/ui.ts";
-
+import { categoryRowText } from "../text/CategoryRow.text";
 
 export interface LanguageConfig {
   showEnglish: boolean;
@@ -36,7 +37,6 @@ interface CategoryRowProps {
   isFirst?: boolean;
   languages: LanguageConfig;
 }
-
 
 interface NamePopoverProps {
   label: string;
@@ -74,7 +74,6 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
           className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-
       {open && (
         <div
           className={`
@@ -88,9 +87,7 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
             className={`
               absolute left-1/2 -translate-x-1/2
               w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst
-                ? "-top-1.5 border-l border-t"
-                : "-bottom-1.5 border-r border-b"}
+              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
             `}
           />
           <p dir={dir} className="text-sm text-text-700 whitespace-normal wrap-break-words">
@@ -102,14 +99,10 @@ function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
   );
 }
 
-
-function CategoryRow({
-  category,
-  isLast,
-  isFirst,
-  languages,
-}: CategoryRowProps) {
+function CategoryRow({ category, isLast, isFirst, languages }: CategoryRowProps) {
   const { menuId, restaurantId } = useAuth();
+  const { language } = useLanguage();
+  const t = categoryRowText[language];
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Category>(category);
@@ -117,14 +110,8 @@ function CategoryRow({
   const iconInputRef = useRef<HTMLInputElement>(null);
   const { toasts, showToast, removeToast } = useToast();
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: category.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: category.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -147,39 +134,36 @@ function CategoryRow({
 
   const handleSave = () => {
     if (languages.showEnglish && (form.english?.trim().length ?? 0) < 3) {
-      setError("English name must be at least 3 characters.");
+      setError(t.errorEnglishMin);
       return;
     }
     if (languages.showFrench && (form.french?.trim().length ?? 0) < 3) {
-      setError("French name must be at least 3 characters.");
+      setError(t.errorFrenchMin);
       return;
     }
     if (languages.showArabic && (form.arabic?.trim().length ?? 0) < 3) {
-      setError("Arabic name must be at least 3 characters.");
+      setError(t.errorArabicMin);
       return;
     }
-
     const hasAny =
       (languages.showEnglish && (form.english?.trim().length ?? 0) >= 3) ||
       (languages.showFrench  && (form.french?.trim().length ?? 0) >= 3) ||
       (languages.showArabic  && (form.arabic?.trim().length ?? 0) >= 3);
-
     if (!hasAny) {
-      setError("At least one translation is required.");
+      setError(t.errorAtLeastOne);
       return;
     }
-
     setError("");
     updateMutation.mutate({
-          data: {
-            categoryId: String(category.id),
-            visible: category.status === "visible",
-            image: form.icon ?? undefined,
-            arabicName: form.arabic,
-            frenchName: form.french,
-            englishName: form.english
-          }
-        });
+      data: {
+        categoryId: String(category.id),
+        visible: category.status === "visible",
+        image: form.icon ?? undefined,
+        arabicName: form.arabic,
+        frenchName: form.french,
+        englishName: form.english,
+      },
+    });
     setIsEditing(false);
   };
 
@@ -189,91 +173,62 @@ function CategoryRow({
     setIsEditing(false);
   };
 
-  const handleToggleStatus = () => {
-    toggleMutation.mutate(String(category.id));
-  };
+  const handleToggleStatus = () => toggleMutation.mutate(String(category.id));
 
   const categoriesKey = ["categories", restaurantId, menuId];
-  
-const deleteMutation = useMutation({
-  mutationFn: (id: string) => categoryService.deleteCategory(id),
 
-  onMutate: async (id: string) => {
-    await queryClient.cancelQueries({ queryKey: categoriesKey });
-    const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
-
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        categories: old.categories.filter((cat) => cat.id !== id),
-      };
-    });
-
-    return { previous };
-  },
-
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
-    showToast("error", "Delete Failed", getErrorMessage(err));
-  },
-
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: categoriesKey });
-  },
-});
-
-const updateMutation = useMutation({
-    mutationFn: ({
-      data
-    }: {
-      data: UpdateCategoryRequest;
-    }) => categoryService.updateCategory(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-      showToast(
-        "success",
-        "Category Updated",
-        "Category has been updated successfully.",
-      );
-    },
-    onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
-  });
-
-
-  const handleDelete = () => {
-    deleteMutation.mutate(String(category.id));
-  };
-
-  const toggleMutation = useMutation({
-    mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
-  
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => categoryService.deleteCategory(id),
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: categoriesKey });
       const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
-  
+      queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
+        if (!old) return old;
+        return { ...old, categories: old.categories.filter((cat) => cat.id !== id) };
+      });
+      return { previous };
+    },
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+      showToast("error", t.toastDeleteFailedTitle, getErrorMessage(err));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: categoriesKey }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ data }: { data: UpdateCategoryRequest }) =>
+      categoryService.updateCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoriesKey });
+      showToast("success", t.toastUpdatedTitle, t.toastUpdatedMessage);
+    },
+    onError: (err) => showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: categoriesKey });
+      const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
       queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
         if (!old) return old;
         return {
           ...old,
           categories: old.categories.map((cat) =>
-            cat.id === id ? { ...cat, isVisible: !cat.isVisible } : cat
+            cat.id === id ? { ...cat, isVisible: !cat.isVisible } : cat,
           ),
         };
       });
-  
       return { previous };
     },
-  
     onError: (err, _variables, context) => {
       queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
-      showToast("error", "Save Failed", getErrorMessage(err));
+      showToast("error", t.toastSaveFailedTitle, getErrorMessage(err));
     },
-  
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKey });
-    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: categoriesKey }),
   });
+
+  const handleDelete = () => deleteMutation.mutate(String(category.id));
 
   const missingClass = "border-warning bg-warning/10";
   const inputClass =
@@ -342,7 +297,7 @@ const updateMutation = useMutation({
           <NamePopover label={category.english} dir="ltr" isFirst={isFirst} />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
-            Missing
+            {t.missing}
           </span>
         )}
       </TableCell>
@@ -359,7 +314,7 @@ const updateMutation = useMutation({
           <NamePopover label={category.french} dir="ltr" isFirst={isFirst} />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
-            Missing
+            {t.missing}
           </span>
         )}
       </TableCell>
@@ -377,7 +332,7 @@ const updateMutation = useMutation({
           <NamePopover label={category.arabic} dir="rtl" isFirst={isFirst} />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
-            Missing
+            {t.missing}
           </span>
         )}
       </TableCell>
@@ -397,14 +352,14 @@ const updateMutation = useMutation({
               onClick={handleCancel}
               className="h-9 px-3 rounded-lg border border-beige-400 text-sm text-text-600 hover:bg-beige-200 transition-colors hover:cursor-pointer"
             >
-              Cancel
+              {t.cancel}
             </button>
             <button
               onClick={handleSave}
               className="h-9 px-4 flex items-center gap-2 rounded-lg bg-primary-700 text-cream-500 text-sm font-medium hover:bg-primary-700/90 transition-colors hover:cursor-pointer"
             >
               <Save size={15} />
-              Save
+              {t.save}
             </button>
           </div>
         ) : (

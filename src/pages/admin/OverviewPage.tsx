@@ -18,6 +18,7 @@ import SectionHeader from "../../components/shared/SectionHeader";
 import AnalyticsLineChart from "../../components/ui/overview/AnalyticsLineChart";
 import StatCard from "../../components/ui/overview/StatCard";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import {
   buildDailyViewSeries,
   buildDailyLikesSeries,
@@ -26,9 +27,12 @@ import {
   resolveSubscriptionBanner,
 } from "../../lib/analytics";
 import * as restaurantService from "../../services/restaurant.service";
+import { overviewText } from "./text/OverviewPage.text";
 
 function OverviewPage() {
   const { restaurantId, email } = useAuth();
+  const { language } = useLanguage();
+  const t = overviewText[language];
   const now = new Date();
 
   const [viewsMonth, setViewsMonth] = useState({
@@ -149,8 +153,8 @@ function OverviewPage() {
         formattedExpiryDate && (
           <Notification
             variant="warning"
-            title="Subscription Expiring Soon"
-            message={`Your Spectral QR Pro plan expires on ${formattedExpiryDate}. Renew to keep features active.`}
+            title={t.subscriptionExpiringTitle}
+            message={t.subscriptionExpiringMessage(formattedExpiryDate)}
             className="mb-6"
           />
         )}
@@ -161,24 +165,24 @@ function OverviewPage() {
         formattedExpiryDate && (
           <Notification
             variant="success"
-            title="Subscription Active"
-            message={`Your plan is active until ${formattedExpiryDate}.`}
+            title={t.subscriptionActiveTitle}
+            message={t.subscriptionActiveMessage(formattedExpiryDate)}
             className="mb-6"
           />
         )}
 
       <div className="mb-8">
-        <PageHeader title="Overview" />
+        <PageHeader title={t.pageTitle} />
         <p className="text-base text-text-400 mt-1">
-          Welcome back, {welcomeName}
+          {t.welcomeBack(welcomeName)}
         </p>
       </div>
 
       {isLoading ? (
-        <PageLoadingState message="Loading overview..." />
+        <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(error, "Could not load overview data.")}
+          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       ) : (
@@ -186,34 +190,34 @@ function OverviewPage() {
           <section className="flex flex-col gap-4">
             <SectionHeader
               icon={BarChart3}
-              title="Analytics dashboard"
-              description="Live stats from your restaurant account"
+              title={t.analyticsDashboardTitle}
+              description={t.analyticsDashboardDescription}
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
               <StatCard
-                label="Menus"
+                label={t.menus}
                 value={formatStatNumber(data?.totalMenus ?? 0)}
                 icon={<BookOpen className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-200"
               />
 
               <StatCard
-                label="Categories"
+                label={t.categories}
                 value={formatStatNumber(data?.totalCategories ?? 0)}
                 icon={<LayoutGrid className="w-5 h-5 text-primary-700" />}
                 className="bg-beige-100"
               />
 
               <StatCard
-                label="Dishes"
+                label={t.dishes}
                 value={formatStatNumber(data?.totalDishes ?? 0)}
                 icon={<UtensilsCrossed className="w-5 h-5 text-primary-700" />}
                 className="bg-primary-100"
               />
 
               <StatCard
-                label="Views"
+                label={t.views}
                 value={formatStatNumber(
                   data?.views?.filter((v) => {
                     const d = new Date(v.viewedAt);
@@ -230,7 +234,7 @@ function OverviewPage() {
               />
 
               <StatCard
-                label="Likes"
+                label={t.likes}
                 value={formatStatNumber(data?.totalLikes ?? 0)}
                 icon={<Heart className="w-5 h-5 text-primary-700" />}
                 trend={likesTrend}
@@ -242,13 +246,13 @@ function OverviewPage() {
           <section className="flex flex-col gap-4">
             <SectionHeader
               icon={BarChart3}
-              title="Analytics Charts"
-              description="Monthly activity overview"
+              title={t.analyticsChartsTitle}
+              description={t.analyticsChartsDescription}
             />
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <AnalyticsLineChart
-                title="Views"
+                title={t.views}
                 series={viewsSeries}
                 primaryKey="total"
                 secondaryKey="direct"
@@ -258,11 +262,11 @@ function OverviewPage() {
                 month={viewsMonth}
                 onPrev={() => prevMonth(setViewsMonth)}
                 onNext={() => nextMonth(setViewsMonth)}
-                emptyMessage="View activity will appear here once customers start visiting your menu."
+                emptyMessage={t.viewsEmptyMessage}
               />
 
               <AnalyticsLineChart
-                title="Likes"
+                title={t.likes}
                 series={likesSeries}
                 primaryKey="total"
                 secondaryKey="qrCode"
@@ -272,7 +276,7 @@ function OverviewPage() {
                 month={likesMonth}
                 onPrev={() => prevMonth(setLikesMonth)}
                 onNext={() => nextMonth(setLikesMonth)}
-                emptyMessage="Like activity will appear here once guests start liking dishes."
+                emptyMessage={t.likesEmptyMessage}
               />
             </div>
           </section>

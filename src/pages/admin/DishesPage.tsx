@@ -28,8 +28,9 @@ import type { Column } from "../../components/ui/table/Table";
 import DishRow from "../../components/ui/dish/DishRow";
 import CategoryFilterBar from "../../components/ui/dish/CategoryFilterBar";
 import ToastContainer from "../../components/ui/ToastContainer";
-import AddDishModal from "../../components/ui/dish/AddDishModa";
+import AddDishModal from "../../components/ui/dish/AddDishModal";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import { categoryWithDishesToUI } from "../../lib/mappers";
 import * as dishService from "../../services/dish.service";
@@ -37,6 +38,7 @@ import type { Dish } from "../../types/dish";
 import type { LanguageConfig } from "../../components/ui/category/CategoryRow";
 import type { Devise, Language } from "../../types/enums";
 import type { AllDishesResponse } from "../../services/dish.service";
+import { dishesText } from "./text/DishesPage.text";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -44,10 +46,11 @@ function DishesPage() {
   const { menuId, restaurantId } = useAuth();
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
+  const { language } = useLanguage();
+  const t = dishesText[language];
 
   const [selectedCategory, setSelectedCategory] =
     useState<UniqueIdentifier | null>(null);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -78,7 +81,6 @@ function DishesPage() {
   const { categoryOptions, dishes, supportedLanguages, devise } =
     useMemo(() => {
       const menus = allDishesData?.menus ?? [];
-
       const activeMenu =
         (menuId ? menus.find((m) => m.id === menuId) : null) ?? menus[0];
 
@@ -101,7 +103,9 @@ function DishesPage() {
             categoryWithDishesToUI(category);
 
           const label =
-            catUI.english || catUI.french || catUI.arabic || String(catUI.id);
+            language === "fr"
+              ? catUI.french || catUI.english || catUI.arabic || String(catUI.id)
+              : catUI.english || catUI.french || catUI.arabic || String(catUI.id);
 
           const mapped = catDishes.map(
             (dish) =>
@@ -134,7 +138,7 @@ function DishesPage() {
         supportedLanguages: langs,
         devise: (activeMenu?.devise ?? "usd") as Devise,
       };
-    }, [allDishesData, menuId]);
+    }, [allDishesData, menuId, language]);
 
   const languages: LanguageConfig = useMemo(
     () => ({
@@ -197,7 +201,7 @@ function DishesPage() {
 
     onError: (err, _variables, context) => {
       queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-      showToast("error", "Reorder Failed", getErrorMessage(err));
+      showToast("error", t.reorderFailedTitle, getErrorMessage(err));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
@@ -230,9 +234,6 @@ function DishesPage() {
     });
   };
 
-  // Resolve the category that is *actually* driving the filter:
-  // - if the user picked one and it still exists, use it
-  // - otherwise fall back to the first available category
   const activeCategory: UniqueIdentifier | null = useMemo(() => {
     if (
       selectedCategory != null &&
@@ -263,50 +264,48 @@ function DishesPage() {
   );
 
   const columns: Column[] = [
-    { key: "order", label: "Order", center: true, width: "min-w-[80px]" },
-    { key: "image", label: "Icon", center: true, width: "min-w-[80px]" },
+    { key: "order", label: t.colOrder, center: true, width: "min-w-[80px]" },
+    { key: "image", label: t.colIcon, center: true, width: "min-w-[80px]" },
     {
       key: "english",
-      label: "English",
+      label: t.colEnglish,
       center: true,
       width: "min-w-[140px]",
       hidden: !languages.showEnglish,
     },
     {
       key: "french",
-      label: "Français",
+      label: t.colFrench,
       center: true,
       width: "min-w-[140px]",
       hidden: !languages.showFrench,
     },
     {
       key: "arabic",
-      label: "Arabic",
+      label: t.colArabic,
       center: true,
       width: "min-w-[140px]",
       hidden: !languages.showArabic,
     },
     {
       key: "description",
-      label: "Description",
+      label: t.colDescription,
       center: true,
       width: "min-w-[200px]",
     },
-    { key: "price", label: "Price", center: true, width: "min-w-[100px]" },
+    { key: "price", label: t.colPrice, center: true, width: "min-w-[100px]" },
     {
       key: "available",
-      label: "Available",
+      label: t.colAvailable,
       center: true,
       width: "min-w-[120px]",
     },
-    { key: "status", label: "Status", center: true, width: "min-w-[120px]" },
-    { key: "likes", label: "Likes", center: true, width: "min-w-[100px]" },
-    { key: "actions", label: "Actions", center: true, width: "min-w-[140px]" },
+    { key: "status", label: t.colStatus, center: true, width: "min-w-[120px]" },
+    { key: "likes", label: t.colLikes, center: true, width: "min-w-[100px]" },
+    { key: "actions", label: t.colActions, center: true, width: "min-w-[140px]" },
   ];
 
-  const noRestaurantError = !restaurantId
-    ? "No restaurant found. Please log in again."
-    : null;
+  const noRestaurantError = !restaurantId ? t.noRestaurantError : null;
 
   return (
     <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
@@ -314,16 +313,14 @@ function DishesPage() {
 
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <PageHeader
-          title="Dish Manager"
-          description="Organize and manage your menu dishes"
+          title={t.pageTitle}
+          description={t.pageDescription}
           showDescription
         />
         <Button
-          label="Add Dish"
+          label={t.addDish}
           icon={Plus}
-          onClick={() => {
-            setModalOpen(true);
-          }}
+          onClick={() => setModalOpen(true)}
           disabled={isLoading || isError || categoryOptions.length === 0}
         />
       </div>
@@ -334,10 +331,12 @@ function DishesPage() {
         missingTranslationCount > 0 && (
           <Notification
             variant="warning"
-            title="Missing Translations"
-            message={`${missingTranslationCount} dish${
-              missingTranslationCount > 1 ? "es have" : " has"
-            } missing translations. Edit them to add all required languages.`}
+            title={t.missingTranslationsTitle}
+            message={`${missingTranslationCount} ${
+              missingTranslationCount > 1
+                ? t.missingTranslationsPlural
+                : t.missingTranslationsSingle
+            }`}
             className="mb-6"
           />
         )}
@@ -345,10 +344,10 @@ function DishesPage() {
       {noRestaurantError ? (
         <PageErrorState message={noRestaurantError} />
       ) : isLoading ? (
-        <PageLoadingState message="Loading dishes..." />
+        <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(error, "Could not load dishes.")}
+          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       ) : (
@@ -400,9 +399,7 @@ function DishesPage() {
 
       <AddDishModal
         isOpen={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-        }}
+        onClose={() => setModalOpen(false)}
         categories={categoryOptions}
         supportedLanguages={supportedLanguages}
         devise={devise}

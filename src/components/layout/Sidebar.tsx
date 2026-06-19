@@ -3,7 +3,7 @@ import logo from "../../assets/Logo.svg";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../i18n/useLanguage";
 import LanguageToggle from "../ui/sidebar/LanguageToggle";
-import { sidebarText } from "./sidebar.text";
+import { sidebarText } from "./Sidebar.text";
 import {
   LayoutDashboard,
   LayoutGrid,

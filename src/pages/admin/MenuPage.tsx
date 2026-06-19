@@ -23,7 +23,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import SelectDropdown from "../../components/ui/SelectDropdown";
 import ToastContainer from "../../components/ui/ToastContainer";
-//import Modal from "../../components/ui/Modal";
+import Modal from "../../components/ui/Modal";
 import { useAuth } from "../../context/AuthContext";
 import useToast from "../../hooks/useToast";
 import {
@@ -37,7 +37,16 @@ import type { Devise } from "../../types/enums";
 import * as restaurantService from "../../services/restaurant.service";
 
 const DEVISE_OPTIONS: Devise[] = [
-  "eur","usd","gbp","dzd","sar","aed","try","cad","chf","cny",
+  "eur",
+  "usd",
+  "gbp",
+  "dzd",
+  "sar",
+  "aed",
+  "try",
+  "cad",
+  "chf",
+  "cny",
 ];
 
 const ALL_LANGUAGES = ["EN", "FR", "AR"] as const;
@@ -91,10 +100,13 @@ function MenuPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<MenuFormState | null>(null);
   const [initialForm, setInitialForm] = useState<MenuFormState | null>(null);
-  const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>([]);
+  const [supportedLanguages, setSupportedLanguages] = useState<SupportedLang[]>(
+    [],
+  );
   const [initialLanguages, setInitialLanguages] = useState<SupportedLang[]>([]);
   const [errors, setErrors] = useState<MenuFormErrors>({});
   //const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const menuKey = ["menu", restaurantId, menuId] as const;
 
@@ -152,7 +164,8 @@ function MenuPage() {
     onError: (err) => showToast("error", "Save Failed", getErrorMessage(err)),
   });
 
-  {/*const deleteMutation = useMutation({
+  {
+    /*const deleteMutation = useMutation({
     mutationFn: () => menuService.deleteMenu(menuId!),
     onSuccess: () => {
       showToast("success", "Menu Deleted", "The menu has been deleted.");
@@ -160,7 +173,29 @@ function MenuPage() {
       window.location.reload();
     },
     onError: (err) => showToast("error", "Delete Failed", getErrorMessage(err)),
-  });*/}
+  });*/
+  }
+  const deleteMutation = useMutation({
+    mutationFn: () => menuService.deleteMenu(menuId!),
+
+    onSuccess: () => {
+      setShowDeleteModal(false);
+
+      queryClient.invalidateQueries({
+        queryKey: ["restaurant", restaurantId],
+      });
+
+      showToast(
+        "success",
+        "Menu Deleted",
+        "The menu has been deleted successfully.",
+      );
+    },
+
+    onError: (err) => {
+      showToast("error", "Delete Failed", getErrorMessage(err));
+    },
+  });
 
   const handleEdit = () => {
     setErrors({});
@@ -183,7 +218,11 @@ function MenuPage() {
     const validationErrors = validateMenuForm(activeForm, activeLangs);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
-      showToast("error", "Validation Error", "Please fill in all required fields.");
+      showToast(
+        "error",
+        "Validation Error",
+        "Please fill in all required fields.",
+      );
       return;
     }
     saveMutation.mutate(activeForm);
@@ -233,21 +272,27 @@ function MenuPage() {
         />
 
         <div className="flex items-center gap-3 flex-wrap">
-         {previewUrl && (
-  <Button
-    label="Preview"
-    icon={ExternalLink}
-    variant="secondary"
-    onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}
-    disabled={isLoading || isError}
-  />
-)}
+          {previewUrl && (
+            <Button
+              label="Preview"
+              icon={ExternalLink}
+              variant="secondary"
+              onClick={() =>
+                window.open(previewUrl, "_blank", "noopener,noreferrer")
+              }
+              disabled={isLoading || isError}
+            />
+          )}
 
           {!isEditing ? (
             <Button label="Edit" icon={Edit2} onClick={handleEdit} />
           ) : (
             <>
-              <Button label="Cancel" variant="secondary" onClick={handleCancel} />
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onClick={handleCancel}
+              />
               <Button
                 label={saveMutation.isPending ? "Saving..." : "Save Changes"}
                 icon={Save}
@@ -330,14 +375,19 @@ function MenuPage() {
                         placeholder={LANGUAGE_PLACEHOLDERS[lang]}
                         dir={lang === "AR" ? "rtl" : undefined}
                         onChange={(e) => {
-                          setErrors((prev) => ({ ...prev, [field]: undefined }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            [field]: undefined,
+                          }));
                           setForm((prev) =>
                             prev ? { ...prev, [field]: e.target.value } : prev,
                           );
                         }}
                       />
                       {errors[field] && (
-                        <span className="text-xs text-error">{errors[field]}</span>
+                        <span className="text-xs text-error">
+                          {errors[field]}
+                        </span>
                       )}
                     </div>
                   );
@@ -359,12 +409,16 @@ function MenuPage() {
                   onChange={(value) => {
                     setErrors((prev) => ({ ...prev, devise: undefined }));
                     setForm((prev) =>
-                      prev ? { ...prev, devise: value.toLowerCase() as Devise } : prev,
+                      prev
+                        ? { ...prev, devise: value.toLowerCase() as Devise }
+                        : prev,
                     );
                   }}
                 />
                 {errors.devise && (
-                  <span className="text-xs text-error mt-1 block">{errors.devise}</span>
+                  <span className="text-xs text-error mt-1 block">
+                    {errors.devise}
+                  </span>
                 )}
               </div>
             </Card>
@@ -405,7 +459,7 @@ function MenuPage() {
               <Button
                 label="Delete Menu"
                 icon={Trash2}
-                onClick={() => showToast}
+                onClick={() => setShowDeleteModal(true)}
                 className="bg-transparent! border! border-error! text-error! hover:bg-error/10!"
               />
             </Card>
@@ -437,6 +491,36 @@ function MenuPage() {
           message="All categories, dishes, and translations will be deleted."
         />
       </Modal> */}
+      <Modal
+        title="Delete Menu"
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        isPending={deleteMutation.isPending}
+        footer={
+          <>
+            <Button
+              label="Cancel"
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+              fullWidth
+            />
+
+            <Button
+              label={deleteMutation.isPending ? "Deleting..." : "Yes, Delete"}
+              icon={Trash2}
+              onClick={() => deleteMutation.mutate()}
+              fullWidth
+              className="bg-error! border-error!"
+            />
+          </>
+        }
+      >
+        <Notification
+          variant="error"
+          title="This action cannot be undone"
+          message="Deleting this menu will permanently remove all categories, dishes, translations, and menu settings."
+        />
+      </Modal>
     </div>
   );
 }

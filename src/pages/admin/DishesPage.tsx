@@ -5,6 +5,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -39,19 +40,27 @@ import type { AllDishesResponse } from "../../services/dish.service";
 
 const ITEMS_PER_PAGE = 1000;
 
-
 function DishesPage() {
   const { menuId, restaurantId } = useAuth();
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
-  const [selectedCategory, setSelectedCategory] = useState<
-    UniqueIdentifier | "all"
-  >("all");
+  const [selectedCategory, setSelectedCategory] =
+    useState<UniqueIdentifier | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+  );
+
   const dishesKey = ["dishes", restaurantId];
 
   const {
@@ -66,65 +75,66 @@ function DishesPage() {
     enabled: !!restaurantId,
   });
 
-  const { categoryOptions, dishes, supportedLanguages , devise} = useMemo(() => {
-    const menus = allDishesData?.menus ?? [];
+  const { categoryOptions, dishes, supportedLanguages, devise } =
+    useMemo(() => {
+      const menus = allDishesData?.menus ?? [];
 
-    const activeMenu =
-      (menuId ? menus.find((m) => m.id === menuId) : null) ?? menus[0];
+      const activeMenu =
+        (menuId ? menus.find((m) => m.id === menuId) : null) ?? menus[0];
 
-    const langs = activeMenu
-      ? (Object.keys(activeMenu.translations).map((k) =>
-          k.toUpperCase(),
-        ) as Language[])
-      : [];
+      const langs = activeMenu
+        ? (Object.keys(activeMenu.translations).map((k) =>
+            k.toUpperCase(),
+          ) as Language[])
+        : [];
 
-    const categoryOpts: {
-      id: UniqueIdentifier;
-      label: string;
-      count: number;
-    }[] = [];
-    const allDishes: Dish[] = [];
+      const categoryOpts: {
+        id: UniqueIdentifier;
+        label: string;
+        count: number;
+      }[] = [];
+      const allDishes: Dish[] = [];
 
-    for (const menu of menus) {
-      for (const category of menu.categories ?? []) {
-        const { category: catUI, dishes: catDishes } =
-          categoryWithDishesToUI(category);
+      for (const menu of menus) {
+        for (const category of menu.categories ?? []) {
+          const { category: catUI, dishes: catDishes } =
+            categoryWithDishesToUI(category);
 
-        const label =
-          catUI.english || catUI.french || catUI.arabic || String(catUI.id);
+          const label =
+            catUI.english || catUI.french || catUI.arabic || String(catUI.id);
 
-        const mapped = catDishes.map(
-          (dish) =>
-            ({
-              id: dish.id,
-              order: dish.order,
-              image: dish.image,
-              english: dish.english,
-              french: dish.french,
-              arabic: dish.arabic,
-              englishDescription: dish.englishDescription,
-              frenchDescription: dish.frenchDescription,
-              arabDescription: dish.arabicDescription,
-              price: dish.price,
-              available: dish.available,
-              status: dish.status,
-              likes: dish.likes,
-              categoryId: dish.categoryId,
-            }) as Dish,
-        );
+          const mapped = catDishes.map(
+            (dish) =>
+              ({
+                id: dish.id,
+                order: dish.order,
+                image: dish.image,
+                english: dish.english,
+                french: dish.french,
+                arabic: dish.arabic,
+                englishDescription: dish.englishDescription,
+                frenchDescription: dish.frenchDescription,
+                arabDescription: dish.arabicDescription,
+                price: dish.price,
+                available: dish.available,
+                status: dish.status,
+                likes: dish.likes,
+                categoryId: dish.categoryId,
+              }) as Dish,
+          );
 
-        categoryOpts.push({ id: catUI.id, label, count: mapped.length });
-        allDishes.push(...mapped);
+          categoryOpts.push({ id: catUI.id, label, count: mapped.length });
+          allDishes.push(...mapped);
+        }
       }
-    }
 
-    return {
-      categoryOptions: categoryOpts,
-      dishes: allDishes,
-      supportedLanguages: langs,
-      devise: (activeMenu?.devise ?? "usd") as Devise,
-    };
-  }, [allDishesData, menuId]);
+      return {
+        categoryOptions: categoryOpts,
+        dishes: allDishes,
+        supportedLanguages: langs,
+        devise: (activeMenu?.devise ?? "usd") as Devise,
+      };
+    }, [allDishesData, menuId]);
 
   const languages: LanguageConfig = useMemo(
     () => ({
@@ -148,47 +158,51 @@ function DishesPage() {
     [dishes, languages],
   );
 
-const reorderMutation = useMutation({
-  mutationFn: ({ categoryId, orderedIds }: { categoryId: string; orderedIds: string[] }) =>
-    dishService.reorderDishes(categoryId, { orderedDishesIds: orderedIds }),
+  const reorderMutation = useMutation({
+    mutationFn: ({
+      categoryId,
+      orderedIds,
+    }: {
+      categoryId: string;
+      orderedIds: string[];
+    }) =>
+      dishService.reorderDishes(categoryId, { orderedDishesIds: orderedIds }),
 
-  onMutate: async ({ categoryId, orderedIds }) => {
-    await queryClient.cancelQueries({ queryKey: dishesKey });
-    const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+    onMutate: async ({ categoryId, orderedIds }) => {
+      await queryClient.cancelQueries({ queryKey: dishesKey });
+      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
 
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        menus: old.menus.map((menu) => ({
-          ...menu,
-          categories: menu.categories.map((cat) => {
-            if (String(cat.id) !== categoryId) return cat;
-            const map = new Map(cat.dishes.map((d) => [String(d.id), d]));
-            return {
-              ...cat,
-              dishes: orderedIds.map((id) => map.get(id)).filter(Boolean) as typeof cat.dishes,
-            };
-          }),
-        })),
-      };
-    });
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          menus: old.menus.map((menu) => ({
+            ...menu,
+            categories: menu.categories.map((cat) => {
+              if (String(cat.id) !== categoryId) return cat;
+              const map = new Map(cat.dishes.map((d) => [String(d.id), d]));
+              return {
+                ...cat,
+                dishes: orderedIds
+                  .map((id) => map.get(id))
+                  .filter(Boolean) as typeof cat.dishes,
+              };
+            }),
+          })),
+        };
+      });
 
-    return { previous };
-  },
+      return { previous };
+    },
 
-  onSuccess: () => {
-   // showToast("success", "Dishes Reordered", "Dish order has been updated successfully.");
-  },
-  onError: (err, _variables, context) => {
-    queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-    showToast("error", "Reorder Failed", getErrorMessage(err));
-  },
-  onSettled: () => {
-    queryClient.invalidateQueries({ queryKey: dishesKey });
-  },
-});
-
+    onError: (err, _variables, context) => {
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+      showToast("error", "Reorder Failed", getErrorMessage(err));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dishesKey });
+    },
+  });
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -216,14 +230,27 @@ const reorderMutation = useMutation({
     });
   };
 
+  // Resolve the category that is *actually* driving the filter:
+  // - if the user picked one and it still exists, use it
+  // - otherwise fall back to the first available category
+  const activeCategory: UniqueIdentifier | null = useMemo(() => {
+    if (
+      selectedCategory != null &&
+      categoryOptions.some((c) => c.id === selectedCategory)
+    ) {
+      return selectedCategory;
+    }
+    return categoryOptions[0]?.id ?? null;
+  }, [selectedCategory, categoryOptions]);
+
   const filteredDishes = useMemo(
     () =>
-      selectedCategory === "all"
-        ? dishes
+      activeCategory == null
+        ? []
         : dishes.filter(
-            (d) => String(d.categoryId) === String(selectedCategory),
+            (d) => String(d.categoryId) === String(activeCategory),
           ),
-    [dishes, selectedCategory],
+    [dishes, activeCategory],
   );
 
   const totalPages = Math.max(
@@ -281,7 +308,6 @@ const reorderMutation = useMutation({
     ? "No restaurant found. Please log in again."
     : null;
 
-
   return (
     <div className="flex flex-col p-6 sm:p-8 lg:p-10 w-full">
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -330,7 +356,7 @@ const reorderMutation = useMutation({
           <div className="mb-4">
             <CategoryFilterBar
               categories={categoryOptions}
-              selected={selectedCategory}
+              selected={activeCategory}
               onSelect={(id) => {
                 setSelectedCategory(id);
                 setCurrentPage(1);
@@ -353,7 +379,7 @@ const reorderMutation = useMutation({
                     <DishRow
                       key={dish.id}
                       dish={dish}
-                      devise={devise}  
+                      devise={devise}
                       isLast={index === paginatedDishes.length - 1}
                       isFirst={index === 0}
                       languages={languages}
@@ -379,7 +405,7 @@ const reorderMutation = useMutation({
         }}
         categories={categoryOptions}
         supportedLanguages={supportedLanguages}
-        devise={devise}  
+        devise={devise}
       />
     </div>
   );

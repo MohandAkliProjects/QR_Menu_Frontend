@@ -198,7 +198,7 @@ function DishesPage() {
       return { previous };
     },
 
-    onError: (err, _variables, context) => {
+    onError: (_err, _variables, context) => {
       queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
       showToast("error", gt.reorderFailedTitle, gt.reorderFailed);
     },

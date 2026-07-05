@@ -109,7 +109,7 @@ function CategoriesPage() {
       return { previous };
     },
 
-    onError: (err, _variables, context) => {
+    onError: (_err, _variables, context) => {
       queryClient.setQueryData<CategoriesPageData>(
         categoriesKey,
         context?.previous,

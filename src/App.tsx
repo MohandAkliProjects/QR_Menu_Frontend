@@ -10,12 +10,14 @@ import BannersPage from "./pages/admin/BannersPage";
 import QrDisplayPage from "./pages/admin/QrDisplayPage";
 import MenuPage from "./pages/admin/MenuPage";
 import PublicMenuPage from "./pages/public/PublicMenuPage";
+import LandingPage from "./pages/landing/LandingPage";
 
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/landingpage" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/menu/:menuId" element={<PublicMenuPage />} />
         <Route element={<ProtectedRoute />}>
@@ -30,7 +32,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/landingpage" replace />} />
       </Routes>
     </BrowserRouter>
   );

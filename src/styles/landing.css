@@ -1,0 +1,33 @@
+.landing-root {
+  --background: #F3EFEC;
+  --foreground: #120A07;
+  --card: #FCFAF8;
+  --primary: #63432B;
+  --primary-foreground: #FCFAF8;
+  --muted-foreground: #6B5D56;
+  --accent: #B68D37;
+  --accent-foreground: #FCFAF8;
+  --border: #D3C5B6;
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: "Nunito", system-ui, sans-serif;
+}
+
+.landing-root .bg-background      { background-color: var(--background) !important; }
+.landing-root .bg-card             { background-color: var(--card) !important; }
+.landing-root .bg-primary          { background-color: var(--primary) !important; }
+.landing-root .bg-accent           { background-color: var(--accent) !important; }
+.landing-root .bg-muted            { background-color: #E8E0DB !important; }
+.landing-root .text-primary        { color: var(--primary) !important; }
+.landing-root .text-primary-foreground { color: var(--primary-foreground) !important; }
+.landing-root .text-accent         { color: var(--accent) !important; }
+.landing-root .text-foreground     { color: var(--foreground) !important; }
+.landing-root .text-muted-foreground { color: var(--muted-foreground) !important; }
+.landing-root .text-white          { color: #ffffff !important; }
+.landing-root .border-border       { border-color: var(--border) !important; }
+.landing-root .fill-accent         { fill: var(--accent) !important; }
+.landing-root .bg-primary\/8       { background-color: rgb(99 67 43 / 0.08) !important; }
+.landing-root .bg-accent\/10       { background-color: rgb(182 141 55 / 0.1) !important; }
+.landing-root .bg-accent\/15       { background-color: rgb(182 141 55 / 0.15) !important; }
+.landing-root .border-accent\/20   { border-color: rgb(182 141 55 / 0.2) !important; }

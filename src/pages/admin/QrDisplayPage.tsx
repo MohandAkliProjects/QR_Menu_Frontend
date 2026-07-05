@@ -2,8 +2,6 @@ import { useCallback } from "react";
 import { Copy, Download, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeCanvas } from "qrcode.react";
-
-import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -26,7 +24,7 @@ function QrDisplayPage() {
   const t = qrDisplayText[language];
   const { toasts, showToast, removeToast } = useToast();
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["restaurant", restaurantId],
     queryFn: () => restaurantService.getRestaurant(restaurantId!),
     enabled: !!restaurantId,
@@ -89,7 +87,6 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
           <PageLoadingState message={t.loading} />
         ) : isError ? (
           <PageErrorState
-            message={getErrorMessage(error, t.loadError)}
             onRetry={refetch}
           />
         ) : (

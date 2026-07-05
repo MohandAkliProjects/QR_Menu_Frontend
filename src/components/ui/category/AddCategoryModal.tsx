@@ -2,7 +2,7 @@ import { useState } from "react";
 import Modal from "../Modal";
 import Button from "../Button";
 import Input from "../Input";
-import CategoryImageUpload from "./CategoryImageUpload";
+import ImageUpload from "./ImageUpload";
 import Notification from "../../shared/Notification";
 import { X, Check } from "lucide-react";
 import type { Language } from "../../../types/enums";
@@ -10,11 +10,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useToast from "../../../hooks/useToast";
 import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../i18n/useLanguage";
-import { getErrorMessage } from "../../../api/errors";
 import * as categoryService from "../../../services/category.service";
 import type { CreateCategoryRequest } from "../../../types";
 import ToastContainer from "../../../components/ui/ToastContainer";
 import { addCategoryModalText } from "../text/AddCategoryModal.text";
+import { generalText } from "../../../pages/admin/text/General.text";
 
 interface AddCategoryModalProps {
   isOpen: boolean;
@@ -32,6 +32,7 @@ const EMPTY: CreateCategoryRequest = {
   menuId: "",
 };
 
+
 function AddCategoryModal({
   isOpen,
   onClose,
@@ -40,6 +41,7 @@ function AddCategoryModal({
 }: AddCategoryModalProps) {
   const { language } = useLanguage();
   const t = addCategoryModalText[language];
+  const gt = generalText[language];
 
   const [form, setForm] = useState<CreateCategoryRequest>(EMPTY);
   const [showValidationError, setShowValidationError] = useState(false);
@@ -68,15 +70,14 @@ function AddCategoryModal({
   };
 
   const createMutation = useMutation({
-    mutationFn: ({ data }: { data: CreateCategoryRequest }) =>
-      categoryService.createCategory(data),
+    mutationFn: ({ data }: { data: CreateCategoryRequest }) => categoryService.createCategory(data),
     onSuccess: () => {
       onSuccess();
       onClose();
       setForm(EMPTY);
       showToast("success", t.toastSuccessTitle, t.toastSuccessMessage);
     },
-    onError: (err) => showToast("error", t.toastErrorTitle, getErrorMessage(err)),
+    onError: () => showToast("error", gt.savingErrorTitle, gt.savingError),
     onSettled() {
       queryClient.invalidateQueries({ queryKey: categoriesKey });
     },
@@ -122,7 +123,7 @@ function AddCategoryModal({
 
         <div className="flex justify-center w-full">
           <div className="w-full max-w-105">
-            <CategoryImageUpload
+            <ImageUpload
               preview={form.image ?? null}
               onChange={(_, preview) =>
                 setForm((prev) => ({ ...prev, image: preview }))

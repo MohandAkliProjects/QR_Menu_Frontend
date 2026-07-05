@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -45,7 +44,7 @@ function OverviewPage() {
     month: now.getMonth(),
   });
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["overview", restaurantId],
     queryFn: () => restaurantService.getDashboardStats(restaurantId!),
     enabled: !!restaurantId,
@@ -182,7 +181,6 @@ function OverviewPage() {
         <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       ) : (

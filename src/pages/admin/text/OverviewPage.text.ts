@@ -9,7 +9,6 @@ export const overviewText = {
     subscriptionActiveMessage: (date: string) =>
       `Your plan is active until ${date}.`,
     loading: "Loading overview...",
-    loadError: "Could not load overview data.",
     analyticsDashboardTitle: "Analytics dashboard",
     analyticsDashboardDescription: "Live stats from your restaurant account",
     menus: "Menus",
@@ -34,7 +33,6 @@ export const overviewText = {
     subscriptionActiveMessage: (date: string) =>
       `Votre abonnement est actif jusqu'au ${date}.`,
     loading: "Chargement de l'aperçu...",
-    loadError: "Impossible de charger les données de l'aperçu.",
     analyticsDashboardTitle: "Tableau d'analyse",
     analyticsDashboardDescription:
       "Statistiques en direct de votre compte restaurant",

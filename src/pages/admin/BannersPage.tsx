@@ -1,8 +1,6 @@
 import { useRef, useState } from "react";
 import { X, Upload, Check } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -17,6 +15,7 @@ import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import * as restaurantService from "../../services/restaurant.service";
 import { bannersText } from "./text/BannersPage.text";
+import { generalText } from "./text/General.text";
 
 const MAX_BANNERS = 3;
 
@@ -40,6 +39,7 @@ function BannersPage() {
   const { restaurantId } = useAuth();
   const { language } = useLanguage();
   const t = bannersText[language];
+  const gt = generalText[language];
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
@@ -54,7 +54,6 @@ function BannersPage() {
     data: banners = [],
     isLoading,
     isError,
-    error,
     refetch,
   } = useQuery({
     queryKey: bannersKey,
@@ -73,8 +72,8 @@ function BannersPage() {
       handleDeletePreview();
       showToast("success", t.toastAddedTitle, t.toastAddedMessage);
     },
-    onError: (err) =>
-      showToast("error", t.toastAddFailedTitle, getErrorMessage(err)),
+    onError: () =>
+      showToast("error", gt.uploadFailedTitle, gt.uploadFailedMessage),
   });
 
   const deleteBannerMutation = useMutation({
@@ -84,8 +83,8 @@ function BannersPage() {
       queryClient.invalidateQueries({ queryKey: bannersKey });
       showToast("success", t.toastDeletedTitle, t.toastDeletedMessage);
     },
-    onError: (err) =>
-      showToast("error", t.toastDeleteFailedTitle, getErrorMessage(err)),
+    onError: () =>
+      showToast("error", gt.deleteFailedTitle, gt.deleteFailedMessage),
   });
 
   const toggleVisibilityMutation = useMutation({
@@ -94,8 +93,8 @@ function BannersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: bannersKey });
     },
-    onError: (err) =>
-      showToast("error", t.toastUpdateFailedTitle, getErrorMessage(err)),
+    onError: () =>
+      showToast("error", gt.updateFailedTitle, gt.updateFailedMessage),
   });
 
   const isLimitReached = banners.length >= MAX_BANNERS;
@@ -124,7 +123,6 @@ function BannersPage() {
           <PageLoadingState message={t.loading} />
         ) : isError ? (
           <PageErrorState
-            message={getErrorMessage(error, t.loadError)}
             onRetry={refetch}
           />
         ) : (

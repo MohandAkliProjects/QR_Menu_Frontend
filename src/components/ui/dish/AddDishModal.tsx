@@ -2,13 +2,12 @@ import { useState } from "react";
 import Modal from "../Modal";
 import Button from "../Button";
 import Input from "../Input";
-import CategoryImageUpload from "../category/CategoryImageUpload";
+import ImageUpload from "../category/ImageUpload";
 import { X, Check } from "lucide-react";
 import type { UniqueIdentifier } from "@dnd-kit/core";
 import type { Devise, Language } from "../../../types/enums";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useToast from "../../../hooks/useToast";
-import { getErrorMessage } from "../../../api/errors";
 import { createDish } from "../../../services/dish.service";
 import type { CreateDishRequest } from "../../../types";
 import { useAuth } from "../../../context/AuthContext";
@@ -16,6 +15,7 @@ import { useLanguage } from "../../../i18n/useLanguage";
 import ToastContainer from "../ToastContainer";
 import { DEVISE_SYMBOLS } from "../../../lib/constants/devise";
 import { addDishModalText } from "../text/AddDishModal.text";
+import { generalText } from "../../../pages/admin/text/General.text";
 
 interface Category {
   id: UniqueIdentifier;
@@ -53,6 +53,7 @@ function AddDishModal({
 }: AddDishModalProps) {
   const { language } = useLanguage();
   const t = addDishModalText[language];
+  const gt = generalText[language];
 
   const showEnglish = supportedLanguages.includes("EN" as Language);
   const showFrench = supportedLanguages.includes("FR" as Language);
@@ -100,7 +101,7 @@ function AddDishModal({
   const { restaurantId } = useAuth();
 
   const createMutation = useMutation({
-    mutationFn: ({ payload }: { payload: CreateDishRequest }) =>
+    mutationFn: ({ payload }: { payload: CreateDishRequest }) => 
       createDish(payload),
     onSuccess: () => {
       setForm(EMPTY);
@@ -108,7 +109,7 @@ function AddDishModal({
       onClose();
       showToast("success", t.toastSuccessTitle, t.toastSuccessMessage);
     },
-    onError: (err) => showToast("error", t.toastErrorTitle, getErrorMessage(err)),
+    onError: () => showToast("error", gt.savingErrorTitle, gt.savingError),
     onSettled() {
       queryClient.invalidateQueries({ queryKey: ["dishes", restaurantId] });
     },
@@ -163,7 +164,7 @@ function AddDishModal({
         <div className="flex flex-col gap-4 overflow-y-auto max-h-[65vh] pr-1">
           {/* Image Upload */}
           <div className="w-full">
-            <CategoryImageUpload
+            <ImageUpload
               preview={form.image ?? null}
               onChange={(_, preview) =>
                 setForm((prev) => ({ ...prev, image: preview }))

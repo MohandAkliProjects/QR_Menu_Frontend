@@ -37,6 +37,7 @@ import { ROUTES } from "../../types/routes";
 import type { Devise } from "../../types/enums";
 import * as restaurantService from "../../services/restaurant.service";
 import { menuText } from "./text/MenuPage.text";
+import { generalText } from "./text/General.text.ts";
 
 const DEVISE_OPTIONS: Devise[] = [
   "eur",
@@ -99,6 +100,7 @@ function MenuPage() {
   const { restaurantId, menuId } = useAuth();
   const { language } = useLanguage();
   const t = menuText[language];
+  const gt = generalText[language]
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
@@ -119,7 +121,6 @@ function MenuPage() {
     data: menuData,
     isLoading: menuLoading,
     isError: menuIsError,
-    error: menuError,
     refetch: refetchMenu,
   } = useQuery({
     queryKey: menuKey,
@@ -166,8 +167,8 @@ function MenuPage() {
       setForm(null);
       showToast("success", t.toastMenuSavedTitle, t.toastMenuSavedMessage);
     },
-    onError: (err) =>
-      showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
+    onError: () =>
+      showToast("error", gt.savingErrorTitle, gt.savingError),
   });
 
   {
@@ -323,7 +324,6 @@ function MenuPage() {
         <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(menuError, t.loadError)}
           onRetry={refetchMenu}
         />
       ) : activeForm ? (

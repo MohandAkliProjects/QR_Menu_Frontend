@@ -4,10 +4,11 @@ import { Navigate, useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import IconInput from "../../components/ui/IconInput";
-import { getErrorMessage } from "../../api/errors";
+import { ApiClientError } from "../../api/errors";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../i18n/useLanguage";
 import { loginText } from "./text/LoginPage.text";
+import { generalText } from "./text/General.text";
 
 interface FormState {
   email: string;
@@ -43,6 +44,7 @@ function LoginPage() {
   const { login, isAuthenticated } = useAuth();
   const { language } = useLanguage();
   const t = loginText[language];
+  const gt = generalText[language];
 
   const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -69,9 +71,21 @@ function LoginPage() {
       await login(form.email, form.password);
       navigate("/dashboard");
     } catch (error) {
-      setErrors({
-        general: getErrorMessage(error, t.generalError),
-      });
+      if(error instanceof ApiClientError) {
+        if(error.status === 401) { // Unauthorized
+          setErrors({ 
+            general: t.invalidEmailOrPassword 
+          });
+        } else {
+          setErrors({
+            general: gt.error,
+          });
+        }
+      } else {
+        setErrors({
+          general: gt.error,
+        });
+      }
     } finally {
       setLoading(false);
     }

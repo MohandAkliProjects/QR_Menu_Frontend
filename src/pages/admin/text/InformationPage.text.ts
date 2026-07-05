@@ -21,11 +21,8 @@ interface InformationTextDict {
   noSocialLinks: string;
   toastProfileSavedTitle: string;
   toastProfileSavedMessage: string;
-  toastSaveFailedTitle: string;
   toastSessionErrorTitle: string;
   toastSessionErrorMessage: string;
-  toastValidationTitle: string;
-  toastValidationMessage: string;
   restaurantNameRequired: string;
   invalidEmail: string;
   phoneRequired: string;
@@ -59,11 +56,8 @@ export const informationText: Record<"en" | "fr", InformationTextDict> = {
     noSocialLinks: "No social links added yet.",
     toastProfileSavedTitle: "Profile Saved",
     toastProfileSavedMessage: "Your restaurant profile has been updated.",
-    toastSaveFailedTitle: "Save Failed",
     toastSessionErrorTitle: "Session Error",
     toastSessionErrorMessage: "Restaurant session is missing.",
-    toastValidationTitle: "Validation Error",
-    toastValidationMessage: "Please fix the highlighted fields.",
     restaurantNameRequired: "Restaurant name is required.",
     invalidEmail: "Enter a valid email address.",
     phoneRequired: "Phone number cannot be empty.",
@@ -97,11 +91,8 @@ export const informationText: Record<"en" | "fr", InformationTextDict> = {
     toastProfileSavedTitle: "Profil enregistré",
     toastProfileSavedMessage:
       "Le profil de votre restaurant a été mis à jour.",
-    toastSaveFailedTitle: "Échec de l'enregistrement",
     toastSessionErrorTitle: "Erreur de session",
     toastSessionErrorMessage: "La session du restaurant est manquante.",
-    toastValidationTitle: "Erreur de validation",
-    toastValidationMessage: "Veuillez corriger les champs en surbrillance.",
     restaurantNameRequired: "Le nom du restaurant est requis.",
     invalidEmail: "Veuillez saisir une adresse e-mail valide.",
     phoneRequired: "Le numéro de téléphone ne peut pas être vide.",

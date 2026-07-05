@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Edit2, Globe, Phone, Plus, Save, User } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -26,6 +24,7 @@ import {
 } from "../../lib/mappers";
 import * as restaurantService from "../../services/restaurant.service";
 import { informationText } from "./text/InformationPage.text";
+import { generalText } from "./text/General.text";
 
 interface SocialLink {
   id: number;
@@ -85,6 +84,7 @@ function InformationPage() {
   const { restaurantId, email: userEmail } = useAuth();
   const { language } = useLanguage();
   const t = informationText[language];
+  const gt = generalText[language];
   const queryClient = useQueryClient();
   const { toasts, showToast, removeToast } = useToast();
 
@@ -100,7 +100,6 @@ function InformationPage() {
   const {
     isLoading,
     isError,
-    error,
     refetch,
   } = useQuery({
     queryKey: restaurantKey,
@@ -178,8 +177,8 @@ function InformationPage() {
         t.toastProfileSavedMessage,
       );
     },
-    onError: (err) =>
-      showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
+    onError: () =>
+      showToast("error", gt.savingErrorTitle, gt.savingError)
   });
 
   const handleEdit = () => {
@@ -209,7 +208,7 @@ function InformationPage() {
     const validationErrors = validateRestaurant(activeForm, t);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      showToast("error", t.toastValidationTitle, t.toastValidationMessage);
+      showToast("error", gt.validationErrorTitle, gt.validationErrorMessage);
       return;
     }
     saveMutation.mutate(activeForm);
@@ -277,7 +276,6 @@ function InformationPage() {
       <div className="flex flex-col gap-6 p-6 w-full">
         <ToastContainer toasts={toasts} onClose={removeToast} />
         <PageErrorState
-          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       </div>

@@ -1,17 +1,34 @@
 import { useRef } from "react";
 import { Upload } from "lucide-react";
+import { generalText } from "../../../../src/pages/admin/text/General.text.ts";
+import { useLanguage } from "../../../i18n/useLanguage";
+import ToastContainer from "../ToastContainer";
+import useToast from "../../../hooks/useToast";
 
-interface CategoryImageUploadProps {
+interface ImageUploadProps {
   preview: string | null;
   onChange: (file: File, preview: string) => void;
 }
 
-function CategoryImageUpload({ preview, onChange }: CategoryImageUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+function ImageUpload({ preview, onChange }: ImageUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { toasts, showToast, removeToast } = useToast();
+  const { language } = useLanguage();
+  const gt = generalText[language];
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
+    if (!file.type.startsWith("image/")) {
+      showToast("error", gt.imageUploadErrorTitle, gt.imageUploadUnsupportedFileTypeError)
+      return;
+    }
     const reader = new FileReader();
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast("error", gt.imageUploadErrorTitle, gt.imageUploadMaxSizeExceededError)
+      return;
+    }
+
     reader.onload = () => onChange(file, reader.result as string);
     reader.readAsDataURL(file);
   };
@@ -23,6 +40,8 @@ function CategoryImageUpload({ preview, onChange }: CategoryImageUploadProps) {
   };
 
   return (
+    <>
+    <ToastContainer toasts={toasts} onClose={removeToast} />
     <div
       onClick={() => inputRef.current?.click()}
       onDrop={handleDrop}
@@ -57,7 +76,8 @@ function CategoryImageUpload({ preview, onChange }: CategoryImageUploadProps) {
         }}
       />
     </div>
+    </>
   );
 }
 
-export default CategoryImageUpload;
+export default ImageUpload;

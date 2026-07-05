@@ -126,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeStoredAuth(null);
 
     const response = await authService.loginRestaurant({ email, password });
+    
     if (!response.restaurantId) {
       throw new Error("Restaurant account is missing a restaurant id.");
     }

@@ -16,7 +16,6 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -40,6 +39,7 @@ import type { CategoryUI as Category } from "../../types/ui.ts";
 import type { CategoryResponse } from "../../types/api";
 import type { CategoriesPageData } from "../../types/ui.ts";
 import { categoriesText } from "./text/CategoriesPage.text.ts";
+import { generalText } from "./text/General.text.ts";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -49,6 +49,7 @@ function CategoriesPage() {
   const { toasts, showToast, removeToast } = useToast();
   const { language } = useLanguage();
   const t = categoriesText[language];
+  const gt = generalText[language]
 
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +66,7 @@ function CategoriesPage() {
 
   const categoriesKey = ["categories", restaurantId, menuId];
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: categoriesKey,
     queryFn: () =>
       categoryService.loadCategoriesPageData(restaurantId!, menuId!),
@@ -113,7 +114,7 @@ function CategoriesPage() {
         categoriesKey,
         context?.previous,
       );
-      showToast("error", t.reorderFailedTitle, getErrorMessage(err));
+      showToast("error", gt.reorderFailedTitle, gt.reorderFailed);
     },
 
     onSettled: () => {
@@ -216,7 +217,6 @@ function CategoriesPage() {
         <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       ) : (

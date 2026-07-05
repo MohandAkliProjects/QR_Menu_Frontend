@@ -15,8 +15,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import type { UniqueIdentifier } from "@dnd-kit/core";
-
-import { getErrorMessage } from "../../api/errors";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -39,6 +37,7 @@ import type { LanguageConfig } from "../../components/ui/category/CategoryRow";
 import type { Devise, Language } from "../../types/enums";
 import type { AllDishesResponse } from "../../services/dish.service";
 import { dishesText } from "./text/DishesPage.text";
+import { generalText } from "./text/General.text.ts";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -48,6 +47,7 @@ function DishesPage() {
   const { toasts, showToast, removeToast } = useToast();
   const { language } = useLanguage();
   const t = dishesText[language];
+  const gt = generalText[language]
 
   const [selectedCategory, setSelectedCategory] =
     useState<UniqueIdentifier | null>(null);
@@ -70,7 +70,6 @@ function DishesPage() {
     data: allDishesData,
     isLoading,
     isError,
-    error,
     refetch,
   } = useQuery({
     queryKey: dishesKey,
@@ -201,7 +200,7 @@ function DishesPage() {
 
     onError: (err, _variables, context) => {
       queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-      showToast("error", t.reorderFailedTitle, getErrorMessage(err));
+      showToast("error", gt.reorderFailedTitle, gt.reorderFailed);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: dishesKey });
@@ -347,7 +346,6 @@ function DishesPage() {
         <PageLoadingState message={t.loading} />
       ) : isError ? (
         <PageErrorState
-          message={getErrorMessage(error, t.loadError)}
           onRetry={refetch}
         />
       ) : (

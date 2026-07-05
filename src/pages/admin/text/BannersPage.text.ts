@@ -20,11 +20,8 @@ export const bannersText = {
     loadError: "Could not load banners.",
     toastAddedTitle: "Banner Added",
     toastAddedMessage: "Your banner has been uploaded.",
-    toastAddFailedTitle: "Upload Failed",
     toastDeletedTitle: "Banner Deleted",
-    toastDeletedMessage: "Banner has been removed.",
-    toastDeleteFailedTitle: "Delete Failed",
-    toastUpdateFailedTitle: "Update Failed",
+    toastDeletedMessage: "Banner has been removed."
   },
   fr: {
     pageTitle: "Bannières",
@@ -48,10 +45,7 @@ export const bannersText = {
     loadError: "Impossible de charger les bannières.",
     toastAddedTitle: "Bannière ajoutée",
     toastAddedMessage: "Votre bannière a été téléversée.",
-    toastAddFailedTitle: "Échec du téléversement",
     toastDeletedTitle: "Bannière supprimée",
     toastDeletedMessage: "La bannière a été supprimée.",
-    toastDeleteFailedTitle: "Échec de la suppression",
-    toastUpdateFailedTitle: "Échec de la mise à jour",
   },
 } as const;

@@ -21,6 +21,7 @@ import SocialFab from "../../components/public/SocialFab";
 import Footer from "../../components/public/Footer";
 import RestaurantClosed from "../../components/public/RestaurantClosed";
 import { shouldRecordView } from "../../lib/view-tracker";
+import CustomMenuLayout from "../../components/public/CustomMenuLayout";
 import {
   getCategoryName,
   getDishText,
@@ -266,6 +267,21 @@ export default function PublicMenuPage() {
 
   if (!menu || !language) return null;
 
+  const CUSTOM_LAYOUT_SLUG = "cafe-el-bahdja";
+
+if (slug === CUSTOM_LAYOUT_SLUG) {
+  return (
+    <CustomMenuLayout
+      menu={menu}
+      language={language}
+      availableLanguages={availableLanguages}
+      onLanguageChange={setSelectedLanguage}
+      liked={liked}
+      onLike={toggleLike}
+      t={t}
+    />
+  );
+}
   const menuTitle =
     menu.translations[language]?.title ??
     Object.values(menu.translations)[0]?.title ??
@@ -427,7 +443,6 @@ export default function PublicMenuPage() {
       <SocialFab restaurant={menu.restaurant} />
 
       <ReviewFab restaurant={menu.restaurant} language={language} />
-      
     </div>
   );
 }

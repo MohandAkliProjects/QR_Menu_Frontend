@@ -267,7 +267,7 @@ export default function PublicMenuPage() {
 
   if (!menu || !language) return null;
 
-  const CUSTOM_LAYOUT_SLUG = "cafe-el-bahdja";
+  const CUSTOM_LAYOUT_SLUG = "916";
 
 if (slug === CUSTOM_LAYOUT_SLUG) {
   return (
@@ -433,7 +433,7 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
 
             <div className="my-6 border-t border-[var(--menu-border)]" />
 
-            <RestaurantInfoCard restaurant={menu.restaurant} />
+            <RestaurantInfoCard restaurant={menu.restaurant}  showMap={true} />
 
             <Footer restaurant={menu.restaurant} language={language} />
           </>

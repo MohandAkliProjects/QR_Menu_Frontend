@@ -18,7 +18,7 @@ import type { MenuStrings } from "../../lib/constants/menu-strings";
 
 import HeroCarousel from "./HeroCarousel";
 import RestaurantInfoCard from "./RestaurantInfoCard";
-import SocialFab from "./SocialFab";
+import SocialLinksBar from "./SocialLinksBar";
 import ReviewFab from "./Reviewfab";
 import Footer from "./Footer";
 import DishCard from "./DishCard";
@@ -245,18 +245,23 @@ export default function CustomMenuLayout({
 
         <div className="my-6 border-t border-[var(--menu-border)]" />
 
-        <RestaurantInfoCard restaurant={menu.restaurant} />
+        <RestaurantInfoCard restaurant={menu.restaurant} showMap={false} />
+
+        <div className="mt-4">
+          <SocialLinksBar restaurant={menu.restaurant} />
+        </div>
 
         <Footer restaurant={menu.restaurant} language={language} />
       </div>
 
-      <SocialFab restaurant={menu.restaurant} />
       <ReviewFab restaurant={menu.restaurant} language={language} />
     </div>
   );
 }
 
 // Full-screen dish view - same like/close behavior as DishModal, just full page instead of a bottom sheet
+import Button from "../ui/Button";
+
 function FullScreenDish({
   dish,
   devise,
@@ -277,95 +282,109 @@ function FullScreenDish({
   const { name, description } = getDishText(dish, language);
   const available = isDishAvailable(dish);
 
+  const fallbackLang =
+    !dish.translations[language]
+      ? ((Object.keys(dish.translations)[0] as Language | undefined) ?? null)
+      : null;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col overflow-y-auto"
-      style={{ background: "var(--menu-bg)" }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      onClick={onClose}
     >
-      <div className="relative flex-shrink-0" style={{ height: "45vh" }}>
-        {dish.imageUrl ? (
-          <img
-            src={dish.imageUrl}
-            alt={name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[var(--menu-secondary)] text-6xl">
-            🍽️
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 to-transparent" />
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm hidden sm:block" />
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 start-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white"
-          aria-label={t.close}
-        >
-          <X className="w-4 h-4" />
-        </button>
+      <div
+        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-[430px] sm:rounded-3xl overflow-hidden z-10 flex flex-col bg-[var(--menu-card)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Hero image - same fixed height as DishModal */}
+        <div className="relative flex-shrink-0" style={{ height: 240 }}>
+          {dish.imageUrl ? (
+            <img
+              src={dish.imageUrl}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-[var(--menu-secondary)] text-5xl">
+              🍽️
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 to-transparent" />
 
-        {!available && (
-          <div className="absolute bottom-3 start-4 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-500 text-white">
-            {t.unavailable}
-          </div>
-        )}
-      </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 end-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white"
+            aria-label={t.close}
+          >
+            <X className="w-4 h-4" />
+          </button>
 
-      <div className="flex-1 px-5 pt-5 pb-8 max-w-2xl mx-auto w-full">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h1 className="text-2xl font-bold text-[var(--menu-primary)] menu-font-display leading-tight">
-            {name}
-          </h1>
           <button
             type="button"
             onClick={onLike}
-            className="flex-shrink-0"
+            className="absolute top-4 start-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center"
             aria-label={t.like}
           >
             <Heart
-              className="w-6 h-6"
+              className="w-4 h-4"
               fill={liked ? "var(--menu-danger)" : "none"}
-              stroke={liked ? "var(--menu-danger)" : "var(--menu-muted)"}
+              stroke={liked ? "var(--menu-danger)" : "white"}
               strokeWidth={2}
             />
           </button>
+
+          {!available && (
+            <div className="absolute bottom-3 start-4 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-500 text-white">
+              {t.unavailable}
+            </div>
+          )}
+
+          {fallbackLang && (
+            <div
+              className="absolute bottom-3 end-4 px-2 py-1 rounded text-[10px] font-bold uppercase"
+              style={{ background: "var(--menu-accent)", color: "#fff", letterSpacing: "0.04em" }}
+            >
+              {t.shownIn}: {fallbackLang}
+            </div>
+          )}
         </div>
 
-        <p className="text-xl font-bold text-[var(--menu-accent)] mb-4">
-          {formatPrice(dish.price, devise)}
-        </p>
-
-        {description && (
-          <p className="text-sm text-[var(--menu-muted)] leading-relaxed mb-4">
-            {description}
-          </p>
-        )}
-
-        {dish.likesCount > 0 && (
-          <div className="flex items-center gap-1.5 text-sm text-[var(--menu-muted)]">
-            <Heart
-              className="w-4 h-4"
-              fill="var(--menu-danger)"
-              stroke="var(--menu-danger)"
-            />
-            {dish.likesCount} {t.likes}
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 px-5 pt-4 pb-4" style={{ scrollbarWidth: "none" }}>
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <h2 className="text-xl font-semibold text-[var(--menu-primary)] flex-1 leading-tight menu-font-display">
+              {name}
+            </h2>
+            <p className="text-xl font-bold text-[var(--menu-accent)] flex-shrink-0">
+              {formatPrice(dish.price, devise)}
+            </p>
           </div>
-        )}
-      </div>
 
-      <div className="px-5 py-4 border-t border-[var(--menu-border)] bg-[var(--menu-bg)] flex-shrink-0">
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-3 rounded-xl font-bold text-sm"
-          style={{
-            background: "var(--menu-secondary)",
-            color: "var(--menu-primary)",
-          }}
-        >
-          {t.close}
-        </button>
+          {description && (
+            <p className="text-sm text-[var(--menu-muted)] leading-relaxed mb-4">
+              {description}
+            </p>
+          )}
+
+          {dish.likesCount > 0 && (
+            <div className="flex items-center gap-1.5 text-sm text-[var(--menu-muted)] mb-4">
+              <Heart
+                className="w-4 h-4"
+                fill="var(--menu-danger)"
+                stroke="var(--menu-danger)"
+              />
+              {dish.likesCount} {t.likes}
+            </div>
+          )}
+        </div>
+
+        {/* Footer - same Button component as DishModal */}
+        <div className="px-5 py-4 border-t border-[var(--menu-border)] bg-[var(--menu-card)] flex-shrink-0">
+          <Button label={t.close} onClick={onClose} variant="secondary" fullWidth />
+        </div>
       </div>
     </div>
   );

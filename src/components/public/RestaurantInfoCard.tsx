@@ -5,6 +5,8 @@ import type { RestaurantInfo } from "../../types/api";
 
 interface RestaurantInfoCardProps {
   restaurant: RestaurantInfo;
+  /** Whether to render the location map section. Defaults to true. */
+  showMap?: boolean;
 }
 
 function extractCoordsFromGoogleMapsUrl(url: string): { lat: number; lng: number } | null {
@@ -71,42 +73,43 @@ async function resolveCoords(restaurant: RestaurantInfo): Promise<{ lat: number;
   return null;
 }
 
-function RestaurantInfoCard({ restaurant }: RestaurantInfoCardProps) {
+function RestaurantInfoCard({ restaurant, showMap = true }: RestaurantInfoCardProps) {
   const location = restaurant.address || restaurant.ville;
   const phones = restaurant.phones ?? [];
   const hasContactInfo = phones.length > 0 || restaurant.emailAddress;
 
-  
-const [mapState, setMapState] = useState<{ ready: boolean; src: string | null }>({
-  ready: false,
-  src: null,
-});
-
-
-const mapReady = mapState.ready;
-const iframeSrc = mapState.src;
-
-useEffect(() => {
-  let cancelled = false;
-
-  resolveCoords(restaurant).then((coords) => {
-    if (!cancelled) {
-      setMapState({
-        ready: true,
-        src: coords ? buildOsmIframeSrc(coords.lat, coords.lng) : "",
-      });
-    }
+  const [mapState, setMapState] = useState<{ ready: boolean; src: string | null }>({
+    ready: false,
+    src: null,
   });
 
-  return () => { cancelled = true; };
-}, [restaurant.googleMapsLink, restaurant.address, restaurant.ville]);
+  const mapReady = mapState.ready;
+  const iframeSrc = mapState.src;
 
-  if (!location && !hasContactInfo) return null;
+  useEffect(() => {
+    if (!showMap) return;
+    let cancelled = false;
+
+    resolveCoords(restaurant).then((coords) => {
+      if (!cancelled) {
+        setMapState({
+          ready: true,
+          src: coords ? buildOsmIframeSrc(coords.lat, coords.lng) : "",
+        });
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [showMap, restaurant.googleMapsLink, restaurant.address, restaurant.ville]);
+
+  const showLocationBlock = showMap && !!location;
+
+  if (!showLocationBlock && !hasContactInfo) return null;
 
   return (
     <div className="rounded-3xl overflow-hidden border border-[var(--menu-border)] bg-[var(--menu-card)] shadow-sm">
 
-      {location && (
+      {showLocationBlock && (
         <div className="relative" style={{ height: 180 }}>
           {!mapReady ? (
             <div className="h-full bg-[var(--menu-secondary)] animate-pulse" />
@@ -131,8 +134,7 @@ useEffect(() => {
                 </div>
 
                 {restaurant.googleMapsLink && (
-                  
-                  <a  href={restaurant.googleMapsLink}
+                  <a href={restaurant.googleMapsLink}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white flex-shrink-0"
@@ -152,8 +154,7 @@ useEffect(() => {
               </p>
 
               {restaurant.googleMapsLink && (
-                
-                <a  href={restaurant.googleMapsLink}
+                <a href={restaurant.googleMapsLink}
                   target="_blank"
                   rel="noreferrer"
                   className="absolute bottom-3 end-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow bg-[var(--menu-primary)]"
@@ -189,8 +190,7 @@ useEffect(() => {
           ))}
 
           {restaurant.emailAddress && (
-            
-            <a  href={`mailto:${restaurant.emailAddress}`}
+            <a href={`mailto:${restaurant.emailAddress}`}
               className="flex items-center gap-3 group"
             >
               <span className="w-8 h-8 rounded-full bg-[var(--menu-secondary)] flex items-center justify-center flex-shrink-0 group-hover:bg-[var(--menu-accent)]/10 transition-colors">

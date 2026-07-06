@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { RestaurantInfo } from "../../types/api";
 import { Mail, MapPin, Phone } from "lucide-react";
 
@@ -45,61 +46,157 @@ function TikTokIcon() {
   );
 }
 
-/**
- * Always-visible row of social/contact links, for layouts that want
- * socials front-and-center instead of tucked behind a floating action button.
- */
 function SocialLinksBar({ restaurant }: SocialLinksBarProps) {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.15,
+      },
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   const links: SocialLink[] = [];
 
   if (restaurant.instagramLink) {
-    links.push({ label: "Instagram", color: "#E1306C", href: restaurant.instagramLink, icon: <InstagramIcon /> });
+    links.push({
+      label: "Instagram",
+      color: "#E1306C",
+      href: restaurant.instagramLink,
+      icon: <InstagramIcon />,
+    });
   }
+
   if (restaurant.facebookLink) {
-    links.push({ label: "Facebook", color: "#1877F2", href: restaurant.facebookLink, icon: <FacebookIcon /> });
+    links.push({
+      label: "Facebook",
+      color: "#1877F2",
+      href: restaurant.facebookLink,
+      icon: <FacebookIcon />,
+    });
   }
+
   if (restaurant.tiktokLink) {
-    links.push({ label: "TikTok", color: "#010101", href: restaurant.tiktokLink, icon: <TikTokIcon /> });
+    links.push({
+      label: "TikTok",
+      color: "#010101",
+      href: restaurant.tiktokLink,
+      icon: <TikTokIcon />,
+    });
   }
+
   if (restaurant.snapchatLink) {
-    links.push({ label: "Snapchat", color: "#FFFC00", iconColor: "#1a1a1a", href: restaurant.snapchatLink, icon: <SnapchatIcon /> });
+    links.push({
+      label: "Snapchat",
+      color: "#FFFC00",
+      iconColor: "#111",
+      href: restaurant.snapchatLink,
+      icon: <SnapchatIcon />,
+    });
   }
+
   if (restaurant.phones && restaurant.phones.length === 1) {
-    links.push({ label: "Call", color: "#34A853", href: `tel:${restaurant.phones[0]}`, icon: <Phone className="w-5 h-5" /> });
+    links.push({
+      label: "Call",
+      color: "#34A853",
+      href: `tel:${restaurant.phones[0]}`,
+      icon: <Phone className="w-5 h-5" />,
+    });
   }
+
   if (restaurant.emailAddress) {
-    links.push({ label: "Email", color: "#EA4335", href: `mailto:${restaurant.emailAddress}`, icon: <Mail className="w-5 h-5" /> });
+    links.push({
+      label: "Email",
+      color: "#EA4335",
+      href: `mailto:${restaurant.emailAddress}`,
+      icon: <Mail className="w-5 h-5" />,
+    });
   }
+
   if (restaurant.googleMapsLink) {
-    links.push({ label: "Maps", color: "#4285F4", href: restaurant.googleMapsLink, icon: <MapPin className="w-5 h-5" /> });
+    links.push({
+      label: "Maps",
+      color: "#4285F4",
+      href: restaurant.googleMapsLink,
+      icon: <MapPin className="w-5 h-5" />,
+    });
   }
+  const floatingLinks = links.filter(
+    (link) => link.label !== "Call" && link.label !== "Maps",
+  );
 
   if (links.length === 0) return null;
 
   return (
-    <div className="rounded-3xl border border-[var(--menu-border)] bg-[var(--menu-card)] shadow-sm p-4">
-      <h3 className="text-base font-semibold text-[var(--menu-primary)] mb-3 menu-font-display">
-        Follow &amp; Contact
-      </h3>
-      <div className="flex flex-wrap gap-3">
-        {links.map((link) => {
-          const isExternal = link.href.startsWith("http");
-          return (
-            <a
-              key={link.label}
-              href={link.href}
-              target={isExternal ? "_blank" : undefined}
-              rel={isExternal ? "noreferrer" : undefined}
-              className="flex items-center gap-2 pe-4 ps-3 py-2.5 rounded-2xl shadow-sm active:scale-95 transition-transform"
-              style={{ backgroundColor: link.color, color: link.iconColor ?? "#ffffff" }}
-            >
-              {link.icon}
-              <span className="text-sm font-bold">{link.label}</span>
-            </a>
-          );
-        })}
+    <>
+      <div
+        ref={sectionRef}
+        className="rounded-3xl border border-[var(--menu-border)] bg-[var(--menu-card)] shadow-sm p-4"
+      >
+        <h3 className="text-base font-semibold text-[var(--menu-primary)] mb-3 menu-font-display">
+          Follow &amp; Contact
+        </h3>
+
+        <div className="flex flex-wrap gap-3">
+          {links.map((link) => {
+            const isExternal = link.href.startsWith("http");
+
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noreferrer" : undefined}
+                className="flex items-center gap-2 pe-4 ps-3 py-2.5 rounded-2xl shadow-sm active:scale-95 transition-transform"
+                style={{
+                  backgroundColor: link.color,
+                  color: link.iconColor ?? "#fff",
+                }}
+              >
+                {link.icon}
+                <span className="text-sm font-bold">{link.label}</span>
+              </a>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {!isVisible && floatingLinks.length > 0 && (
+        <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-3">
+          {floatingLinks.map((link) => {
+            const isExternal = link.href.startsWith("http");
+
+            return (
+              <a
+                key={`floating-${link.label}`}
+                href={link.href}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noreferrer" : undefined}
+                className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
+                style={{
+                  backgroundColor: link.color,
+                  color: link.iconColor ?? "#fff",
+                }}
+                title={link.label}
+              >
+                {link.icon}
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 

@@ -17,7 +17,6 @@ import {
 import type { MenuStrings } from "../../lib/constants/menu-strings";
 
 import HeroCarousel from "./HeroCarousel";
-import RestaurantInfoCard from "./RestaurantInfoCard";
 import SocialLinksBar from "./SocialLinksBar";
 import ReviewFab from "./Reviewfab";
 import Footer from "./Footer";
@@ -245,7 +244,7 @@ export default function CustomMenuLayout({
 
         <div className="my-6 border-t border-[var(--menu-border)]" />
 
-        <RestaurantInfoCard restaurant={menu.restaurant} showMap={false} />
+     
 
         <div className="mt-4">
           <SocialLinksBar restaurant={menu.restaurant} />

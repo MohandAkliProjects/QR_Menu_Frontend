@@ -267,7 +267,8 @@ export default function PublicMenuPage() {
 
   if (!menu || !language) return null;
 
-  const CUSTOM_LAYOUT_SLUG = "916";
+
+const CUSTOM_LAYOUT_SLUG = "le-916";
 
 if (slug === CUSTOM_LAYOUT_SLUG) {
   return (

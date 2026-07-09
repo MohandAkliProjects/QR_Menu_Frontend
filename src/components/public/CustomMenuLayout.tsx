@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, X } from "lucide-react";
 
 import type {
@@ -22,6 +22,7 @@ import ReviewFab from "./Reviewfab";
 import Footer from "./Footer";
 import DishCard from "./DishCard";
 import EmptyCategory from "./EmptyCategory";
+import Button from "../ui/Button";
 
 const LANGUAGE_LABELS: Record<Language, string> = {
   en: "EN",
@@ -106,6 +107,55 @@ export default function CustomMenuLayout({
 
   const banners = (menu.restaurant.banners ?? []).filter((b) => b.visible);
 
+  // --- Back-navigation handling ---
+  // Each "drill-down" (categories -> dish list -> single dish) pushes a
+  // history entry. The device/browser back button (and our own close
+  // buttons, which just call history.back()) then unwinds one level at a
+  // time instead of leaving the page entirely.
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedDish) {
+        setSelectedDish(null);
+        return;
+      }
+      if (activeCategory) {
+        setActiveCategory(null);
+        return;
+      }
+      // Nothing open — let the browser handle back normally (leaves the page).
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [selectedDish, activeCategory]);
+
+  function openCategory(category: CategoryWithDishesResponse) {
+    window.history.pushState({ menuView: "category" }, "");
+    setActiveCategory(category);
+  }
+
+  function closeCategory() {
+    // Pop history if we pushed a state for it, otherwise just clear directly.
+    if (window.history.state?.menuView === "category") {
+      window.history.back();
+    } else {
+      setActiveCategory(null);
+    }
+  }
+
+  function openDish(dish: DishResponse) {
+    window.history.pushState({ menuView: "dish" }, "");
+    setSelectedDish(dish);
+  }
+
+  function closeDish() {
+    if (window.history.state?.menuView === "dish") {
+      window.history.back();
+    } else {
+      setSelectedDish(null);
+    }
+  }
+
   return (
     <div
       dir={isRTL(language) ? "rtl" : "ltr"}
@@ -123,7 +173,7 @@ export default function CustomMenuLayout({
           language={language}
           liked={liked.has(selectedDish.id)}
           onLike={() => onLike(selectedDish.id)}
-          onClose={() => setSelectedDish(null)}
+          onClose={closeDish}
           t={t}
         />
       )}
@@ -197,7 +247,7 @@ export default function CustomMenuLayout({
                 key={category.id}
                 category={category}
                 language={language}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => openCategory(category)}
               />
             ))}
           </div>
@@ -205,7 +255,7 @@ export default function CustomMenuLayout({
           <div className="pt-2">
             <div className="flex items-center gap-2 mb-4">
               <button
-                onClick={() => setActiveCategory(null)}
+                onClick={closeCategory}
                 className="text-xl leading-none px-1"
                 style={{ color: "var(--menu-primary)" }}
                 aria-label="Back"
@@ -227,7 +277,7 @@ export default function CustomMenuLayout({
                     language={language}
                     liked={liked.has(dish.id)}
                     onLike={() => onLike(dish.id)}
-                    onClick={() => setSelectedDish(dish)}
+                    onClick={() => openDish(dish)}
                     t={t}
                   />
                 ))}
@@ -244,10 +294,11 @@ export default function CustomMenuLayout({
 
         <div className="my-6 border-t border-[var(--menu-border)]" />
 
-     
-
         <div className="mt-4">
-          <SocialLinksBar restaurant={menu.restaurant} />
+          <SocialLinksBar
+            restaurant={menu.restaurant}
+            hideFloating={selectedDish !== null}
+          />
         </div>
 
         <Footer restaurant={menu.restaurant} language={language} />
@@ -259,8 +310,6 @@ export default function CustomMenuLayout({
 }
 
 // Full-screen dish view - same like/close behavior as DishModal, just full page instead of a bottom sheet
-import Button from "../ui/Button";
-
 function FullScreenDish({
   dish,
   devise,
@@ -285,6 +334,11 @@ function FullScreenDish({
     !dish.translations[language]
       ? ((Object.keys(dish.translations)[0] as Language | undefined) ?? null)
       : null;
+
+  const sizes = dish.sizes ?? [];
+  const hasMultipleSizes = sizes.length > 1;
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selectedSize = sizes[selectedIndex] ?? sizes[0];
 
   return (
     <div
@@ -358,7 +412,7 @@ function FullScreenDish({
               {name}
             </h2>
             <p className="text-xl font-bold text-[var(--menu-accent)] flex-shrink-0">
-              {formatPrice(dish.price, devise)}
+              {formatPrice(selectedSize?.price ?? 0, devise)}
             </p>
           </div>
 
@@ -366,6 +420,28 @@ function FullScreenDish({
             <p className="text-sm text-[var(--menu-muted)] leading-relaxed mb-4">
               {description}
             </p>
+          )}
+
+          {hasMultipleSizes && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {sizes.map((size, index) => {
+                const isSelected = index === selectedIndex;
+                return (
+                  <button
+                    key={`${size.name}-${index}`}
+                    type="button"
+                    onClick={() => setSelectedIndex(index)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      isSelected
+                        ? "bg-[var(--menu-accent)] border-[var(--menu-accent)] text-white"
+                        : "bg-transparent border-[var(--menu-border)] text-[var(--menu-primary)]"
+                    }`}
+                  >
+                    {size.name} · {formatPrice(size.price, devise)}
+                  </button>
+                );
+              })}
+            </div>
           )}
 
           {dish.likesCount > 0 && (

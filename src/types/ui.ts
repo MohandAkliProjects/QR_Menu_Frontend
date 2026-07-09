@@ -1,5 +1,5 @@
 import type { UniqueIdentifier } from "@dnd-kit/core";
-import type { CategoryResponse } from "../types/api";
+import type { CategoryResponse, DishSize } from "../types/api";
 import type { Language } from "../types/enums";
 
 export type VisibilityStatus = "visible" | "hidden";
@@ -36,13 +36,12 @@ export interface DishUI {
   englishDescription?: string;
   frenchDescription?: string;
   arabicDescription?: string;
-  price: number;
+  sizes: DishSize[];
   available: AvailabilityStatus;
   status: VisibilityStatus;
   likes: number;
   categoryId: UniqueIdentifier;
 }
-
 
 
 export interface RestaurantFormData {
@@ -62,3 +61,5 @@ export interface RestaurantFormErrors {
   phones?: Record<number, string | undefined>;
   socials?: Record<number, string | undefined>;
 }
+
+

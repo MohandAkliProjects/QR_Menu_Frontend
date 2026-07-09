@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useToast from "../../../hooks/useToast";
 import { createDish } from "../../../services/dish.service";
 import type { CreateDishRequest } from "../../../types";
+import type { DishSize } from "../../../types/api";
 import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../i18n/useLanguage";
 import ToastContainer from "../ToastContainer";
@@ -30,6 +31,8 @@ interface AddDishModalProps {
   devise: Devise;
 }
 
+const DEFAULT_SIZE_NAME = "Regular";
+
 const EMPTY: CreateDishRequest = {
   englishName: "",
   frenchName: "",
@@ -38,7 +41,7 @@ const EMPTY: CreateDishRequest = {
   frenchDescription: "",
   arabicDescription: "",
   image: undefined,
-  price: 0,
+  sizes: [{ name: "", price: 0 }],
   available: true,
   visible: true,
   categoryId: "",
@@ -60,7 +63,6 @@ function AddDishModal({
   const showArabic = supportedLanguages.includes("AR" as Language);
 
   const [form, setForm] = useState<CreateDishRequest>(EMPTY);
-  const [priceDisplay, setPriceDisplay] = useState<string>("");
   const [errors, setErrors] = useState<Partial<Record<keyof CreateDishRequest, string>>>({});
 
   const descTabs = [
@@ -73,26 +75,58 @@ function AddDishModal({
     descTabs[0]?.key ?? "en",
   );
 
+  const hasSingleSize = form.sizes.length === 1;
+
+  const updateSize = (index: number, patch: Partial<DishSize>) => {
+    setForm((p) => ({
+      ...p,
+      sizes: p.sizes.map((s, i) => (i === index ? { ...s, ...patch } : s)),
+    }));
+    if (errors.sizes) setErrors((prev) => ({ ...prev, sizes: undefined }));
+  };
+
+  const addSize = () => {
+    setForm((p) => ({ ...p, sizes: [...p.sizes, { name: "", price: 0 }] }));
+  };
+
+  const removeSize = (index: number) => {
+    setForm((p) => ({ ...p, sizes: p.sizes.filter((_, i) => i !== index) }));
+  };
+
   const validate = () => {
     const newErrors: Partial<Record<keyof CreateDishRequest, string>> = {};
     if (showEnglish && !form.englishName?.trim()) newErrors.englishName = t.errorEnglishRequired;
     if (showFrench  && !form.frenchName?.trim())  newErrors.frenchName  = t.errorFrenchRequired;
     if (showArabic  && !form.arabicName?.trim())  newErrors.arabicName  = t.errorArabicRequired;
-    if (!form.price || form.price <= 0)           newErrors.price       = t.errorPriceRequired;
-    if (!form.categoryId)                         newErrors.categoryId  = t.errorCategoryRequired;
+
+    const invalidSizes =
+      !form.sizes ||
+      form.sizes.length === 0 ||
+      form.sizes.some((s) => !(s.price > 0)) ||
+      (form.sizes.length > 1 && form.sizes.some((s) => !s.name.trim()));
+    if (invalidSizes) {
+      newErrors.sizes = hasSingleSize ? t.errorPriceRequired : t.errorSizesRequired;
+    }
+
+    if (!form.categoryId) newErrors.categoryId = t.errorCategoryRequired;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleConfirm = () => {
     if (!validate()) return;
-    createMutation.mutate({ payload: form });
+
+    const sizesForSubmit: DishSize[] = form.sizes.map((s) => ({
+      ...s,
+      name: s.name.trim() || DEFAULT_SIZE_NAME,
+    }));
+
+    createMutation.mutate({ payload: { ...form, sizes: sizesForSubmit } });
   };
 
   const handleCancel = () => {
     setErrors({});
     setForm(EMPTY);
-    setPriceDisplay("");
     onClose();
   };
 
@@ -105,7 +139,6 @@ function AddDishModal({
       createDish(payload),
     onSuccess: () => {
       setForm(EMPTY);
-      setPriceDisplay("");
       onClose();
       showToast("success", t.toastSuccessTitle, t.toastSuccessMessage);
     },
@@ -289,87 +322,116 @@ function AddDishModal({
             </div>
           )}
 
-          {/* Price + Category */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Sizes */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-text-600">
+              {t.sizesLabel} <span className="text-error">*</span>
+            </label>
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-text-600">
-                {t.priceLabel} <span className="text-error">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-400">
-                  {DEVISE_SYMBOLS[devise]}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={priceDisplay}
-                  placeholder="0.00"
-                  onFocus={() => {
-                    if (form.price === 0) setPriceDisplay("");
-                  }}
-                  onBlur={() => {
-                    if (priceDisplay === "" || priceDisplay === "0") {
-                      setPriceDisplay("");
-                      setForm((p) => ({ ...p, price: 0 }));
-                    }
-                  }}
-                  onChange={(e) => {
-                    setPriceDisplay(e.target.value);
-                    setForm((p) => ({ ...p, price: Number(e.target.value) }));
-                    if (errors.price)
-                      setErrors((prev) => ({ ...prev, price: undefined }));
-                  }}
-                  className={`
-                    w-full h-12 pl-8 pr-4 rounded-xl
-                    bg-card-bg border text-base text-text-800
-                    focus:outline-none transition-all duration-200
-                    shadow-(--shadow-card)
-                    ${
-                      errors.price
-                        ? "border-error"
-                        : "border-primary-200 focus:border-primary-500"
-                    }
-                  `}
-                />
-              </div>
-              {errors.price && (
-                <span className="text-xs text-error">{errors.price}</span>
-              )}
+              {form.sizes.map((size, index) => (
+                <div key={index} className="flex items-center gap-2">
+                 
+                  {!hasSingleSize && (
+                    <input
+                      value={size.name}
+                      placeholder={t.sizeNamePlaceholder}
+                      onChange={(e) => updateSize(index, { name: e.target.value })}
+                      className={`
+                        flex-1 h-11 px-3 rounded-xl
+                        bg-card-bg border text-sm text-text-800
+                        focus:outline-none transition-all duration-200
+                        shadow-(--shadow-card)
+                        ${
+                          errors.sizes && !size.name.trim()
+                            ? "border-error"
+                            : "border-primary-200 focus:border-primary-500"
+                        }
+                      `}
+                    />
+                  )}
+                  <div className={`relative shrink-0 ${hasSingleSize ? "flex-1" : "w-28"}`}>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-400">
+                      {DEVISE_SYMBOLS[devise]}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={size.price || ""}
+                      placeholder="0.00"
+                      onChange={(e) => updateSize(index, { price: Number(e.target.value) })}
+                      className={`
+                        w-full h-11 pl-7 pr-2 rounded-xl
+                        bg-card-bg border text-sm text-text-800
+                        focus:outline-none transition-all duration-200
+                        shadow-(--shadow-card)
+                        ${
+                          errors.sizes && !(size.price > 0)
+                            ? "border-error"
+                            : "border-primary-200 focus:border-primary-500"
+                        }
+                      `}
+                    />
+                  </div>
+                  {form.sizes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeSize(index)}
+                      className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-error/10 hover:text-error transition-colors shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
+            <button
+              type="button"
+              onClick={addSize}
+              className="self-start text-sm text-primary-700 font-medium hover:underline"
+            >
+              + {t.addSizeLabel}
+            </button>
+            {hasSingleSize && (
+              <span className="text-xs text-text-400">{t.singleSizeHint}</span>
+            )}
+            {errors.sizes && (
+              <span className="text-xs text-error">{errors.sizes}</span>
+            )}
+          </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-text-600">
-                {t.categoryLabel} <span className="text-error">*</span>
-              </label>
-              <select
-                value={String(form.categoryId)}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, categoryId: e.target.value }))
+          {/* Category */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-text-600">
+              {t.categoryLabel} <span className="text-error">*</span>
+            </label>
+            <select
+              value={String(form.categoryId)}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, categoryId: e.target.value }))
+              }
+              className={`
+                w-full h-12 px-4 rounded-xl
+                bg-card-bg border text-base text-text-800
+                focus:outline-none transition-all duration-200
+                shadow-(--shadow-card)
+                ${
+                  errors.categoryId
+                    ? "border-error"
+                    : "border-primary-200 focus:border-primary-500"
                 }
-                className={`
-                  w-full h-12 px-4 rounded-xl
-                  bg-card-bg border text-base text-text-800
-                  focus:outline-none transition-all duration-200
-                  shadow-(--shadow-card)
-                  ${
-                    errors.categoryId
-                      ? "border-error"
-                      : "border-primary-200 focus:border-primary-500"
-                  }
-                `}
-              >
-                <option value="">{t.categoryPlaceholder}</option>
-                {categories.map((cat) => (
-                  <option key={String(cat.id)} value={String(cat.id)}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-              {errors.categoryId && (
-                <span className="text-xs text-error">{errors.categoryId}</span>
-              )}
-            </div>
+              `}
+            >
+              <option value="">{t.categoryPlaceholder}</option>
+              {categories.map((cat) => (
+                <option key={String(cat.id)} value={String(cat.id)}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+            {errors.categoryId && (
+              <span className="text-xs text-error">{errors.categoryId}</span>
+            )}
           </div>
 
           {/* Availability + Visibility */}

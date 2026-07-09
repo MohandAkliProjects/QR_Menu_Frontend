@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Heart, X } from "lucide-react";
 
 import type { DishResponse } from "../../types/api";
@@ -30,6 +30,11 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
   const { name, description } = getDishText(dish, language);
   const available = isDishAvailable(dish);
   const fallbackLang = getActiveLang(dish.translations, language);
+
+  const sizes = dish.sizes ?? [];
+  const hasMultipleSizes = sizes.length > 1;
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selectedSize = sizes[selectedIndex] ?? sizes[0];
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -108,12 +113,34 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
               {name}
             </h2>
             <p className="text-xl font-bold text-[var(--menu-accent)] flex-shrink-0">
-              {formatPrice(dish.price, devise)}
+              {formatPrice(selectedSize?.price ?? 0, devise)}
             </p>
           </div>
 
           {description && (
             <p className="text-sm text-[var(--menu-muted)] leading-relaxed mb-4">{description}</p>
+          )}
+
+          {hasMultipleSizes && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {sizes.map((size, index) => {
+                const isSelected = index === selectedIndex;
+                return (
+                  <button
+                    key={`${size.name}-${index}`}
+                    type="button"
+                    onClick={() => setSelectedIndex(index)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      isSelected
+                        ? "bg-[var(--menu-accent)] border-[var(--menu-accent)] text-white"
+                        : "bg-transparent border-[var(--menu-border)] text-[var(--menu-primary)]"
+                    }`}
+                  >
+                    {size.name} · {formatPrice(size.price, devise)}
+                  </button>
+                );
+              })}
+            </div>
           )}
 
           {dish.likesCount > 0 && (
@@ -126,12 +153,7 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-[var(--menu-border)] bg-[var(--menu-card)] flex-shrink-0">
-          <Button
-            label={t.close}
-            onClick={onClose}
-            variant="secondary"
-            fullWidth
-          />
+          <Button label={t.close} onClick={onClose} variant="secondary" fullWidth />
         </div>
       </div>
     </div>

@@ -42,11 +42,16 @@ export interface BannersResponse {
   banners: BannerResponse[];
 }
 
+export interface DishSize {
+  name: string;
+  price: number;
+}
+
 
 export interface DishResponse {
   id: string;
   categoryId: string;
-  price: number;
+  sizes: DishSize[];
   imageUrl?: string;
   likesCount: number;
   isAvailable: boolean;
@@ -246,7 +251,7 @@ export interface BaseDishRequest {
   available: boolean,
   visible: boolean
   image?: string,
-  price: number,
+  sizes: DishSize[],
 }
 
 export interface CreateDishRequest extends BaseDishRequest {

@@ -118,7 +118,7 @@ function DishesPage() {
                 englishDescription: dish.englishDescription,
                 frenchDescription: dish.frenchDescription,
                 arabDescription: dish.arabicDescription,
-                price: dish.price,
+                sizes: dish.sizes,
                 available: dish.available,
                 status: dish.status,
                 likes: dish.likes,
@@ -292,7 +292,7 @@ function DishesPage() {
       center: true,
       width: "min-w-[200px]",
     },
-    { key: "price", label: t.colPrice, center: true, width: "min-w-[100px]" },
+    { key: "sizes", label: t.colSizes, center: true, width: "min-w-[200px]" },
     {
       key: "available",
       label: t.colAvailable,

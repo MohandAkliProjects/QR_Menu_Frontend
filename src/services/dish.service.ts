@@ -12,6 +12,13 @@ export interface AllDishesResponse {
   menus: FullMenuResponse[];
 }
 
+function appendSizesFormData(formData: FormData, sizes: { name: string; price: number }[]) {
+  sizes.forEach((size, index) => {
+    formData.append(`sizes[${index}].name`, size.name);
+    formData.append(`sizes[${index}].price`, String(size.price));
+  });
+}
+
 function appendCreateDishFormData (
   request: CreateDishRequest,
 ): FormData {
@@ -30,12 +37,12 @@ function appendCreateDishFormData (
     }
   }
 
-  formData.append("price", String(request.price));
-  
+  appendSizesFormData(formData, request.sizes);
+
   formData.append("isAvailable", String(request.available));
 
   formData.append("isVisible", String(request.visible));
-  
+
 
   if (request.image && isDataUrl(request.image)) {
     formData.append("image", dataUrlToFile(request.image, "dish-image.png"));
@@ -60,12 +67,12 @@ function appendUpdateDishFormData(
     }
   }
 
-  formData.append("price", String(request.price));
-  
+  appendSizesFormData(formData, request.sizes);
+
   formData.append("isAvailable", String(request.available));
-  
+
   formData.append("isVisible", String(request.visible));
-  
+
   if (request.image && isDataUrl(request.image)) {
     formData.append("image", dataUrlToFile(request.image, "dish-image.png"));
   }

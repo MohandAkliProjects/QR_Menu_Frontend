@@ -13,6 +13,9 @@ export const dishRowText = {
     toastUpdatedMessage: "Dish has been updated successfully.",
     toastSaveFailedTitle: "Save Failed",
     toastUpdateFailedTitle: "Update Failed",
+    addSize: "Add size",
+    sizeNamePlaceholder: "Name",
+    errorSizesRequired: "Add at least one size with a name and price.",
   },
   fr: {
     missing: "Manquant",
@@ -28,5 +31,8 @@ export const dishRowText = {
     toastUpdatedMessage: "Le plat a été mis à jour avec succès.",
     toastSaveFailedTitle: "Échec de l'enregistrement",
     toastUpdateFailedTitle: "Échec de la mise à jour",
+    addSize: "Ajouter une taille",
+    sizeNamePlaceholder: "Nom",
+    errorSizesRequired: "Ajoutez au moins une taille avec un nom et un prix.",
   },
 } as const;

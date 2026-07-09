@@ -4,6 +4,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 
 interface SocialLinksBarProps {
   restaurant: RestaurantInfo;
+  hideFloating?: boolean;
 }
 
 interface SocialLink {
@@ -46,7 +47,7 @@ function TikTokIcon() {
   );
 }
 
-function SocialLinksBar({ restaurant }: SocialLinksBarProps) {
+function SocialLinksBar({ restaurant, hideFloating = false }: SocialLinksBarProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -172,13 +173,13 @@ function SocialLinksBar({ restaurant }: SocialLinksBarProps) {
         </div>
       </div>
 
-      {!isVisible && floatingLinks.length > 0 && (
+      {!isVisible && !hideFloating && floatingLinks.length > 0 && (
         <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-3">
           {floatingLinks.map((link) => {
             const isExternal = link.href.startsWith("http");
 
             return (
-              <a
+              <a  
                 key={`floating-${link.label}`}
                 href={link.href}
                 target={isExternal ? "_blank" : undefined}

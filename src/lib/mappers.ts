@@ -51,7 +51,7 @@ export function dishResponseToUI(dish: DishResponse): DishUI {
     englishDescription: en?.description,
     frenchDescription: fr?.description,
     arabicDescription: ar?.description,
-    price: dish.price,
+    sizes: dish.sizes ?? [],
     available: (dish.isAvailable ?? dish.available)
       ? "available"
       : "unavailable",

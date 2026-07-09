@@ -24,10 +24,21 @@ function getActiveLang(
   return fallback ?? null;
 }
 
+function getCardPriceDisplay(dish: DishResponse, devise: Devise): string {
+  const sizes = dish.sizes ?? [];
+  if (sizes.length === 0) return "";
+  if (sizes.length === 1) return formatPrice(sizes[0].price, devise);
+
+  const min = Math.min(...sizes.map((s) => s.price));
+  return `${formatPrice(min, devise)}+`;
+}
+
 function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCardProps) {
   const { name, description } = getDishText(dish, language);
   const available = isDishAvailable(dish);
   const fallbackLang = getActiveLang(dish.translations, language);
+  const priceDisplay = getCardPriceDisplay(dish, devise);
+  const hasMultipleSizes = (dish.sizes?.length ?? 0) > 1;
 
   return (
     <div
@@ -92,7 +103,12 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
         )}
         <div className="flex items-center justify-between mt-2">
           <span className="text-sm font-bold text-[var(--menu-accent)]">
-            {formatPrice(dish.price, devise)}
+            {priceDisplay}
+            {hasMultipleSizes && (
+              <span className="text-[10px] font-medium text-[var(--menu-muted)] ms-1">
+                / {dish.sizes.length} tailles
+              </span>
+            )}
           </span>
           {dish.likesCount > 0 && (
             <span className="flex items-center gap-1 text-[11px] text-[var(--menu-muted)]">

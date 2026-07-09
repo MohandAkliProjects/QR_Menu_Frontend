@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
+  X,
 } from "lucide-react";
 import { CircleCheck, CircleX } from "lucide-react";
 import Badge from "../Badge";
@@ -25,7 +26,7 @@ import type { AllDishesResponse } from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../i18n/useLanguage";
 import ToastContainer from "../../../components/ui/ToastContainer";
-import type { UpdateDishRequest } from "../../../types/api";
+import type { UpdateDishRequest, DishSize } from "../../../types/api";
 import type { Devise } from "../../../types";
 import { DEVISE_SYMBOLS } from "../../../lib/constants/devise";
 import { dishRowText } from "../text/DishRow.text";
@@ -48,7 +49,7 @@ function DishUItoUpdateDishRequest(dish: Dish): UpdateDishRequest {
     arabicDescription: dish.arabicDescription,
     available: dish.available === "available",
     visible: dish.status === "visible",
-    price: dish.price,
+    sizes: dish.sizes.length > 0 ? dish.sizes.map((s) => ({ ...s })) : [{ name: "", price: 0 }],
     dishId: String(dish.id),
     image: dish.image ?? undefined,
   };
@@ -247,6 +248,151 @@ function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
   );
 }
 
+interface SizesPopoverProps {
+  sizes: DishSize[];
+  devise: Devise;
+  isFirst?: boolean;
+}
+
+function SizesPopover({ sizes, devise, isFirst }: SizesPopoverProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (!sizes.length) return <span className="text-sm text-text-300 select-none">—</span>;
+
+  if (sizes.length === 1) {
+    return (
+      <span className="text-sm text-text-600">
+        {DEVISE_SYMBOLS[devise]} {sizes[0].price}
+      </span>
+    );
+  }
+
+  const prices = sizes.map((s) => s.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+
+  return (
+    <div ref={ref} className="relative flex justify-center">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors"
+      >
+        <span className="whitespace-nowrap">
+          {DEVISE_SYMBOLS[devise]} {min} – {DEVISE_SYMBOLS[devise]} {max}
+        </span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          className={`
+            absolute z-50 left-1/2 -translate-x-1/2
+            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
+            w-max max-w-50 rounded-xl border border-beige-300
+            bg-card-bg shadow-lg px-3 py-2
+            flex flex-col gap-1.5
+          `}
+        >
+          <div
+            className={`
+              absolute left-1/2 -translate-x-1/2
+              w-3 h-3 rotate-45 bg-card-bg border-beige-300
+              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
+            `}
+          />
+          {sizes.map((size, i) => (
+            <div key={i} className="flex items-center justify-between gap-3 text-sm">
+              <span className="truncate max-w-24 text-text-700">{size.name || "—"}</span>
+              <span className="text-text-500 shrink-0">
+                {DEVISE_SYMBOLS[devise]} {size.price}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface SizesEditorProps {
+  sizes: DishSize[];
+  setForm: React.Dispatch<React.SetStateAction<UpdateDishRequest>>;
+  devise: Devise;
+  addSizeLabel: string;
+  sizeNamePlaceholder: string;
+  error?: string;
+}
+
+function SizesEditor({ sizes, setForm, devise, addSizeLabel, sizeNamePlaceholder, error }: SizesEditorProps) {
+  const updateSize = (index: number, patch: Partial<DishSize>) => {
+    setForm((p) => ({
+      ...p,
+      sizes: (p.sizes ?? []).map((s, i) => (i === index ? { ...s, ...patch } : s)),
+    }));
+  };
+
+  const addSize = () => {
+    setForm((p) => ({ ...p, sizes: [...(p.sizes ?? []), { name: "", price: 0 }] }));
+  };
+
+  const removeSize = (index: number) => {
+    setForm((p) => ({ ...p, sizes: (p.sizes ?? []).filter((_, i) => i !== index) }));
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full py-1">
+      {sizes.map((size, index) => (
+        <div key={index} className="flex items-center gap-1">
+          <input
+            value={size.name}
+            placeholder={sizeNamePlaceholder}
+            onChange={(e) => updateSize(index, { name: e.target.value })}
+            className="w-16 h-8 px-2 rounded-md border border-beige-400 text-xs text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
+          />
+          <span className="text-xs text-text-400 shrink-0">{DEVISE_SYMBOLS[devise]}</span>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={size.price}
+            onChange={(e) => updateSize(index, { price: Number(e.target.value) })}
+            className="w-16 h-8 px-1 rounded-md border border-beige-400 text-xs text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
+          />
+          {sizes.length > 1 && (
+            <button
+              type="button"
+              onClick={() => removeSize(index)}
+              className="text-text-400 hover:text-error transition-colors shrink-0"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addSize}
+        className="text-xs text-primary-700 hover:underline self-center"
+      >
+        + {addSizeLabel}
+      </button>
+      {error && <span className="text-xs text-error text-center">{error}</span>}
+    </div>
+  );
+}
+
 function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
   const { language } = useLanguage();
   const t = dishRowText[language];
@@ -254,6 +400,7 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<UpdateDishRequest>(DishUItoUpdateDishRequest(dish));
   const [error, setError] = useState("");
+  const [sizesError, setSizesError] = useState("");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -381,12 +528,18 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
   const isMissingEnglish = languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
   const isMissingFrench  = languages.showFrench  && (form.frenchName?.trim().length ?? 0) < 1;
   const isMissingArabic  = languages.showArabic  && (form.arabicName?.trim().length ?? 0) < 1;
+  const isMissingSizes   =
+    !form.sizes ||
+    form.sizes.length === 0 ||
+    form.sizes.some((s) => !s.name?.trim() || !(s.price > 0));
 
   const handleSave = () => {
     if (isMissingEnglish) { setError(t.errorEnglishRequired); return; }
     if (isMissingFrench)  { setError(t.errorFrenchRequired);  return; }
     if (isMissingArabic)  { setError(t.errorArabicRequired);  return; }
+    if (isMissingSizes)   { setSizesError(t.errorSizesRequired); return; }
     setError("");
+    setSizesError("");
     updateMutation.mutate({ payload: form });
     setIsEditing(false);
   };
@@ -394,6 +547,7 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
   const handleCancel = () => {
     setForm(DishUItoUpdateDishRequest(dish));
     setError("");
+    setSizesError("");
     setIsEditing(false);
   };
 
@@ -503,25 +657,22 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
         </div>
       </TableCell>
 
-      {/* Price */}
+      {/* Sizes */}
       <TableCell>
-        {isEditing ? (
-          <div className="flex items-center gap-1 justify-center">
-            <span className="text-sm text-text-400">{DEVISE_SYMBOLS[devise]}</span>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={form.price}
-              onChange={(e) => setForm((p) => ({ ...p, price: Number(e.target.value) }))}
-              className="w-20 h-9 px-2 rounded-lg border border-beige-400 text-sm text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
+        <div className="flex justify-center">
+          {isEditing ? (
+            <SizesEditor
+              sizes={form.sizes ?? []}
+              setForm={setForm}
+              devise={devise}
+              addSizeLabel={t.addSize}
+              sizeNamePlaceholder={t.sizeNamePlaceholder}
+              error={sizesError}
             />
-          </div>
-        ) : (
-          <span className="text-sm text-text-600">
-            {DEVISE_SYMBOLS[devise]} {dish.price}
-          </span>
-        )}
+          ) : (
+            <SizesPopover sizes={dish.sizes} devise={devise} isFirst={isFirst} />
+          )}
+        </div>
       </TableCell>
 
       {/* Available */}

@@ -340,6 +340,14 @@ function FullScreenDish({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selectedSize = sizes[selectedIndex] ?? sizes[0];
 
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
@@ -406,7 +414,10 @@ function FullScreenDish({
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto flex-1 px-5 pt-4 pb-4" style={{ scrollbarWidth: "none" }}>
+        <div
+          className="overflow-y-auto flex-1 px-5 pt-4 pb-4"
+          style={{ scrollbarWidth: "none", overscrollBehavior: "contain" }}
+        >
           <div className="flex items-start justify-between gap-3 mb-2">
             <h2 className="text-xl font-semibold text-[var(--menu-primary)] flex-1 leading-tight menu-font-display">
               {name}

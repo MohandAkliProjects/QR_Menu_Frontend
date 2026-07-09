@@ -87,6 +87,27 @@ function CategoryTile({
   );
 }
 
+function resolveFromSearchParams(
+  menu: FullMenuResponse,
+  params: URLSearchParams,
+): {
+  category: CategoryWithDishesResponse | null;
+  dish: DishResponse | null;
+} {
+  const categoryId = params.get("category");
+  const dishId = params.get("dish");
+
+  const category =
+    menu.categories.find((c) => c.id === categoryId) ?? null;
+
+  const dish =
+    category && dishId
+      ? category.dishes.find((d) => d.id === dishId) ?? null
+      : null;
+
+  return { category, dish };
+}
+
 export default function CustomMenuLayout({
   menu,
   language,
@@ -96,9 +117,18 @@ export default function CustomMenuLayout({
   onLike,
   t,
 }: CustomMenuLayoutProps) {
+
   const [activeCategory, setActiveCategory] =
-    useState<CategoryWithDishesResponse | null>(null);
-  const [selectedDish, setSelectedDish] = useState<DishResponse | null>(null);
+    useState<CategoryWithDishesResponse | null>(() => {
+      if (typeof window === "undefined") return null;
+      return resolveFromSearchParams(menu, new URLSearchParams(window.location.search))
+        .category;
+    });
+  const [selectedDish, setSelectedDish] = useState<DishResponse | null>(() => {
+    if (typeof window === "undefined") return null;
+    return resolveFromSearchParams(menu, new URLSearchParams(window.location.search))
+      .dish;
+  });
 
   const menuTitle =
     menu.translations[language]?.title ??
@@ -107,51 +137,60 @@ export default function CustomMenuLayout({
 
   const banners = (menu.restaurant.banners ?? []).filter((b) => b.visible);
 
-  // --- Back-navigation handling ---
-  // Each "drill-down" (categories -> dish list -> single dish) pushes a
-  // history entry. The device/browser back button (and our own close
-  // buttons, which just call history.back()) then unwinds one level at a
-  // time instead of leaving the page entirely.
   useEffect(() => {
     const handlePopState = () => {
-      if (selectedDish) {
-        setSelectedDish(null);
-        return;
-      }
-      if (activeCategory) {
-        setActiveCategory(null);
-        return;
-      }
-      // Nothing open — let the browser handle back normally (leaves the page).
+      const { category, dish } = resolveFromSearchParams(
+        menu,
+        new URLSearchParams(window.location.search),
+      );
+      setActiveCategory(category);
+      setSelectedDish(dish);
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [selectedDish, activeCategory]);
+  }, [menu]);
+
+  function buildUrl(categoryId: string | null, dishId: string | null) {
+    const params = new URLSearchParams(window.location.search);
+    if (categoryId) params.set("category", categoryId);
+    else params.delete("category");
+    if (dishId) params.set("dish", dishId);
+    else params.delete("dish");
+    const query = params.toString();
+    return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  }
 
   function openCategory(category: CategoryWithDishesResponse) {
-    window.history.pushState({ menuView: "category" }, "");
+    window.history.pushState({ menuView: "category" }, "", buildUrl(category.id, null));
     setActiveCategory(category);
+    setSelectedDish(null);
   }
 
   function closeCategory() {
-    // Pop history if we pushed a state for it, otherwise just clear directly.
     if (window.history.state?.menuView === "category") {
       window.history.back();
     } else {
+      window.history.replaceState({}, "", buildUrl(null, null));
       setActiveCategory(null);
     }
   }
 
   function openDish(dish: DishResponse) {
-    window.history.pushState({ menuView: "dish" }, "");
+    if (!activeCategory) return;
+    window.history.pushState(
+      { menuView: "dish" },
+      "",
+      buildUrl(activeCategory.id, dish.id),
+    );
     setSelectedDish(dish);
   }
 
   function closeDish() {
     if (window.history.state?.menuView === "dish") {
       window.history.back();
-    } else {
+    } else if (activeCategory) {
+      window.history.replaceState({}, "", buildUrl(activeCategory.id, null));
       setSelectedDish(null);
     }
   }
@@ -309,7 +348,6 @@ export default function CustomMenuLayout({
   );
 }
 
-// Full-screen dish view - same like/close behavior as DishModal, just full page instead of a bottom sheet
 function FullScreenDish({
   dish,
   devise,

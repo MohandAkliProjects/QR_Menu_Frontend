@@ -5,7 +5,8 @@ export const qrDisplayText = {
     loadError: "Could not load QR information.",
     yourQrCodeTitle: "Your QR Code",
     yourQrCodeDescription:
-      "Guests scan this code to open your public menu in their browser.",
+      "Each menu has its own QR code. Guests scan it to open that specific menu.",
+    defaultMenuBadge: "Default",
     noQrCode: "No QR code available. Please set a default menu first.",
     noPublicUrl: "No public menu URL configured yet.",
     publicMenuUrlTitle: "Public Menu URL",
@@ -29,7 +30,8 @@ export const qrDisplayText = {
     loadError: "Impossible de charger les informations du QR.",
     yourQrCodeTitle: "Votre code QR",
     yourQrCodeDescription:
-      "Les clients scannent ce code pour ouvrir votre menu public dans leur navigateur.",
+      "Chaque menu possède son propre code QR. Les clients le scannent pour ouvrir ce menu.",
+    defaultMenuBadge: "Par défaut",
     noQrCode:
       "Aucun code QR disponible. Veuillez d'abord définir un menu par défaut.",
     noPublicUrl: "Aucune URL de menu public configurée pour le moment.",

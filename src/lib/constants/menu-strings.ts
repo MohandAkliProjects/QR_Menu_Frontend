@@ -16,6 +16,9 @@ export const MENU_STRINGS = {
     closed: "We're Currently Closed",
     closedMessage:
       "This restaurant's menu is not available right now. Please check back later or contact the restaurant directly.",
+    chooseMenu: "Choose a menu",
+    chooseMenuHint: "Select the menu you'd like to view",
+    categoriesLabel: "categories",
     poweredBy: "Powered by",
     allCategories: "All",
     item: "item",
@@ -46,6 +49,9 @@ export const MENU_STRINGS = {
     closed: "Nous sommes actuellement fermés",
     closedMessage:
       "Le menu de ce restaurant n'est pas disponible pour le moment. Revenez plus tard ou contactez le restaurant directement.",
+    chooseMenu: "Choisissez un menu",
+    chooseMenuHint: "Sélectionnez le menu que vous souhaitez consulter",
+    categoriesLabel: "catégories",
     poweredBy: "Propulsé par",
     allCategories: "Tout",
     item: "article",
@@ -76,6 +82,9 @@ export const MENU_STRINGS = {
     closed: "نحن مغلقون حالياً",
     closedMessage:
       "قائمة هذا المطعم غير متاحة الآن. يرجى المراجعة لاحقاً أو التواصل مع المطعم مباشرة.",
+    chooseMenu: "اختر قائمة",
+    chooseMenuHint: "حدد القائمة التي تريد عرضها",
+    categoriesLabel: "فئات",
     poweredBy: "مدعوم من",
     allCategories: "الكل",
     item: "عنصر",

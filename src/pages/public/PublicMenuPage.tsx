@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import type { Language } from "../../types/enums";
 import type { CategoryWithDishesResponse, DishResponse } from "../../types";
 import type { RouteParams } from "../../types/routes";
 import { ApiClientError } from "../../api/errors";
-import { getFullMenuBySlug } from "../../services/menu.service";
+import {
+  getFullMenu,
+  getFullMenuBySlug,
+  getMenusBySlug,
+} from "../../services/menu.service";
+import * as restaurantService from "../../services/restaurant.service";
 import useToast from "../../hooks/useToast";
 import ToastContainer from "../../components/ui/ToastContainer";
 import HeroCarousel from "../../components/public/HeroCarousel";
@@ -20,6 +25,7 @@ import RestaurantInfoCard from "../../components/public/RestaurantInfoCard";
 import SocialFab from "../../components/public/SocialFab";
 import Footer from "../../components/public/Footer";
 import RestaurantClosed from "../../components/public/RestaurantClosed";
+import MenuPicker from "../../components/public/MenuPicker";
 import { shouldRecordView } from "../../lib/view-tracker";
 import CustomMenuLayout from "../../components/public/CustomMenuLayout";
 import {
@@ -43,7 +49,9 @@ const STICKY_OFFSET_FALLBACK = 132;
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export default function PublicMenuPage() {
-  const { menuId: slug } = useParams<RouteParams["PublicMenu"]>();
+  const { slug } = useParams<RouteParams["PublicMenu"]>();
+  const [searchParams] = useSearchParams();
+  const menuIdFromQr = searchParams.get("menu");
   const { toasts, showToast, removeToast } = useToast();
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -61,17 +69,53 @@ export default function PublicMenuPage() {
   const [likeLoading, setLikeLoading] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
-  const {
-    data: menu,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["public-menu", slug],
-    queryFn: () => getFullMenuBySlug(slug!),
-    enabled: !!slug,
+  const { data: menuList, isLoading: menuListLoading, error: menuListError } = useQuery({
+    queryKey: ["public-menu-list", slug],
+    queryFn: () => getMenusBySlug(slug!),
+    enabled: !!slug && !menuIdFromQr,
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
+
+  const resolvedMenuId = useMemo(() => {
+    if (menuIdFromQr) return menuIdFromQr;
+    if (menuList?.length === 1) return menuList[0].id;
+    return null;
+  }, [menuIdFromQr, menuList]);
+
+  const {
+    data: menu,
+    isLoading: menuLoading,
+    error: menuError,
+  } = useQuery({
+    queryKey: ["public-menu", slug, resolvedMenuId],
+    queryFn: () =>
+      resolvedMenuId
+        ? getFullMenu(resolvedMenuId)
+        : getFullMenuBySlug(slug!),
+    enabled: !!slug && (!!resolvedMenuId || (menuList !== undefined && menuList.length <= 1)),
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+
+  const showMenuPicker =
+    !menuIdFromQr &&
+    !menuListLoading &&
+    !!menuList &&
+    menuList.length > 1;
+
+  const { data: restaurantBySlug } = useQuery({
+    queryKey: ["restaurant-by-slug", slug],
+    queryFn: () => restaurantService.getRestaurantBySlug(slug!),
+    enabled: !!slug && showMenuPicker,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+
+  const isLoading =
+    menuListLoading ||
+    (!showMenuPicker && menuLoading && !menu);
+  const error = menuListError ?? menuError;
 
   useEffect(() => {
     if (!menu?.id) return;
@@ -81,10 +125,17 @@ export default function PublicMenuPage() {
     }).catch(() => {});
   }, [menu?.id]);
 
-  const availableLanguages = useMemo(
-    () => (menu ? (Object.keys(menu.translations) as Language[]) : []),
-    [menu],
-  );
+  const availableLanguages = useMemo(() => {
+    if (menu) return Object.keys(menu.translations) as Language[];
+    if (menuList?.length) {
+      const keys = new Set<string>();
+      menuList.forEach((entry) =>
+        Object.keys(entry.translations).forEach((key) => keys.add(key)),
+      );
+      return Array.from(keys) as Language[];
+    }
+    return [];
+  }, [menu, menuList]);
 
   const language: Language | null = useMemo(() => {
     if (selectedLanguage && availableLanguages.includes(selectedLanguage)) {
@@ -237,6 +288,30 @@ export default function PublicMenuPage() {
   const isClosed = error instanceof ApiClientError && error.status === 403;
 
   if (isClosed) return <RestaurantClosed language={language} />;
+
+  const showMenuPickerView =
+    showMenuPicker && !menuListLoading && !menuListError;
+
+  if (showMenuPickerView && menuList) {
+    const pickerRestaurant = restaurantBySlug
+      ? {
+          name: restaurantBySlug.name,
+          logoUrl: restaurantBySlug.logoUrl,
+          ville: restaurantBySlug.ville,
+          address: restaurantBySlug.address,
+        }
+      : menu?.restaurant;
+
+    return (
+      <MenuPicker
+        slug={slug!}
+        menus={menuList}
+        restaurant={pickerRestaurant}
+        language={language}
+        onLanguageChange={setSelectedLanguage}
+      />
+    );
+  }
 
   if (isLoading) {
     return (

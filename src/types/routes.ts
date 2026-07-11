@@ -1,7 +1,7 @@
 
 export type RouteParams = {
   PublicMenu: {
-    menuId: string;
+    slug: string;
   };
 
   Restaurant: {
@@ -25,6 +25,8 @@ export const ROUTES = {
 
 
   qrRedirect: (restaurantId: string) => `/r/${restaurantId}` as const,
-  publicMenu: (slug: string) => `/menu/${slug}` as const,
+  publicMenu: (slug: string, menuId?: string) =>
+    menuId ? (`/menu/${slug}?menu=${menuId}` as const) : (`/menu/${slug}` as const),
+  menuUnavailable: "/menu-unavailable",
 
 } as const;

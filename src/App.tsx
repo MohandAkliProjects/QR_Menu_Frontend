@@ -11,6 +11,7 @@ import BannersPage from "./pages/admin/BannersPage";
 import QrDisplayPage from "./pages/admin/QrDisplayPage";
 import MenuPage from "./pages/admin/MenuPage";
 import PublicMenuPage from "./pages/public/PublicMenuPage";
+import RestaurantClosed from "./components/public/RestaurantClosed";
 import LandingPage from "./pages/landing/LandingPage";
 import SupplementsPage from "./pages/admin/SupplementsPage";
 
@@ -21,7 +22,8 @@ function App() {
       <Routes>
         <Route path="/landingpage" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/menu/:menuId" element={<PublicMenuPage />} />
+        <Route path="/menu/:slug" element={<PublicMenuPage />} />
+        <Route path="/menu-unavailable" element={<RestaurantClosed />} />
         <Route element={<ProtectedRoute />}>
           <Route
             path="/dashboard"

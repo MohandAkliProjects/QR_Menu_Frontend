@@ -8,10 +8,13 @@ import type {
   RestaurantUpdateRequest,
   TranslationsMap,
   BaseDishRequest,
-  BaseCategoryRequest
+  BaseCategoryRequest,
+  SupplementResponse,
+  SupplementTranslation,
+  BaseSupplementRequest
 } from "../types/api";
 import type { Devise, Language } from "../types/enums";
-import type { CategoryUI, DishUI } from "../types/ui";
+import type { CategoryUI, DishUI, SupplementUI } from "../types/ui";
 
 function getTranslationName(
   translations: TranslationsMap<{ name: string }>,
@@ -33,6 +36,36 @@ export function categoryResponseToUI(category: CategoryResponse): CategoryUI {
     french: getTranslationName(category.translations, "FR"),
     arabic: getTranslationName(category.translations, "AR"),
     status: isVisible ? "visible" : "hidden",
+  };
+}
+
+export function supplementRequestToTranslations(
+  request: BaseSupplementRequest
+): TranslationsMap<SupplementTranslation> {
+  const translations: TranslationsMap<SupplementTranslation> = {};
+
+  if (request.englishName?.trim()) {
+    translations["EN" as Language] = { name: request.englishName.trim() };
+  }
+  if (request.frenchName?.trim()) {
+    translations["FR" as Language] = { name: request.frenchName.trim() };
+  }
+  if (request.arabicName?.trim()) {
+    translations["AR" as Language] = { name: request.arabicName.trim() };
+  }
+
+  return translations;
+}
+
+export function supplementResponseToUI(supplement: SupplementResponse): SupplementUI {
+  return {
+    id: supplement.id,
+    english: getTranslationName(supplement.translations, "EN") ?? "",
+    french: getTranslationName(supplement.translations, "FR"),
+    arabic: getTranslationName(supplement.translations, "AR"),
+    price: supplement.price,
+    available: (supplement.isAvailable ?? supplement.available) ? "available" : "unavailable",
+    status: (supplement.isVisible ?? supplement.visible) ? "visible" : "hidden",
   };
 }
 
@@ -60,6 +93,7 @@ export function dishResponseToUI(dish: DishResponse): DishUI {
       : "hidden",
     likes: dish.likesCount,
     categoryId: dish.categoryId,
+    supplements: (dish.supplements ?? []).map(supplementResponseToUI),
   };
 }
 

@@ -19,15 +19,18 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Dish } from "../../../types/dish";
 import type { LanguageConfig } from "../category/CategoryRow";
 import useToast from "../../../hooks/useToast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getErrorMessage } from "../../../api/errors";
 import * as dishService from "../../../services/dish.service";
+import * as supplementService from "../../../services/supplement.service";
 import type { AllDishesResponse } from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../i18n/useLanguage";
 import ToastContainer from "../../../components/ui/ToastContainer";
 import type { UpdateDishRequest, DishSize } from "../../../types/api";
 import type { Devise } from "../../../types";
+import type { SupplementUI } from "../../../types/ui";
+import { supplementResponseToUI } from "../../../lib/mappers";
 import { DEVISE_SYMBOLS } from "../../../lib/constants/devise";
 import { dishRowText } from "../text/DishRow.text";
 
@@ -393,6 +396,184 @@ function SizesEditor({ sizes, setForm, devise, addSizeLabel, sizeNamePlaceholder
   );
 }
 
+interface DishSupplementsPopoverProps {
+  dishId: string;
+  attached: SupplementUI[];
+  isFirst?: boolean;
+  emptyLabel: string;
+  noneYetLabel: string;
+}
+
+function DishSupplementsPopover({
+  dishId,
+  attached,
+  isFirst,
+  emptyLabel,
+  noneYetLabel,
+}: DishSupplementsPopoverProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { restaurantId, menuId } = useAuth();
+  const queryClient = useQueryClient();
+  const dishesKey = ["dishes", restaurantId];
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  // Lazy-fetched only when the popover is open, and shares the same cache
+  // key as the Supplements page — no duplicate network cost if that page
+  // was already visited this session.
+  const { data, isLoading } = useQuery({
+    queryKey: ["supplements", restaurantId, menuId],
+    queryFn: () => supplementService.loadSupplementsPageData(restaurantId!, menuId!),
+    enabled: open && !!restaurantId && !!menuId,
+  });
+
+  const catalog = data?.supplements ?? [];
+  const attachedIds = new Set(attached.map((s) => String(s.id)));
+
+  const addMutation = useMutation({
+    mutationFn: ({ supplementId }: { supplementId: string }) =>
+      supplementService.addSupplementToDish(supplementId, dishId),
+    onMutate: async ({ supplementId }) => {
+      await queryClient.cancelQueries({ queryKey: dishesKey });
+      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+      const supplementToAdd = catalog.find((s) => s.id === supplementId);
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+        if (!old || !supplementToAdd) return old;
+        return {
+          ...old,
+          menus: old.menus.map((menu) => ({
+            ...menu,
+            categories: menu.categories.map((cat) => ({
+              ...cat,
+              dishes: cat.dishes.map((d) =>
+                d.id === dishId
+                  ? { ...d, supplements: [...(d.supplements ?? []), supplementToAdd] }
+                  : d,
+              ),
+            })),
+          })),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: ({ supplementId }: { supplementId: string }) =>
+      supplementService.removeSupplementFromDish(supplementId, dishId),
+    onMutate: async ({ supplementId }) => {
+      await queryClient.cancelQueries({ queryKey: dishesKey });
+      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          menus: old.menus.map((menu) => ({
+            ...menu,
+            categories: menu.categories.map((cat) => ({
+              ...cat,
+              dishes: cat.dishes.map((d) =>
+                d.id === dishId
+                  ? { ...d, supplements: (d.supplements ?? []).filter((s) => s.id !== supplementId) }
+                  : d,
+              ),
+            })),
+          })),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
+  });
+
+  const toggle = (supplementId: string, isAttached: boolean) => {
+    if (isAttached) removeMutation.mutate({ supplementId });
+    else addMutation.mutate({ supplementId });
+  };
+
+  const summaryNames = attached
+    .map((s) => s.english || s.french || s.arabic)
+    .filter(Boolean)
+    .join(", ");
+
+  return (
+    <div ref={ref} className="relative flex justify-center">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-35"
+      >
+        <span className={`truncate ${attached.length === 0 ? "text-text-300" : ""}`}>
+          {attached.length > 0 ? summaryNames : emptyLabel}
+        </span>
+        <ChevronDown
+          size={13}
+          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          className={`
+            absolute z-50 left-1/2 -translate-x-1/2
+            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
+            w-56 rounded-xl border border-beige-300
+            bg-card-bg shadow-lg p-3
+            flex flex-col gap-2 max-h-60 overflow-y-auto
+          `}
+        >
+          <div
+            className={`
+              absolute left-1/2 -translate-x-1/2
+              w-3 h-3 rotate-45 bg-card-bg border-beige-300
+              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
+            `}
+          />
+          {isLoading ? (
+            <span className="text-xs text-text-400 text-center py-2">…</span>
+          ) : catalog.length === 0 ? (
+            <span className="text-xs text-text-400 text-center py-2">{noneYetLabel}</span>
+          ) : (
+            catalog.map((s) => {
+              const ui = supplementResponseToUI(s);
+              const name = ui.english || ui.french || ui.arabic || "—";
+              const isAttached = attachedIds.has(String(s.id));
+              return (
+                <label
+                  key={String(s.id)}
+                  className="flex items-center gap-2 text-sm text-text-700 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAttached}
+                    onChange={() => toggle(String(s.id), isAttached)}
+                    className="accent-primary-700"
+                  />
+                  <span className="truncate flex-1">{name}</span>
+                </label>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
   const { language } = useLanguage();
   const t = dishRowText[language];
@@ -672,6 +853,19 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
           ) : (
             <SizesPopover sizes={dish.sizes} devise={devise} isFirst={isFirst} />
           )}
+        </div>
+      </TableCell>
+
+      {/* Supplements — independent of edit mode, toggles instantly */}
+      <TableCell>
+        <div className="flex justify-center">
+          <DishSupplementsPopover
+            dishId={String(dish.id)}
+            attached={dish.supplements ?? []}
+            isFirst={isFirst}
+            emptyLabel={t.noSupplements}
+            noneYetLabel={t.noSupplementsInCatalog}
+          />
         </div>
       </TableCell>
 

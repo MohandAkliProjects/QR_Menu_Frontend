@@ -42,7 +42,7 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
 
   return (
     <div
-      className={`bg-[var(--menu-card)] rounded-2xl overflow-hidden shadow-sm border border-[var(--menu-border)] cursor-pointer transition-all duration-200 active:scale-[0.97] hover:shadow-md ${
+      className={`bg-(--menu-card) rounded-2xl overflow-hidden shadow-sm border border-(--menu-border) cursor-pointer transition-all duration-200 active:scale-[0.97] hover:shadow-md ${
         available ? "" : "opacity-60"
       }`}
       onClick={onClick}
@@ -56,20 +56,20 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
             loading="lazy"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-[var(--menu-secondary)] text-3xl">
+          <div className="absolute inset-0 flex items-center justify-center bg-(--menu-secondary) text-3xl">
             🍽️
           </div>
         )}
 
         {!available && (
-          <div className="absolute top-2 start-2 px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-500 text-white">
+          <div className="absolute top-2 inset-s-2 px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-500 text-white">
             {t.unavailable}
           </div>
         )}
 
         {fallbackLang && (
           <div
-            className="absolute bottom-2 start-2 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase"
+            className="absolute bottom-2 inset-s-2 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase"
             style={{ background: "var(--menu-accent)", color: "#fff", letterSpacing: "0.04em" }}
           >
             {fallbackLang}
@@ -78,7 +78,7 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
 
         <button
           type="button"
-          className="absolute top-2 end-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-sm flex items-center justify-center shadow-sm transition-transform active:scale-90"
+          className="absolute top-2 inset-e-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-sm flex items-center justify-center shadow-sm transition-transform active:scale-90"
           onClick={(e) => {
             e.stopPropagation();
             onLike();
@@ -95,23 +95,23 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
       </div>
 
       <div className="p-3">
-        <h3 className="text-sm font-bold text-[var(--menu-primary)] line-clamp-1">{name}</h3>
+        <h3 className="text-sm font-bold text-(--menu-primary) line-clamp-1">{name}</h3>
         {description && (
-          <p className="text-[11px] text-[var(--menu-muted)] mt-0.5 line-clamp-2 leading-relaxed">
+          <p className="text-[11px] text-(--menu-muted) mt-0.5 line-clamp-2 leading-relaxed">
             {description}
           </p>
         )}
         <div className="flex items-center justify-between mt-2">
-          <span className="text-sm font-bold text-[var(--menu-accent)]">
+          <span className="text-sm font-bold text-(--menu-accent)">
             {priceDisplay}
             {hasMultipleSizes && (
-              <span className="text-[10px] font-medium text-[var(--menu-muted)] ms-1">
+              <span className="text-[10px] font-medium text-(--menu-muted) ms-1">
                 / {dish.sizes.length} tailles
               </span>
             )}
           </span>
           {dish.likesCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-[var(--menu-muted)]">
+            <span className="flex items-center gap-1 text-[11px] text-(--menu-muted)">
               <Heart className="w-3 h-3" fill="var(--menu-danger)" stroke="var(--menu-danger)" />
               {dish.likesCount} {t.likes}
             </span>

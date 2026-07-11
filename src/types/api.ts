@@ -62,6 +62,7 @@ export interface DishResponse {
   visible: boolean;
   order: number;
   translations: TranslationsMap<DishTranslation>;
+  supplements: SupplementResponse[];
 }
 
 export interface CategoryResponse {
@@ -261,4 +262,48 @@ export interface CreateDishRequest extends BaseDishRequest {
 export interface UpdateDishRequest extends BaseDishRequest {
   dishId: string,
   wantToDeleteImage?: boolean;
+}
+
+
+export interface SupplementTranslation {
+  name: string;
+}
+
+export interface SupplementResponse {
+  id: string;
+  price: number;
+  isAvailable: boolean;
+  /** @deprecated */
+  available: boolean;
+  isVisible: boolean;
+  /** @deprecated */
+  visible: boolean;
+  translations: TranslationsMap<SupplementTranslation>;
+}
+export interface MenuWithSupplementsResponse {
+  id: string;
+  translations: TranslationsMap<MenuTranslation>;
+  devise: Devise;
+  supplements: SupplementResponse[];
+}
+
+export interface AllSupplementsResponse {
+  menus: MenuWithSupplementsResponse[];
+}
+
+export interface BaseSupplementRequest {
+  englishName?: string;
+  frenchName?: string;
+  arabicName?: string;
+  price: number;
+  available: boolean;
+  visible: boolean;
+}
+
+export interface CreateSupplementRequest extends BaseSupplementRequest {
+  menuId: string;
+}
+
+export interface UpdateSupplementRequest extends BaseSupplementRequest {
+  supplementId: string;
 }

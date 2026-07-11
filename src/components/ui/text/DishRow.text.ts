@@ -16,6 +16,8 @@ export const dishRowText = {
     addSize: "Add size",
     sizeNamePlaceholder: "Name",
     errorSizesRequired: "Add at least one size with a name and price.",
+    noSupplements: "None",
+    noSupplementsInCatalog: "No supplements yet",
   },
   fr: {
     missing: "Manquant",
@@ -34,5 +36,6 @@ export const dishRowText = {
     addSize: "Ajouter une taille",
     sizeNamePlaceholder: "Nom",
     errorSizesRequired: "Ajoutez au moins une taille avec un nom et un prix.",
+    noSupplements: "Aucun",noSupplementsInCatalog: "Aucun supplément pour l'instant",
   },
 } as const;

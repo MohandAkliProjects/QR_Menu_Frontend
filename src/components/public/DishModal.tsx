@@ -47,25 +47,25 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-[430px] bg-[var(--menu-card)] rounded-t-3xl overflow-hidden z-10 flex flex-col"
+        className="relative w-full max-w-107.5 bg-(--menu-card) rounded-t-3xl overflow-hidden z-10 flex flex-col"
         style={{ maxHeight: "92vh", animation: "menu-slide-up 0.28s ease-out" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Hero image */}
-        <div className="relative flex-shrink-0" style={{ height: 240 }}>
+        <div className="relative shrink-0" style={{ height: 240 }}>
           {dish.imageUrl ? (
             <img src={dish.imageUrl} alt={name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[var(--menu-secondary)] text-5xl">
+            <div className="w-full h-full flex items-center justify-center bg-(--menu-secondary) text-5xl">
               🍽️
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/25 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-b from-black/25 to-transparent" />
 
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 end-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white"
+            className="absolute top-4 inset-e-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white"
             aria-label={t.close}
           >
             <X className="w-4 h-4" />
@@ -74,7 +74,7 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
           <button
             type="button"
             onClick={onLike}
-            className="absolute top-4 start-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center"
+            className="absolute top-4 inset-s-4 w-9 h-9 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center"
             aria-label={t.like}
           >
             <Heart
@@ -86,14 +86,14 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
           </button>
 
           {!available && (
-            <div className="absolute bottom-3 start-4 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-500 text-white">
+            <div className="absolute bottom-3 inset-s-4 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-500 text-white">
               {t.unavailable}
             </div>
           )}
 
           {fallbackLang && (
             <div
-              className="absolute bottom-3 end-4 px-2 py-1 rounded text-[10px] font-bold uppercase"
+              className="absolute bottom-3 inset-e-4 px-2 py-1 rounded text-[10px] font-bold uppercase"
               style={{ background: "var(--menu-accent)", color: "#fff", letterSpacing: "0.04em" }}
             >
               {t.shownIn}: {fallbackLang}
@@ -102,23 +102,23 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
         </div>
 
         {/* Drag handle */}
-        <div className="flex justify-center pt-2.5 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-[var(--menu-border)]" />
+        <div className="flex justify-center pt-2.5 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-(--menu-border)" />
         </div>
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-5 pt-3 pb-4" style={{ scrollbarWidth: "none" }}>
           <div className="flex items-start justify-between gap-3 mb-2">
-            <h2 className="text-xl font-semibold text-[var(--menu-primary)] flex-1 leading-tight menu-font-display">
+            <h2 className="text-xl font-semibold text-(--menu-primary) flex-1 leading-tight menu-font-display">
               {name}
             </h2>
-            <p className="text-xl font-bold text-[var(--menu-accent)] flex-shrink-0">
+            <p className="text-xl font-bold text-(--menu-accent) shrink-0">
               {formatPrice(selectedSize?.price ?? 0, devise)}
             </p>
           </div>
 
           {description && (
-            <p className="text-sm text-[var(--menu-muted)] leading-relaxed mb-4">{description}</p>
+            <p className="text-sm text-(--menu-muted) leading-relaxed mb-4">{description}</p>
           )}
 
           {hasMultipleSizes && (
@@ -132,8 +132,8 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
                     onClick={() => setSelectedIndex(index)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                       isSelected
-                        ? "bg-[var(--menu-accent)] border-[var(--menu-accent)] text-white"
-                        : "bg-transparent border-[var(--menu-border)] text-[var(--menu-primary)]"
+                        ? "bg-(--menu-accent) border-(--menu-accent) text-white"
+                        : "bg-transparent border-(--menu-border) text-(--menu-primary)"
                     }`}
                   >
                     {size.name} · {formatPrice(size.price, devise)}
@@ -144,7 +144,7 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
           )}
 
           {dish.likesCount > 0 && (
-            <div className="flex items-center gap-1.5 text-sm text-[var(--menu-muted)] mb-4">
+            <div className="flex items-center gap-1.5 text-sm text-(--menu-muted) mb-4">
               <Heart className="w-4 h-4" fill="var(--menu-danger)" stroke="var(--menu-danger)" />
               {dish.likesCount} {t.likes}
             </div>
@@ -152,7 +152,7 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-[var(--menu-border)] bg-[var(--menu-card)] flex-shrink-0">
+        <div className="px-5 py-4 border-t border-(--menu-border) bg-(--menu-card) shrink-0">
           <Button label={t.close} onClick={onClose} variant="secondary" fullWidth />
         </div>
       </div>

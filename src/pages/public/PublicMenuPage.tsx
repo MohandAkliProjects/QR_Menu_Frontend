@@ -245,8 +245,8 @@ export default function PublicMenuPage() {
         style={{ background: "var(--menu-bg)" }}
       >
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[var(--menu-accent)] border-t-transparent animate-spin" />
-          <p className="text-sm text-[var(--menu-muted)]">{t.loading}</p>
+          <div className="w-8 h-8 rounded-full border-2 border-(--menu-accent) border-t-transparent animate-spin" />
+          <p className="text-sm text-(--menu-muted)">{t.loading}</p>
         </div>
       </div>
     );
@@ -258,7 +258,7 @@ export default function PublicMenuPage() {
         className="min-h-screen flex items-center justify-center px-6"
         style={{ background: "var(--menu-bg)" }}
       >
-        <p className="text-base text-[var(--menu-muted)] text-center">
+        <p className="text-base text-(--menu-muted) text-center">
           {t.notFound}
         </p>
       </div>
@@ -331,7 +331,7 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
 
         <div
           ref={stickyRef}
-          className="sticky top-0 z-20 -mx-4 px-4 py-3 border-b border-[var(--menu-border)]"
+          className="sticky top-0 z-20 -mx-4 px-4 py-3 border-b border-(--menu-border)"
           style={{ background: "var(--menu-bg)" }}
         >
           <div className="mb-3">
@@ -355,7 +355,7 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
 
         {searchResults !== null ? (
           <div className="pt-4">
-            <p className="text-xs text-[var(--menu-muted)] mb-3">
+            <p className="text-xs text-(--menu-muted) mb-3">
               {t.searchResults(searchResults.length, search)}
             </p>
 
@@ -377,10 +377,10 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
             ) : (
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">🔍</div>
-                <p className="text-base font-semibold text-[var(--menu-primary)] menu-font-display">
+                <p className="text-base font-semibold text-(--menu-primary) menu-font-display">
                   {t.noResults}
                 </p>
-                <p className="text-xs text-[var(--menu-muted)] mt-1">
+                <p className="text-xs text-(--menu-muted) mt-1">
                   {t.noResultsHint}
                 </p>
               </div>
@@ -401,7 +401,7 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
                     style={{ scrollMarginTop: STICKY_OFFSET_FALLBACK + 8 }}
                     className="pb-4"
                   >
-                    <h2 className="text-lg font-bold text-[var(--menu-primary)] mb-3 menu-font-display">
+                    <h2 className="text-lg font-bold text-(--menu-primary) mb-3 menu-font-display">
                       {catLabel}
                     </h2>
 
@@ -432,7 +432,7 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
               )}
             </div>
 
-            <div className="my-6 border-t border-[var(--menu-border)]" />
+            <div className="my-6 border-t border-(--menu-border)" />
 
             <RestaurantInfoCard restaurant={menu.restaurant}  showMap={true} />
 

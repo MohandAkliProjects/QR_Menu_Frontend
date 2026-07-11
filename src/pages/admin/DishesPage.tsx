@@ -123,6 +123,7 @@ function DishesPage() {
                 status: dish.status,
                 likes: dish.likes,
                 categoryId: dish.categoryId,
+                supplements: dish.supplements,
               }) as Dish,
           );
 
@@ -263,46 +264,47 @@ function DishesPage() {
   );
 
   const columns: Column[] = [
-    { key: "order", label: t.colOrder, center: true, width: "min-w-[80px]" },
-    { key: "image", label: t.colIcon, center: true, width: "min-w-[80px]" },
-    {
-      key: "english",
-      label: t.colEnglish,
-      center: true,
-      width: "min-w-[140px]",
-      hidden: !languages.showEnglish,
-    },
-    {
-      key: "french",
-      label: t.colFrench,
-      center: true,
-      width: "min-w-[140px]",
-      hidden: !languages.showFrench,
-    },
-    {
-      key: "arabic",
-      label: t.colArabic,
-      center: true,
-      width: "min-w-[140px]",
-      hidden: !languages.showArabic,
-    },
-    {
-      key: "description",
-      label: t.colDescription,
-      center: true,
-      width: "min-w-[200px]",
-    },
-    { key: "sizes", label: t.colSizes, center: true, width: "min-w-[200px]" },
-    {
-      key: "available",
-      label: t.colAvailable,
-      center: true,
-      width: "min-w-[120px]",
-    },
-    { key: "status", label: t.colStatus, center: true, width: "min-w-[120px]" },
-    { key: "likes", label: t.colLikes, center: true, width: "min-w-[100px]" },
-    { key: "actions", label: t.colActions, center: true, width: "min-w-[140px]" },
-  ];
+  { key: "order", label: t.colOrder, center: true, width: "min-w-[80px]" },
+  { key: "image", label: t.colIcon, center: true, width: "min-w-[80px]" },
+  {
+    key: "english",
+    label: t.colEnglish,
+    center: true,
+    width: "min-w-[140px]",
+    hidden: !languages.showEnglish,
+  },
+  {
+    key: "french",
+    label: t.colFrench,
+    center: true,
+    width: "min-w-[140px]",
+    hidden: !languages.showFrench,
+  },
+  {
+    key: "arabic",
+    label: t.colArabic,
+    center: true,
+    width: "min-w-[140px]",
+    hidden: !languages.showArabic,
+  },
+  {
+    key: "description",
+    label: t.colDescription,
+    center: true,
+    width: "min-w-[200px]",
+  },
+  { key: "sizes", label: t.colSizes, center: true, width: "min-w-[200px]" },
+ { key: "supplements", label: t.colSupplements, center: true, width: "min-w-[160px]" },
+  {
+    key: "available",
+    label: t.colAvailable,
+    center: true,
+    width: "min-w-[120px]",
+  },
+  { key: "status", label: t.colStatus, center: true, width: "min-w-[120px]" },
+  { key: "likes", label: t.colLikes, center: true, width: "min-w-[100px]" },
+  { key: "actions", label: t.colActions, center: true, width: "min-w-[140px]" },
+];
 
   const noRestaurantError = !restaurantId ? t.noRestaurantError : null;
 

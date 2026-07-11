@@ -11,6 +11,7 @@ import QrDisplayPage from "./pages/admin/QrDisplayPage";
 import MenuPage from "./pages/admin/MenuPage";
 import PublicMenuPage from "./pages/public/PublicMenuPage";
 import LandingPage from "./pages/landing/LandingPage";
+import SupplementsPage from "./pages/admin/SupplementsPage";
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
             <Route index element={<OverviewPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="dishes" element={<DishesPage />} />
+             <Route path="supplements" element={<SupplementsPage />} />
             <Route path="information" element={<InformationPage />} />
             <Route path="banners" element={<BannersPage />} />
             <Route path="qr" element={<QrDisplayPage />} />

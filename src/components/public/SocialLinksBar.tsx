@@ -143,9 +143,9 @@ function SocialLinksBar({ restaurant, hideFloating = false }: SocialLinksBarProp
     <>
       <div
         ref={sectionRef}
-        className="rounded-3xl border border-[var(--menu-border)] bg-[var(--menu-card)] shadow-sm p-4"
+        className="rounded-3xl border border-(--menu-border) bg-(--menu-card) shadow-sm p-4"
       >
-        <h3 className="text-base font-semibold text-[var(--menu-primary)] mb-3 menu-font-display">
+        <h3 className="text-base font-semibold text-(--menu-primary) mb-3 menu-font-display">
           Follow &amp; Contact
         </h3>
 

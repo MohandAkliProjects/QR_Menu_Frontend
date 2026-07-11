@@ -2,6 +2,7 @@ import type {
   CategoryResponse,
   CategoryWithDishesResponse,
   DishResponse,
+  SupplementResponse,
 } from "../types/api";
 import type { Devise, Language } from "../types/enums";
 
@@ -78,4 +79,15 @@ export function isCategoryVisible(
   category: CategoryResponse | CategoryWithDishesResponse
 ): boolean {
   return category.isVisible ?? category.visible ?? true;
+}
+
+export function getSupplementName(
+  supplement: SupplementResponse,
+  language: Language
+): string {
+  return (
+    supplement.translations[language]?.name ??
+    Object.values(supplement.translations)[0]?.name ??
+    ""
+  );
 }

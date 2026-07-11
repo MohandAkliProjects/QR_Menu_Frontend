@@ -43,6 +43,12 @@ const SIZES_LABEL: Record<Language, string> = {
   ar: "الأحجام",
 };
 
+const BACK_LABEL: Record<Language, string> = {
+  en: "Back",
+  fr: "Retour",
+  ar: "رجوع",
+};
+
 function getSupplementName(
   supplement: SupplementResponse,
   language: Language,
@@ -330,7 +336,7 @@ export default function CustomMenuLayout({
                 onClick={closeCategory}
                 className="text-xl leading-none px-1"
                 style={{ color: "var(--menu-primary)" }}
-                aria-label="Back"
+                aria-label={BACK_LABEL[language]}
               >
                 {isRTL(language) ? "→" : "←"}
               </button>
@@ -577,7 +583,7 @@ function FullScreenDish({
                         {supplementName}
                       </span>
                       <span className="text-sm font-semibold text-(--menu-accent)">
-                        +{formatPrice(supplement.price, devise)}
+                        {formatPrice(supplement.price, devise)}
                       </span>
                     </div>
                   );

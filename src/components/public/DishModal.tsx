@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Heart, X } from "lucide-react";
 
-import type { DishResponse } from "../../types/api";
+import type { DishResponse, SupplementResponse } from "../../types/api";
 import type { Devise, Language } from "../../types/enums";
 import { formatPrice, getDishText, isDishAvailable } from "../../utils/menu-display";
 import type { MenuStrings } from "../../lib/constants/menu-strings";
@@ -17,6 +17,18 @@ interface DishModalProps {
   t: MenuStrings;
 }
 
+const SIZES_LABEL: Record<Language, string> = {
+  en: "Sizes",
+  fr: "Tailles",
+  ar: "الأحجام",
+};
+
+const SUPPLEMENTS_LABEL: Record<Language, string> = {
+  en: "Add-ons",
+  fr: "Suppléments",
+  ar: "الإضافات",
+};
+
 function getActiveLang(
   translations: Partial<Record<Language, unknown>>,
   language: Language
@@ -24,6 +36,14 @@ function getActiveLang(
   if (translations[language]) return null;
   const fallback = Object.keys(translations)[0] as Language | undefined;
   return fallback ?? null;
+}
+
+function getSupplementName(supplement: SupplementResponse, language: Language): string {
+  return (
+    supplement.translations[language]?.name ??
+    Object.values(supplement.translations)[0]?.name ??
+    ""
+  );
 }
 
 function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishModalProps) {
@@ -35,6 +55,12 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
   const hasMultipleSizes = sizes.length > 1;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selectedSize = sizes[selectedIndex] ?? sizes[0];
+
+  const supplements = (dish.supplements ?? []).filter(
+    (s) =>
+      (s.isAvailable ?? s.available) &&
+      (s.isVisible ?? s.visible),
+  );
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -122,24 +148,59 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
           )}
 
           {hasMultipleSizes && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {sizes.map((size, index) => {
-                const isSelected = index === selectedIndex;
-                return (
-                  <button
-                    key={`${size.name}-${index}`}
-                    type="button"
-                    onClick={() => setSelectedIndex(index)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                      isSelected
-                        ? "bg-(--menu-accent) border-(--menu-accent) text-white"
-                        : "bg-transparent border-(--menu-border) text-(--menu-primary)"
-                    }`}
-                  >
-                    {size.name} · {formatPrice(size.price, devise)}
-                  </button>
-                );
-              })}
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-(--menu-primary) mb-2">
+                {SIZES_LABEL[language]}
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((size, index) => {
+                  const isSelected = index === selectedIndex;
+                  return (
+                    <button
+                      key={`${size.name}-${index}`}
+                      type="button"
+                      onClick={() => setSelectedIndex(index)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                        isSelected
+                          ? "bg-(--menu-accent) border-(--menu-accent) text-white"
+                          : "bg-transparent border-(--menu-border) text-(--menu-primary)"
+                      }`}
+                    >
+                      {size.name} · {formatPrice(size.price, devise)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {supplements.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-(--menu-primary) mb-2">
+                {SUPPLEMENTS_LABEL[language]}
+              </h3>
+              <div className="flex flex-col rounded-xl border border-(--menu-border) overflow-hidden">
+                {supplements.map((supplement, index) => {
+                  const supplementName = getSupplementName(supplement, language);
+                  return (
+                    <div
+                      key={supplement.id}
+                      className={`flex items-center justify-between px-4 py-2.5 ${
+                        index !== supplements.length - 1
+                          ? "border-b border-(--menu-border)"
+                          : ""
+                      }`}
+                    >
+                      <span className="text-sm text-(--menu-primary)">
+                        {supplementName}
+                      </span>
+                      <span className="text-sm font-semibold text-(--menu-accent)">
+                        +{formatPrice(supplement.price, devise)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

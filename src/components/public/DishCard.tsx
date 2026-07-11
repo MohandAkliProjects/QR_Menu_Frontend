@@ -15,6 +15,12 @@ interface DishCardProps {
   t: MenuStrings;
 }
 
+const SIZES_COUNT_LABEL: Record<Language, string> = {
+  en: "sizes",
+  fr: "tailles",
+  ar: "أحجام",
+};
+
 function getActiveLang(
   translations: Partial<Record<Language, unknown>>,
   language: Language
@@ -30,7 +36,7 @@ function getCardPriceDisplay(dish: DishResponse, devise: Devise): string {
   if (sizes.length === 1) return formatPrice(sizes[0].price, devise);
 
   const min = Math.min(...sizes.map((s) => s.price));
-  return `${formatPrice(min, devise)}+`;
+  return `${formatPrice(min, devise)} `;
 }
 
 function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCardProps) {
@@ -106,7 +112,7 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
             {priceDisplay}
             {hasMultipleSizes && (
               <span className="text-[10px] font-medium text-(--menu-muted) ms-1">
-                / {dish.sizes.length} tailles
+               +{dish.sizes.length} {SIZES_COUNT_LABEL[language]}
               </span>
             )}
           </span>

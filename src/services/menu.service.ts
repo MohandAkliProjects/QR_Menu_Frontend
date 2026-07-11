@@ -1,5 +1,6 @@
 import { apiRequest } from "../api/client";
 import type {
+  CreateMenuRequest,
   FullMenuResponse,
   MenuResponse,
   UpdateMenuRequest,
@@ -19,6 +20,16 @@ export async function getMenuById(
   return menus.find((menu) => menu.id === menuId) ?? null;
 }
 
+export async function createMenu(
+  restaurantId: string,
+  data: CreateMenuRequest
+): Promise<MenuResponse> {
+  return apiRequest<MenuResponse>(`/api/menus/restaurant/${restaurantId}`, {
+    method: "POST",
+    body: data,
+  });
+}
+
 export async function updateMenu(
   restaurantId: string,
   menuId: string,
@@ -34,8 +45,20 @@ export async function deleteMenu(menuId: string): Promise<void> {
   return apiRequest<void>(`/api/menus/${menuId}`, { method: "DELETE" });
 }
 
+export async function getFullMenu(menuId: string): Promise<FullMenuResponse> {
+  return apiRequest<FullMenuResponse>(`/api/menus/${menuId}/full`, { auth: false });
+}
+
 export async function getFullMenuBySlug(slug: string): Promise<FullMenuResponse> {
   return apiRequest<FullMenuResponse>(`/api/menus/slug/${slug}/full`, { auth: false });
+}
+
+export async function getMenusBySlug(slug: string): Promise<MenuResponse[]> {
+  return apiRequest<MenuResponse[]>(`/api/menus/slug/${slug}/list`, { auth: false });
+}
+
+export function getMenuRedirectUrl(menuId: string): string {
+  return `${import.meta.env.VITE_API_BASE_URL}/api/menus/${menuId}/redirect`;
 }
 
 export function sumMenuLikes(fullMenu: FullMenuResponse): number {

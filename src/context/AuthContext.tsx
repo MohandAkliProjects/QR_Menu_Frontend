@@ -34,6 +34,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  setMenuId: (menuId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -152,6 +153,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeStoredAuth(null);
   }, []);
 
+  const setMenuId = useCallback((menuId: string) => {
+    setAuth((current) => {
+      if (!current) return current;
+      const next = { ...current, menuId };
+      writeStoredAuth(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       token: auth?.token ?? null,
@@ -164,8 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       refreshSession,
+      setMenuId,
     }),
-    [auth, isBootstrapping, login, logout, refreshSession],
+    [auth, isBootstrapping, login, logout, refreshSession, setMenuId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -15,69 +15,168 @@ import { useLanguage } from "../../i18n/useLanguage";
 import useToast from "../../hooks/useToast";
 import { ROUTES } from "../../types/routes";
 import * as restaurantService from "../../services/restaurant.service";
+import * as menuService from "../../services/menu.service";
 import { qrDisplayText } from "./text/QrDisplayPage.text";
 
+function getMenuTitle(
+  translations: Record<string, { title: string }>,
+  language: "en" | "fr",
+): string {
+  const key = language === "fr" ? "fr" : "en";
+  return (
+    translations[key]?.title ??
+    translations.en?.title ??
+    Object.values(translations)[0]?.title ??
+    "Menu"
+  );
+}
+
+function MenuQrCard({
+  menuId,
+  title,
+  slug,
+  isDefault,
+  t,
+  onCopy,
+  onDownload,
+  onTest,
+}: {
+  menuId: string;
+  title: string;
+  slug: string;
+  isDefault: boolean;
+  t: (typeof qrDisplayText)["en"];
+  onCopy: (url: string) => void;
+  onDownload: (canvasId: string, filename: string) => void;
+  onTest: (url: string) => void;
+}) {
+  const qrUrl = menuService.getMenuRedirectUrl(menuId);
+  const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuId)}`;
+  const canvasId = `qr-canvas-${menuId}`;
+
+  return (
+    <Card className="flex flex-col gap-4 p-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="text-lg font-semibold text-dark-800">{title}</h3>
+        {isDefault && (
+          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium border border-primary-400 text-primary-600 bg-primary-50">
+            {t.defaultMenuBadge}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col items-center gap-4">
+        {qrUrl ? (
+          <QRCodeCanvas
+            id={canvasId}
+            value={qrUrl}
+            size={200}
+            className="w-44 h-44 sm:w-48 sm:h-48"
+          />
+        ) : (
+          <p className="text-small text-text-300 text-center">{t.noQrCode}</p>
+        )}
+        <p className="text-xs text-text-300 text-center break-all px-2">
+          {displayUrl || t.noPublicUrl}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3">
+          <div className="flex-1 min-w-0">
+            <Input value={displayUrl} readOnly />
+          </div>
+          <Button
+            label={t.copyMenuUrl}
+            icon={Copy}
+            onClick={() => onCopy(displayUrl)}
+            className="whitespace-nowrap w-auto shrink-0"
+            disabled={!displayUrl}
+          />
+        </div>
+        <div className="flex gap-3">
+          <Button
+            label={t.downloadQr}
+            icon={Download}
+            className="flex-1"
+            onClick={() => onDownload(canvasId, `${title.replace(/\s+/g, "-").toLowerCase()}-qr.png`)}
+            disabled={!qrUrl}
+          />
+          <Button
+            label={t.testUrl}
+            icon={ExternalLink}
+            className="flex-1"
+            onClick={() => onTest(displayUrl)}
+            disabled={!displayUrl}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function QrDisplayPage() {
-  
   const { restaurantId } = useAuth();
   const { language } = useLanguage();
   const t = qrDisplayText[language];
   const { toasts, showToast, removeToast } = useToast();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data: restaurant, isLoading: restaurantLoading, isError, refetch } = useQuery({
     queryKey: ["restaurant", restaurantId],
     queryFn: () => restaurantService.getRestaurant(restaurantId!),
     enabled: !!restaurantId,
     staleTime: Infinity,
-    select: (restaurant) => ({
-qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`,
-  qrDisplayUrl: restaurant.slug
-    ? `${window.location.origin}${ROUTES.publicMenu(restaurant.slug)}`
-    : "",
-}),
   });
 
-  const qrUrl = data?.qrUrl ?? "";
-  const qrDisplayUrl = data?.qrDisplayUrl ?? "";
+  const { data: menus = [], isLoading: menusLoading } = useQuery({
+    queryKey: ["menus", restaurantId],
+    queryFn: () => menuService.getMenusByRestaurant(restaurantId!),
+    enabled: !!restaurantId,
+    staleTime: Infinity,
+  });
 
-  const handleCopy = useCallback(async () => {
-    if (!qrDisplayUrl) return;
-    try {
-      await navigator.clipboard.writeText(qrDisplayUrl);
-      showToast("success", t.toastCopiedTitle, t.toastCopiedMessage);
-    } catch {
-      showToast("error", t.toastCopyFailedTitle, t.toastCopyFailedMessage);
-    }
-  }, [qrDisplayUrl, showToast, t]);
+  const handleCopy = useCallback(
+    async (url: string) => {
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast("success", t.toastCopiedTitle, t.toastCopiedMessage);
+      } catch {
+        showToast("error", t.toastCopyFailedTitle, t.toastCopyFailedMessage);
+      }
+    },
+    [showToast, t],
+  );
 
-  function handleTest() {
-    if (!qrDisplayUrl) return;
-    window.open(qrDisplayUrl, "_blank", "noopener,noreferrer");
-  }
+  const handleTest = useCallback((url: string) => {
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, []);
 
-  function handleDownload() {
-    if (!qrUrl) {
-      showToast("error", t.toastNoQrTitle, t.toastNoQrMessage);
-      return;
-    }
-    const canvas = document.querySelector<HTMLCanvasElement>("canvas");
-    if (!canvas) {
-      showToast(
-        "error",
-        t.toastDownloadFailedTitle,
-        t.toastDownloadFailedMessage,
-      );
-      return;
-    }
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = "restaurant-qr.png";
-    link.click();
-    showToast("success", t.toastDownloadedTitle, t.toastDownloadedMessage);
-  }
+  const handleDownload = useCallback(
+    (canvasId: string, filename: string) => {
+      const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+      if (!canvas) {
+        showToast(
+          "error",
+          t.toastDownloadFailedTitle,
+          t.toastDownloadFailedMessage,
+        );
+        return;
+      }
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = filename;
+      link.click();
+      showToast("success", t.toastDownloadedTitle, t.toastDownloadedMessage);
+    },
+    [showToast, t],
+  );
+
+  const isLoading = restaurantLoading || menusLoading;
 
   return (
-    <div className="w-full  p-6 sm:p-8 lg:p-12">
+    <div className="w-full p-6 sm:p-8 lg:p-12">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <div className="w-full flex flex-col gap-8">
@@ -86,87 +185,34 @@ qrUrl: `${import.meta.env.VITE_API_BASE_URL}/api/restaurants/r/${restaurantId!}`
         {isLoading ? (
           <PageLoadingState message={t.loading} />
         ) : isError ? (
-          <PageErrorState
-            onRetry={refetch}
-          />
+          <PageErrorState onRetry={refetch} />
         ) : (
           <>
-            <div className="flex flex-col gap-8 w-full">
-              <SubTitle
-                title={t.yourQrCodeTitle}
-                description={t.yourQrCodeDescription}
-                showDescription={true}
-              />
-              <Card
-                className="
-                  flex flex-col items-center justify-center gap-6
-                  w-full
-                  max-w-sm sm:max-w-md md:max-w-135 lg:max-w-135 xl:max-w-145
-                  min-h-80 sm:min-h-80 md:min-h-87
-                  mx-auto py-8 px-6 sm:py-10 sm:px-10
-                "
-              >
-                {qrUrl ? (
-                  <QRCodeCanvas
-                    value={qrUrl}
-                    size={256}
-                    className="w-36 h-36 sm:w-48 sm:h-48 lg:w-64 lg:h-64"
+            <SubTitle
+              title={t.yourQrCodeTitle}
+              description={t.yourQrCodeDescription}
+              showDescription
+            />
+
+            {menus.length === 0 ? (
+              <Card className="p-8 text-center text-text-300">{t.noQrCode}</Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {menus.map((menu) => (
+                  <MenuQrCard
+                    key={menu.id}
+                    menuId={menu.id}
+                    title={getMenuTitle(menu.translations, language)}
+                    slug={restaurant?.slug ?? ""}
+                    isDefault={restaurant?.defaultMenuId === menu.id}
+                    t={t}
+                    onCopy={handleCopy}
+                    onDownload={handleDownload}
+                    onTest={handleTest}
                   />
-                ) : (
-                  <p className="text-small text-text-300 text-center">
-                    {t.noQrCode}
-                  </p>
-                )}
-                <p className="text-small text-text-300 text-center truncate w-full px-4">
-                  {qrDisplayUrl || t.noPublicUrl}
-                </p>
-              </Card>
-            </div>
-
-            <div className="flex flex-col gap-4 w-full">
-              <SubTitle title={t.publicMenuUrlTitle} />
-              <div
-                className="
-                  flex gap-4 w-full
-                  max-w-sm sm:max-w-md md:max-w-150 lg:max-w-175 xl:max-w-250
-                  mx-auto
-                "
-              >
-                <div className="flex-1 min-w-0">
-                  <Input value={qrDisplayUrl} readOnly />
-                </div>
-                <Button
-                  label={t.copyMenuUrl}
-                  icon={Copy}
-                  onClick={handleCopy}
-                  className="whitespace-nowrap w-auto shrink-0"
-                  disabled={!qrDisplayUrl}
-                />
+                ))}
               </div>
-            </div>
-
-            <div
-              className="
-                flex gap-6 w-full m-6
-                max-w-sm sm:max-w-md md:max-w-150 lg:max-w-175 xl:max-w-200
-                mx-auto
-              "
-            >
-              <Button
-                label={t.downloadQr}
-                icon={Download}
-                className="flex-1"
-                onClick={handleDownload}
-                disabled={!qrUrl}
-              />
-              <Button
-                label={t.testUrl}
-                icon={ExternalLink}
-                className="flex-1"
-                onClick={handleTest}
-                disabled={!qrDisplayUrl}
-              />
-            </div>
+            )}
           </>
         )}
       </div>

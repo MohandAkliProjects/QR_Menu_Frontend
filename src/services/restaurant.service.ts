@@ -10,6 +10,10 @@ export async function getRestaurant(restaurantId: string): Promise<RestaurantRes
   return apiRequest<RestaurantResponse>(`/api/restaurants/${restaurantId}`);
 }
 
+export async function getRestaurantBySlug(slug: string): Promise<RestaurantResponse> {
+  return apiRequest<RestaurantResponse>(`/api/restaurants/slug/${slug}`, { auth: false });
+}
+
 export async function getDashboardStats(
   restaurantId: string
 ): Promise<RestaurantDashboardStatsResponse> {
@@ -60,6 +64,16 @@ export async function updateRestaurant(
     body: formData,
   });
 }
+export async function setDefaultMenu(
+  restaurantId: string,
+  menuId: string
+): Promise<RestaurantResponse> {
+  return apiRequest<RestaurantResponse>(
+    `/api/restaurants/${restaurantId}/default-menu/${menuId}`,
+    { method: "PATCH" }
+  );
+}
+
 export async function getBanners(restaurantId: string): Promise<BannersResponse> {
   return apiRequest<BannersResponse>(`/api/restaurants/${restaurantId}/banners`);
 }

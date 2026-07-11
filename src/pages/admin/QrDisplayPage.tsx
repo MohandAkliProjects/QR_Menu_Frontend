@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Copy, Download, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { QRCodeCanvas } from "qrcode.react";
@@ -16,6 +16,7 @@ import useToast from "../../hooks/useToast";
 import { ROUTES } from "../../types/routes";
 import * as restaurantService from "../../services/restaurant.service";
 import * as menuService from "../../services/menu.service";
+import { buildMenuKeyMap } from "../../lib/menuSlug";
 import { qrDisplayText } from "./text/QrDisplayPage.text";
 
 function getMenuTitle(
@@ -31,8 +32,11 @@ function getMenuTitle(
   );
 }
 
+type QrDisplayText = (typeof qrDisplayText)[keyof typeof qrDisplayText];
+
 function MenuQrCard({
   menuId,
+  menuKey,
   title,
   slug,
   isDefault,
@@ -42,16 +46,21 @@ function MenuQrCard({
   onTest,
 }: {
   menuId: string;
+  menuKey: string;
   title: string;
   slug: string;
   isDefault: boolean;
-  t: (typeof qrDisplayText)["en"];
+  t: QrDisplayText;
   onCopy: (url: string) => void;
   onDownload: (canvasId: string, filename: string) => void;
   onTest: (url: string) => void;
 }) {
+  // QR code itself still encodes the real backend redirect by real menuId —
+  // this is never seen by the user, so it doesn't need to be "pretty."
   const qrUrl = menuService.getMenuRedirectUrl(menuId);
-  const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuId)}`;
+
+  // The human-facing URL uses the friendly menuKey instead of the raw id.
+  const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuKey)}`;
   const canvasId = `qr-canvas-${menuId}`;
 
   return (
@@ -74,8 +83,11 @@ function MenuQrCard({
             className="w-44 h-44 sm:w-48 sm:h-48"
           />
         ) : (
-          <p className="text-small text-text-300 text-center">{t.noQrCode}</p>
+          <p className="text-small text-text-300 text-center">
+            {t.noQrCode}
+          </p>
         )}
+
         <p className="text-xs text-text-300 text-center break-all px-2">
           {displayUrl || t.noPublicUrl}
         </p>
@@ -86,6 +98,7 @@ function MenuQrCard({
           <div className="flex-1 min-w-0">
             <Input value={displayUrl} readOnly />
           </div>
+
           <Button
             label={t.copyMenuUrl}
             icon={Copy}
@@ -94,14 +107,21 @@ function MenuQrCard({
             disabled={!displayUrl}
           />
         </div>
+
         <div className="flex gap-3">
           <Button
             label={t.downloadQr}
             icon={Download}
             className="flex-1"
-            onClick={() => onDownload(canvasId, `${title.replace(/\s+/g, "-").toLowerCase()}-qr.png`)}
+            onClick={() =>
+              onDownload(
+                canvasId,
+                `${title.replace(/\s+/g, "-").toLowerCase()}-qr.png`
+              )
+            }
             disabled={!qrUrl}
           />
+
           <Button
             label={t.testUrl}
             icon={ExternalLink}
@@ -134,6 +154,11 @@ function QrDisplayPage() {
     enabled: !!restaurantId,
     staleTime: Infinity,
   });
+
+  // Stable, human-readable per-menu key derived from each menu's title,
+  // e.g. "Lunch Menu" -> "lunch-menu". Duplicates get "-2", "-3", etc.
+  // Computed client-side only — no backend field needed.
+  const menuKeyMap = useMemo(() => buildMenuKeyMap(menus), [menus]);
 
   const handleCopy = useCallback(
     async (url: string) => {
@@ -202,6 +227,7 @@ function QrDisplayPage() {
                   <MenuQrCard
                     key={menu.id}
                     menuId={menu.id}
+                    menuKey={menuKeyMap.get(menu.id) ?? menu.id}
                     title={getMenuTitle(menu.translations, language)}
                     slug={restaurant?.slug ?? ""}
                     isDefault={restaurant?.defaultMenuId === menu.id}

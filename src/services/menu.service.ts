@@ -68,4 +68,6 @@ export function sumMenuLikes(fullMenu: FullMenuResponse): number {
       cat.dishes.reduce((dishTotal, dish) => dishTotal + (dish.likesCount ?? 0), 0),
     0
   );
+
+  
 }

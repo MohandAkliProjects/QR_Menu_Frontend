@@ -11,6 +11,7 @@ import {
   getFullMenuBySlug,
   getMenusBySlug,
 } from "../../services/menu.service";
+import { findMenuByKey } from "../../lib/menuSlug";
 import * as restaurantService from "../../services/restaurant.service";
 import useToast from "../../hooks/useToast";
 import ToastContainer from "../../components/ui/ToastContainer";
@@ -51,7 +52,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 export default function PublicMenuPage() {
   const { slug } = useParams<RouteParams["PublicMenu"]>();
   const [searchParams] = useSearchParams();
-  const menuIdFromQr = searchParams.get("menu");
+  // NOTE: this is now a friendly key (e.g. "lunch-menu"), not a raw menu id.
+  const menuKeyFromQr = searchParams.get("menu");
   const { toasts, showToast, removeToast } = useToast();
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -69,19 +71,30 @@ export default function PublicMenuPage() {
   const [likeLoading, setLikeLoading] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
+  // Always fetch the menu list now — we need it to resolve the friendly
+  // key back to a real menu id, whether or not "?menu=" is present.
   const { data: menuList, isLoading: menuListLoading, error: menuListError } = useQuery({
     queryKey: ["public-menu-list", slug],
     queryFn: () => getMenusBySlug(slug!),
-    enabled: !!slug && !menuIdFromQr,
+    enabled: !!slug,
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
 
   const resolvedMenuId = useMemo(() => {
-    if (menuIdFromQr) return menuIdFromQr;
-    if (menuList?.length === 1) return menuList[0].id;
+    if (!menuList) return null;
+    if (menuKeyFromQr) {
+      const match = findMenuByKey(menuList, menuKeyFromQr);
+      return match?.id ?? null;
+    }
+    if (menuList.length === 1) return menuList[0].id;
     return null;
-  }, [menuIdFromQr, menuList]);
+  }, [menuKeyFromQr, menuList]);
+
+  // A "?menu=" was present, the menu list loaded, but nothing matched —
+  // stale/mistyped link, not a loading state.
+  const menuKeyNotFound =
+    !!menuKeyFromQr && !!menuList && !resolvedMenuId;
 
   const {
     data: menu,
@@ -93,13 +106,16 @@ export default function PublicMenuPage() {
       resolvedMenuId
         ? getFullMenu(resolvedMenuId)
         : getFullMenuBySlug(slug!),
-    enabled: !!slug && (!!resolvedMenuId || (menuList !== undefined && menuList.length <= 1)),
+    enabled:
+      !!slug &&
+      !menuKeyNotFound &&
+      (!!resolvedMenuId || (!!menuList && menuList.length <= 1)),
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
 
   const showMenuPicker =
-    !menuIdFromQr &&
+    !menuKeyFromQr &&
     !menuListLoading &&
     !!menuList &&
     menuList.length > 1;
@@ -114,7 +130,7 @@ export default function PublicMenuPage() {
 
   const isLoading =
     menuListLoading ||
-    (!showMenuPicker && menuLoading && !menu);
+    (!showMenuPicker && !menuKeyNotFound && menuLoading && !menu);
   const error = menuListError ?? menuError;
 
   useEffect(() => {
@@ -327,7 +343,7 @@ export default function PublicMenuPage() {
     );
   }
 
-  if (error && !isClosed) {
+  if ((error && !isClosed) || menuKeyNotFound) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-6"
@@ -342,22 +358,21 @@ export default function PublicMenuPage() {
 
   if (!menu || !language) return null;
 
+  const CUSTOM_LAYOUT_SLUG = "le-916";
 
-const CUSTOM_LAYOUT_SLUG = "le-916";
-
-if (slug === CUSTOM_LAYOUT_SLUG) {
-  return (
-    <CustomMenuLayout
-      menu={menu}
-      language={language}
-      availableLanguages={availableLanguages}
-      onLanguageChange={setSelectedLanguage}
-      liked={liked}
-      onLike={toggleLike}
-      t={t}
-    />
-  );
-}
+  if (slug === CUSTOM_LAYOUT_SLUG) {
+    return (
+      <CustomMenuLayout
+        menu={menu}
+        language={language}
+        availableLanguages={availableLanguages}
+        onLanguageChange={setSelectedLanguage}
+        liked={liked}
+        onLike={toggleLike}
+        t={t}
+      />
+    );
+  }
   const menuTitle =
     menu.translations[language]?.title ??
     Object.values(menu.translations)[0]?.title ??
@@ -509,7 +524,7 @@ if (slug === CUSTOM_LAYOUT_SLUG) {
 
             <div className="my-6 border-t border-(--menu-border)" />
 
-            <RestaurantInfoCard restaurant={menu.restaurant}  showMap={true} />
+            <RestaurantInfoCard restaurant={menu.restaurant} showMap={true} />
 
             <Footer restaurant={menu.restaurant} language={language} />
           </>

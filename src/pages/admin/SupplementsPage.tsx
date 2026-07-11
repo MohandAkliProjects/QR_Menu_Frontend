@@ -21,6 +21,7 @@ import * as supplementService from "../../services/supplement.service";
 import type { Language } from "../../types/enums";
 import type { SupplementUI as Supplement } from "../../types/ui.ts";
 import { supplementsText } from "./text/SupplementsPage.text.ts";
+import MenuFilterBar from "../../components/ui/menu/MenuFilterBar.tsx";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -138,6 +139,10 @@ function SupplementsPage() {
         <PageErrorState onRetry={refetch} />
       ) : (
         <>
+        
+        <div className="mb-4">
+  <MenuFilterBar />
+</div>
           <div className="flex-1">
             <Table columns={columns}>
               {paginatedSupplements.map((supplement, index) => (

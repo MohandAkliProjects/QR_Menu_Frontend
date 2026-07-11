@@ -38,6 +38,7 @@ import type { Devise, Language } from "../../types/enums";
 import type { AllDishesResponse } from "../../services/dish.service";
 import { dishesText } from "./text/DishesPage.text";
 import { generalText } from "./text/General.text.ts";
+import MenuFilterBar from "../../components/ui/menu/MenuFilterBar.tsx";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -77,69 +78,67 @@ function DishesPage() {
     enabled: !!restaurantId,
   });
 
-  const { categoryOptions, dishes, supportedLanguages, devise } =
-    useMemo(() => {
-      const menus = allDishesData?.menus ?? [];
-      const activeMenu =
-        (menuId ? menus.find((m) => m.id === menuId) : null) ?? menus[0];
+const { categoryOptions, dishes, supportedLanguages, devise } =
+  useMemo(() => {
+    const menus = allDishesData?.menus ?? [];
+    const activeMenu =
+      (menuId ? menus.find((m) => m.id === menuId) : null) ?? menus[0];
 
-      const langs = activeMenu
-        ? (Object.keys(activeMenu.translations).map((k) =>
-            k.toUpperCase(),
-          ) as Language[])
-        : [];
+    const langs = activeMenu
+      ? (Object.keys(activeMenu.translations).map((k) =>
+          k.toUpperCase(),
+        ) as Language[])
+      : [];
 
-      const categoryOpts: {
-        id: UniqueIdentifier;
-        label: string;
-        count: number;
-      }[] = [];
-      const allDishes: Dish[] = [];
+    const categoryOpts: {
+      id: UniqueIdentifier;
+      label: string;
+      count: number;
+    }[] = [];
+    const allDishes: Dish[] = [];
 
-      for (const menu of menus) {
-        for (const category of menu.categories ?? []) {
-          const { category: catUI, dishes: catDishes } =
-            categoryWithDishesToUI(category);
+    // ✅ only the selected menu's categories, not every menu
+    for (const category of activeMenu?.categories ?? []) {
+      const { category: catUI, dishes: catDishes } =
+        categoryWithDishesToUI(category);
 
-          const label =
-            language === "fr"
-              ? catUI.french || catUI.english || catUI.arabic || String(catUI.id)
-              : catUI.english || catUI.french || catUI.arabic || String(catUI.id);
+      const label =
+        language === "fr"
+          ? catUI.french || catUI.english || catUI.arabic || String(catUI.id)
+          : catUI.english || catUI.french || catUI.arabic || String(catUI.id);
 
-          const mapped = catDishes.map(
-            (dish) =>
-              ({
-                id: dish.id,
-                order: dish.order,
-                image: dish.image,
-                english: dish.english,
-                french: dish.french,
-                arabic: dish.arabic,
-                englishDescription: dish.englishDescription,
-                frenchDescription: dish.frenchDescription,
-                arabDescription: dish.arabicDescription,
-                sizes: dish.sizes,
-                available: dish.available,
-                status: dish.status,
-                likes: dish.likes,
-                categoryId: dish.categoryId,
-                supplements: dish.supplements,
-              }) as Dish,
-          );
+      const mapped = catDishes.map(
+        (dish) =>
+          ({
+            id: dish.id,
+            order: dish.order,
+            image: dish.image,
+            english: dish.english,
+            french: dish.french,
+            arabic: dish.arabic,
+            englishDescription: dish.englishDescription,
+            frenchDescription: dish.frenchDescription,
+            arabDescription: dish.arabicDescription,
+            sizes: dish.sizes,
+            available: dish.available,
+            status: dish.status,
+            likes: dish.likes,
+            categoryId: dish.categoryId,
+            supplements: dish.supplements,
+          }) as Dish,
+      );
 
-          categoryOpts.push({ id: catUI.id, label, count: mapped.length });
-          allDishes.push(...mapped);
-        }
-      }
+      categoryOpts.push({ id: catUI.id, label, count: mapped.length });
+      allDishes.push(...mapped);
+    }
 
-      return {
-        categoryOptions: categoryOpts,
-        dishes: allDishes,
-        supportedLanguages: langs,
-        devise: (activeMenu?.devise ?? "usd") as Devise,
-      };
-    }, [allDishesData, menuId, language]);
-
+    return {
+      categoryOptions: categoryOpts,
+      dishes: allDishes,
+      supportedLanguages: langs,
+      devise: (activeMenu?.devise ?? "usd") as Devise,
+    };
+  }, [allDishesData, menuId, language]);
   const languages: LanguageConfig = useMemo(
     () => ({
       showEnglish:
@@ -352,6 +351,10 @@ function DishesPage() {
         />
       ) : (
         <>
+
+        <div className="mb-4">
+  <MenuFilterBar />
+</div>
           <div className="mb-4">
             <CategoryFilterBar
               categories={categoryOptions}

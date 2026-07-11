@@ -40,6 +40,7 @@ import type { CategoryResponse } from "../../types/api";
 import type { CategoriesPageData } from "../../types/ui.ts";
 import { categoriesText } from "./text/CategoriesPage.text.ts";
 import { generalText } from "./text/General.text.ts";
+import MenuFilterBar from "../../components/ui/menu/MenuFilterBar.tsx";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -221,6 +222,11 @@ function CategoriesPage() {
         />
       ) : (
         <>
+
+        
+        <div className="mb-4">
+  <MenuFilterBar />
+</div>
           <div className="flex-1">
             <DndContext
               sensors={sensors}

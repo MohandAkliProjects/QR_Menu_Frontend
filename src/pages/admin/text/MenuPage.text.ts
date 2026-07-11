@@ -36,6 +36,12 @@ interface MenuTextDict {
   toastDeleteFailedTitle: string;
   toastValidationTitle: string;
   toastValidationMessage: string;
+  yourMenus: string;
+  createMenu: string;
+  createModalTitle: string;
+  lastMenuNotice: string;
+  toastMenuCreatedTitle: string;
+  toastMenuCreatedMessage: string;
   requiredTitle: (langLabel: string) => string;
 }
 
@@ -81,6 +87,13 @@ export const menuText: Record<"en" | "fr", MenuTextDict> = {
     toastDeleteFailedTitle: "Delete Failed",
     toastValidationTitle: "Validation Error",
     toastValidationMessage: "Please fill in all required fields.",
+    // en
+yourMenus: "Your Menus",
+createMenu: "Create Menu",
+createModalTitle: "Create a new menu",
+lastMenuNotice: "You can't delete your only menu.",
+toastMenuCreatedTitle: "Menu Created",
+toastMenuCreatedMessage: "Your new menu is ready to edit.",
     requiredTitle: (langLabel: string) => `${langLabel} title is required.`,
   },
   fr: {
@@ -124,6 +137,13 @@ export const menuText: Record<"en" | "fr", MenuTextDict> = {
     toastDeleteFailedTitle: "Échec de la suppression",
     toastValidationTitle: "Erreur de validation",
     toastValidationMessage: "Veuillez remplir tous les champs obligatoires.",
+    // fr
+yourMenus: "Vos menus",
+createMenu: "Créer un menu",
+createModalTitle: "Créer un nouveau menu",
+lastMenuNotice: "Vous ne pouvez pas supprimer votre seul menu.",
+toastMenuCreatedTitle: "Menu créé",
+toastMenuCreatedMessage: "Votre nouveau menu est prêt à être modifié.",
     requiredTitle: (langLabel: string) => `Le titre en ${langLabel} est requis.`,
   },
 };

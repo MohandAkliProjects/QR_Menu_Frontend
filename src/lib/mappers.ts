@@ -11,7 +11,8 @@ import type {
   BaseCategoryRequest,
   SupplementResponse,
   SupplementTranslation,
-  BaseSupplementRequest
+  BaseSupplementRequest,
+  CreateMenuRequest
 } from "../types/api";
 import type { Devise, Language } from "../types/enums";
 import type { CategoryUI, DishUI, SupplementUI } from "../types/ui";
@@ -262,4 +263,23 @@ export function restaurantFormToUpdateRequest(
   }
 
   return request;
+}
+
+export function menuFormToCreateRequest(
+  form: MenuFormState,
+  supportedLanguages: string[]
+): CreateMenuRequest {
+  return menuFormToUpdateRequest(form, supportedLanguages) as CreateMenuRequest;
+}
+
+export function emptyMenuForm(): MenuFormState {
+  return { english: "", french: "", arabic: "", devise: "dzd" };
+}
+
+export function getMenuTitle(menu: MenuResponse, lang: string): string {
+  return (
+    getMenuTranslationTitle(menu.translations, lang) ??
+    Object.values(menu.translations)[0]?.title ??
+    "Untitled menu"
+  );
 }

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
+import { MenuProvider } from "./context/MenuContext";
 import LoginPage from "./pages/admin/LoginPage";
 import OverviewPage from "./pages/admin/OverviewPage";
 import CategoriesPage from "./pages/admin/CategoriesPage";
@@ -22,11 +23,18 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/menu/:menuId" element={<PublicMenuPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route
+            path="/dashboard"
+            element={
+              <MenuProvider>
+                <DashboardLayout />
+              </MenuProvider>
+            }
+          >
             <Route index element={<OverviewPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="dishes" element={<DishesPage />} />
-             <Route path="supplements" element={<SupplementsPage />} />
+            <Route path="supplements" element={<SupplementsPage />} />
             <Route path="information" element={<InformationPage />} />
             <Route path="banners" element={<BannersPage />} />
             <Route path="qr" element={<QrDisplayPage />} />

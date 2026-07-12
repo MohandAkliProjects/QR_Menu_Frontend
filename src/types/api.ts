@@ -95,6 +95,7 @@ export interface MenuResponse {
   translations: Record<string, { title: string }>;
   totalCategories: number;
   totalDishes: number;
+  publicKey: string;
 }
 
 export interface RestaurantInfo {

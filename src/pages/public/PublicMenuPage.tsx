@@ -11,7 +11,6 @@ import {
   getFullMenuBySlug,
   getMenusBySlug,
 } from "../../services/menu.service";
-import { findMenuByKey } from "../../lib/menuSlug";
 import * as restaurantService from "../../services/restaurant.service";
 import useToast from "../../hooks/useToast";
 import ToastContainer from "../../components/ui/ToastContainer";
@@ -81,15 +80,15 @@ export default function PublicMenuPage() {
     retry: false,
   });
 
-  const resolvedMenuId = useMemo(() => {
-    if (!menuList) return null;
-    if (menuKeyFromQr) {
-      const match = findMenuByKey(menuList, menuKeyFromQr);
-      return match?.id ?? null;
-    }
-    if (menuList.length === 1) return menuList[0].id;
-    return null;
-  }, [menuKeyFromQr, menuList]);
+const resolvedMenuId = useMemo(() => {
+  if (!menuList) return null;
+  if (menuKeyFromQr) {
+    const match = menuList.find((m) => m.publicKey === menuKeyFromQr);
+    return match?.id ?? null;
+  }
+  if (menuList.length === 1) return menuList[0].id;
+  return null;
+}, [menuKeyFromQr, menuList]);
 
   // A "?menu=" was present, the menu list loaded, but nothing matched —
   // stale/mistyped link, not a loading state.

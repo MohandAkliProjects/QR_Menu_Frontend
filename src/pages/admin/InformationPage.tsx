@@ -105,8 +105,6 @@ function InformationPage() {
     queryKey: restaurantKey,
     queryFn: () => restaurantService.getRestaurant(restaurantId!),
     enabled: !!restaurantId,
-    // Populate the form when data first arrives (or on refetch after save)
-    // We use select to avoid re-setting form while user is editing
     staleTime: Infinity,
   });
 

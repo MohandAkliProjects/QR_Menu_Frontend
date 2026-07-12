@@ -55,8 +55,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
 
   const defaultMenuId = restaurant?.defaultMenuId ?? null;
 
-  // Resolve/repair the active menu whenever the menu list changes
-  // (covers first load, and the active menu being deleted elsewhere)
+
   useEffect(() => {
     if (!restaurantId || menus.length === 0) return;
 

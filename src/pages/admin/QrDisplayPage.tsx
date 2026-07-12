@@ -54,12 +54,10 @@ function MenuQrCard({
   onDownload: (canvasId: string, filename: string) => void;
   onTest: (url: string) => void;
 }) {
-  // QR code itself still encodes the real backend redirect by real menuId —
-  // this is never seen by the user, so it doesn't need to be "pretty."
+
   const qrUrl = menuService.getMenuRedirectUrl(menuId);
 
-  // The human-facing URL uses the friendly publicKey (from the backend)
-  // instead of the raw id.
+
   const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuKey)}`;
   const canvasId = `qr-canvas-${menuId}`;
 

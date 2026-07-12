@@ -34,7 +34,6 @@ function InstagramIcon({ className }: { className?: string }) {
   );
 }
 
-// ── Navbar ────────────────────────────────────────────────────────────────────
 function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -143,10 +142,9 @@ function Navbar() {
   );
 }
 
-// ── Phone mockup ──────────────────────────────────────────────────────────────
 function PhoneMockup() {
   return (
-    <div className="relative flex-shrink-0">
+    <div className="relative shrink-0">
       <div className="absolute inset-0 rounded-[2.8rem] blur-2xl opacity-20 bg-accent scale-90 translate-y-4" />
       <div
         className="relative w-56 rounded-[2.8rem] p-[3px] shadow-2xl"
@@ -184,7 +182,6 @@ function PhoneMockup() {
   );
 }
 
-// ── Hero ──────────────────────────────────────────────────────────────────────
 function Hero() {
   return (
     <section className="min-h-screen bg-background pt-16 flex items-center overflow-hidden">
@@ -240,7 +237,6 @@ function Hero() {
   );
 }
 
-// ── Features ──────────────────────────────────────────────────────────────────
 function Features() {
   const features = [
     {
@@ -297,7 +293,6 @@ function Features() {
   );
 }
 
-// ── How it works ──────────────────────────────────────────────────────────────
 function HowItWorks() {
   const steps = [
     {
@@ -349,7 +344,6 @@ function HowItWorks() {
   );
 }
 
-// ── Preview ───────────────────────────────────────────────────────────────────
 function Preview() {
   return (
     <section className="bg-background py-24 overflow-hidden">
@@ -412,7 +406,6 @@ function Preview() {
   );
 }
 
-// ── Pricing ───────────────────────────────────────────────────────────────────
 function Pricing() {
   const plans = [
     {
@@ -531,7 +524,6 @@ function Pricing() {
   );
 }
 
-// ── Contact CTA ───────────────────────────────────────────────────────────────
 function ContactCTA() {
   return (
     <section
@@ -581,7 +573,6 @@ function ContactCTA() {
   );
 }
 
-// ── Footer ────────────────────────────────────────────────────────────────────
 function Footer() {
   const navigate = useNavigate();
   const navLinks = [
@@ -631,7 +622,6 @@ function Footer() {
   );
 }
 
-// ── WhatsApp float ────────────────────────────────────────────────────────────
 function WhatsAppFloat() {
   const [visible, setVisible] = useState(false);
 
@@ -657,7 +647,6 @@ function WhatsAppFloat() {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 function LandingPage() {
   return (
     <div className="landing-root min-h-screen">

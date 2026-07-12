@@ -1,6 +1,4 @@
-/** Mirrors com.qrmenu.qrmenu.enums — JSON keys match backend serialization */
 
-// enums.ts
 export type Language = "en" | "fr" | "ar";
 export type Devise =
   | "dzd"
@@ -25,8 +23,6 @@ export type SocialPlatform =
   | "INSTAGRAM"
   | "TIKTOK"
   | "EMAIL"
-   //"WEBSITE"
-   //"GOOGLE";
   |"Snapchat"
   |"Google Maps";
 

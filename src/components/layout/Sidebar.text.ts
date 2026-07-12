@@ -9,6 +9,8 @@ export const sidebarText = {
     qrDisplay: "QR Display",
     information: "Information",
     logout: "Log out",
+    collapse: "Collapse sidebar",
+    expand: "Expand sidebar",
   },
   fr: {
     overview: "Aperçu",
@@ -20,5 +22,7 @@ export const sidebarText = {
     qrDisplay: "Affichage QR",
     information: "Informations",
     logout: "Déconnexion",
+    collapse: "Réduire le menu",
+    expand: "Agrandir le menu",
   },
 } as const;

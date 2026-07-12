@@ -90,8 +90,7 @@ const resolvedMenuId = useMemo(() => {
   return null;
 }, [menuKeyFromQr, menuList]);
 
-  // A "?menu=" was present, the menu list loaded, but nothing matched —
-  // stale/mistyped link, not a loading state.
+
   const menuKeyNotFound =
     !!menuKeyFromQr && !!menuList && !resolvedMenuId;
 

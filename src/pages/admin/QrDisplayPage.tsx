@@ -133,6 +133,117 @@ function MenuQrCard({
   );
 }
 
+function SingleMenuQrView({
+  menuId,
+  menuKey,
+  title,
+  slug,
+  t,
+  onCopy,
+  onDownload,
+  onTest,
+}: {
+  menuId: string;
+  menuKey: string;
+  title: string;
+  slug: string;
+  t: QrDisplayText;
+  onCopy: (url: string) => void;
+  onDownload: (canvasId: string, filename: string) => void;
+  onTest: (url: string) => void;
+}) {
+  const qrUrl = menuService.getMenuRedirectUrl(menuId);
+  const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuKey)}`;
+  const canvasId = "qr-canvas-active";
+
+  return (
+    <div className="flex flex-col gap-8 w-full">
+      <SubTitle
+        title={t.yourQrCodeTitle}
+        description={`${t.yourQrCodeDescription} — ${title}`}
+        showDescription={true}
+      />
+      <div id="qr-canvas-active">
+        <Card
+          className="
+            flex flex-col items-center justify-center gap-6
+            w-full
+            max-w-sm sm:max-w-md md:max-w-135 lg:max-w-135 xl:max-w-145
+            min-h-80 sm:min-h-80 md:min-h-87
+            mx-auto py-8 px-6 sm:py-10 sm:px-10
+          "
+        >
+          {qrUrl ? (
+            <QRCodeCanvas
+              id={canvasId}
+              value={qrUrl}
+              size={256}
+              className="w-36 h-36 sm:w-48 sm:h-48 lg:w-64 lg:h-64"
+            />
+          ) : (
+            <p className="text-small text-text-300 text-center">
+              {t.noQrCode}
+            </p>
+          )}
+          <p className="text-small text-text-300 text-center truncate w-full px-4">
+            {displayUrl || t.noPublicUrl}
+          </p>
+        </Card>
+      </div>
+
+      <div className="flex flex-col gap-4 w-full">
+        <SubTitle title={t.publicMenuUrlTitle} />
+        <div
+          className="
+            flex gap-4 w-full
+            max-w-sm sm:max-w-md md:max-w-150 lg:max-w-175 xl:max-w-250
+            mx-auto
+          "
+        >
+          <div className="flex-1 min-w-0">
+            <Input value={displayUrl} readOnly />
+          </div>
+          <Button
+            label={t.copyMenuUrl}
+            icon={Copy}
+            onClick={() => onCopy(displayUrl)}
+            className="whitespace-nowrap w-auto shrink-0"
+            disabled={!displayUrl}
+          />
+        </div>
+      </div>
+
+      <div
+        className="
+          flex gap-6 w-full m-6
+          max-w-sm sm:max-w-md md:max-w-150 lg:max-w-175 xl:max-w-200
+          mx-auto
+        "
+      >
+        <Button
+          label={t.downloadQr}
+          icon={Download}
+          className="flex-1"
+          onClick={() =>
+            onDownload(
+              canvasId,
+              `${title.replace(/\s+/g, "-").toLowerCase()}-qr.png`,
+            )
+          }
+          disabled={!qrUrl}
+        />
+        <Button
+          label={t.testUrl}
+          icon={ExternalLink}
+          className="flex-1"
+          onClick={() => onTest(displayUrl)}
+          disabled={!displayUrl}
+        />
+      </div>
+    </div>
+  );
+}
+
 function QrDisplayPage() {
   const { restaurantId } = useAuth();
   const { language } = useLanguage();
@@ -204,6 +315,26 @@ function QrDisplayPage() {
           <PageLoadingState message={t.loading} />
         ) : isError ? (
           <PageErrorState onRetry={refetch} />
+        ) : menus.length === 0 ? (
+          <>
+            <SubTitle
+              title={t.yourQrCodeTitle}
+              description={t.yourQrCodeDescription}
+              showDescription
+            />
+            <Card className="p-8 text-center text-text-300">{t.noQrCode}</Card>
+          </>
+        ) : menus.length === 1 ? (
+          <SingleMenuQrView
+            menuId={menus[0].id}
+            menuKey={menus[0].publicKey ?? menus[0].id}
+            title={getMenuTitle(menus[0].translations, language)}
+            slug={restaurant?.slug ?? ""}
+            t={t}
+            onCopy={handleCopy}
+            onDownload={handleDownload}
+            onTest={handleTest}
+          />
         ) : (
           <>
             <SubTitle
@@ -211,14 +342,10 @@ function QrDisplayPage() {
               description={t.yourQrCodeDescription}
               showDescription
             />
-
-            {menus.length === 0 ? (
-              <Card className="p-8 text-center text-text-300">{t.noQrCode}</Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {menus.map((menu) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {menus.map((menu) => (
+                <div key={menu.id}>
                   <MenuQrCard
-                    key={menu.id}
                     menuId={menu.id}
                     menuKey={menu.publicKey ?? menu.id}
                     title={getMenuTitle(menu.translations, language)}
@@ -229,9 +356,9 @@ function QrDisplayPage() {
                     onDownload={handleDownload}
                     onTest={handleTest}
                   />
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </>
         )}
       </div>

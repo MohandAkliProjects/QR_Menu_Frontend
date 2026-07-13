@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Eye,
   EyeOff,
@@ -7,7 +7,6 @@ import {
   Save,
   Upload,
   Image as ImageIcon,
-  ChevronDown,
 } from "lucide-react";
 import Badge from "../Badge";
 import TableCell from "../table/TableCell";
@@ -25,6 +24,8 @@ import type { UpdateCategoryRequest } from "../../../types/api";
 import type { CategoryUI as Category } from "../../../types/ui.ts";
 import { categoryRowText } from "../text/CategoryRow.text";
 
+import NamePopover from "../Namepopover.tsx";
+
 export interface LanguageConfig {
   showEnglish: boolean;
   showFrench: boolean;
@@ -38,68 +39,7 @@ interface CategoryRowProps {
   languages: LanguageConfig;
 }
 
-interface NamePopoverProps {
-  label: string;
-  dir?: "ltr" | "rtl";
-  isFirst?: boolean;
-}
-
-function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const isTruncated = label.length > 14;
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  if (!isTruncated)
-    return <span className="text-sm text-text-600">{label}</span>;
-
-  return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-30"
-      >
-        <span className="truncate">{label}</span>
-        <ChevronDown
-          size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div
-          className={`
-            absolute z-50 left-1/2 -translate-x-1/2
-            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
-            w-max max-w-50 rounded-xl border border-beige-300
-            bg-card-bg shadow-lg px-3 py-2
-          `}
-        >
-          <div
-            className={`
-              absolute left-1/2 -translate-x-1/2
-              w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
-            `}
-          />
-          <p dir={dir} className="text-sm text-text-700 whitespace-normal wrap-break-words">
-            {label}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CategoryRow({ category, isLast, isFirst, languages }: CategoryRowProps) {
+function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
   const { menuId, restaurantId } = useAuth();
   const { language } = useLanguage();
   const t = categoryRowText[language];
@@ -294,7 +234,7 @@ function CategoryRow({ category, isLast, isFirst, languages }: CategoryRowProps)
             {error && <span className="text-xs text-error text-center">{error}</span>}
           </div>
         ) : category.english ? (
-          <NamePopover label={category.english} dir="ltr" isFirst={isFirst} />
+          <NamePopover label={category.english} dir="ltr" />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
             {t.missing}
@@ -311,7 +251,7 @@ function CategoryRow({ category, isLast, isFirst, languages }: CategoryRowProps)
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : category.french ? (
-          <NamePopover label={category.french} dir="ltr" isFirst={isFirst} />
+          <NamePopover label={category.french} dir="ltr" />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
             {t.missing}
@@ -329,7 +269,7 @@ function CategoryRow({ category, isLast, isFirst, languages }: CategoryRowProps)
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
         ) : category.arabic ? (
-          <NamePopover label={category.arabic} dir="rtl" isFirst={isFirst} />
+          <NamePopover label={category.arabic} dir="rtl" />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
             {t.missing}

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Pencil,
   Trash2,
@@ -8,8 +8,6 @@ import {
   Heart,
   Eye,
   EyeOff,
-  ChevronDown,
-  X,
 } from "lucide-react";
 import { CircleCheck, CircleX } from "lucide-react";
 import Badge from "../Badge";
@@ -19,20 +17,21 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Dish } from "../../../types/dish";
 import type { LanguageConfig } from "../category/CategoryRow";
 import useToast from "../../../hooks/useToast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getErrorMessage } from "../../../api/errors";
 import * as dishService from "../../../services/dish.service";
-import * as supplementService from "../../../services/supplement.service";
 import type { AllDishesResponse } from "../../../services/dish.service";
 import { useAuth } from "../../../context/AuthContext";
 import { useLanguage } from "../../../i18n/useLanguage";
 import ToastContainer from "../../../components/ui/ToastContainer";
-import type { UpdateDishRequest, DishSize } from "../../../types/api";
+import type { UpdateDishRequest } from "../../../types/api";
 import type { Devise } from "../../../types";
-import type { SupplementUI } from "../../../types/ui";
-import { supplementResponseToUI } from "../../../lib/mappers";
-import { DEVISE_SYMBOLS } from "../../../lib/constants/devise";
 import { dishRowText } from "../text/DishRow.text";
+
+import NamePopover from "../Namepopover";
+import { MultilingualTextPopover, MultilingualTextEditor } from "../Multilingualtextpopover";
+import { SizesPopover, SizesEditor } from "../Sizespopover";
+import DishSupplementsPopover from "../Dishsupplementspopover";
 
 interface DishRowProps {
   dish: Dish;
@@ -58,523 +57,7 @@ function DishUItoUpdateDishRequest(dish: Dish): UpdateDishRequest {
   };
 }
 
-interface NamePopoverProps {
-  label: string;
-  dir?: "ltr" | "rtl";
-  isFirst?: boolean;
-}
-
-function NamePopover({ label, dir = "ltr", isFirst }: NamePopoverProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const isTruncated = label.length > 14;
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  if (!isTruncated)
-    return <span className="text-sm text-text-600">{label}</span>;
-
-  return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-30"
-      >
-        <span className="truncate">{label}</span>
-        <ChevronDown
-          size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div
-          className={`
-            absolute z-50 left-1/2 -translate-x-1/2
-            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
-            w-max max-w-50 rounded-xl border border-beige-300
-            bg-card-bg shadow-lg px-3 py-2
-          `}
-        >
-          <div
-            className={`
-              absolute left-1/2 -translate-x-1/2
-              w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
-            `}
-          />
-          <p dir={dir} className="text-sm text-text-700 whitespace-normal wrap-break-words">
-            {label}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface DescriptionPopoverProps {
-  dish: Dish;
-  languages: LanguageConfig;
-  isFirst?: boolean;
-}
-
-function DescriptionPopover({ dish, languages, isFirst }: DescriptionPopoverProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const hasAny = dish.englishDescription || dish.frenchDescription || dish.arabicDescription;
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  if (!hasAny) return <span className="text-sm text-text-300 select-none">—</span>;
-
-  const entries = [
-    languages.showEnglish && dish.englishDescription && { label: "EN", text: dish.englishDescription, dir: "ltr" as const },
-    languages.showFrench  && dish.frenchDescription  && { label: "FR", text: dish.frenchDescription,  dir: "ltr" as const },
-    languages.showArabic  && dish.arabicDescription  && { label: "AR", text: dish.arabicDescription,  dir: "rtl" as const },
-  ].filter(Boolean) as { label: string; text: string; dir: "ltr" | "rtl" }[];
-
-  return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-35"
-      >
-        <span className="truncate">
-          {dish.englishDescription || dish.frenchDescription || dish.arabicDescription}
-        </span>
-        <ChevronDown
-          size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div
-          className={`
-            absolute z-50 left-1/2 -translate-x-1/2
-            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
-            w-64 rounded-xl border border-beige-300
-            bg-card-bg shadow-lg p-3
-            flex flex-col gap-3
-          `}
-        >
-          <div
-            className={`
-              absolute left-1/2 -translate-x-1/2
-              w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
-            `}
-          />
-          {entries.map((entry) => (
-            <div key={entry.label} className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold tracking-widest uppercase text-text-400">
-                {entry.label}
-              </span>
-              <p dir={entry.dir} className="text-sm text-text-700 leading-relaxed wrap-break-words">
-                {entry.text}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface DescriptionEditProps {
-  form: UpdateDishRequest;
-  setForm: React.Dispatch<React.SetStateAction<UpdateDishRequest>>;
-  languages: LanguageConfig;
-}
-
-function DescriptionEdit({ form, setForm, languages }: DescriptionEditProps) {
-  const tabs = [
-    languages.showEnglish && { key: "en", label: "EN", field: "englishDescription" as const, dir: "ltr" as const, placeholder: "Description…" },
-    languages.showFrench  && { key: "fr", label: "FR", field: "frenchDescription"  as const, dir: "ltr" as const, placeholder: "Description…" },
-    languages.showArabic  && { key: "ar", label: "AR", field: "arabicDescription"  as const, dir: "rtl" as const, placeholder: "وصف…"         },
-  ].filter(Boolean) as { key: string; label: string; field: keyof UpdateDishRequest; dir: "ltr" | "rtl"; placeholder: string }[];
-
-  const [activeTab, setActiveTab] = useState(tabs[0]?.key ?? "en");
-  const active = tabs.find((tab) => tab.key === activeTab);
-
-  if (!tabs.length) return null;
-
-  return (
-    <div className="flex flex-col gap-1 w-full">
-      {tabs.length > 1 && (
-        <div className="flex rounded-md border border-beige-300 overflow-hidden self-start">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`
-                px-2 py-0.5 text-[10px] font-semibold transition-colors
-                ${activeTab === tab.key ? "bg-primary-700 text-cream-500" : "bg-card-bg text-text-500 hover:bg-beige-100"}
-              `}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
-      {active && (
-        <textarea
-          key={active.key}
-          value={(form[active.field] as string) ?? ""}
-          placeholder={active.placeholder}
-          dir={active.dir}
-          onChange={(e) => setForm((p) => ({ ...p, [active.field]: e.target.value }))}
-          rows={2}
-          className="
-            w-full px-3 py-2 rounded-lg border border-beige-400
-            text-sm text-dark-700 bg-cream-200
-            focus:outline-none focus:border-primary-500
-            resize-none overflow-y-auto max-h-20
-          "
-        />
-      )}
-    </div>
-  );
-}
-
-interface SizesPopoverProps {
-  sizes: DishSize[];
-  devise: Devise;
-  isFirst?: boolean;
-}
-
-function SizesPopover({ sizes, devise, isFirst }: SizesPopoverProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  if (!sizes.length) return <span className="text-sm text-text-300 select-none">—</span>;
-
-  if (sizes.length === 1) {
-    return (
-      <span className="text-sm text-text-600">
-        {DEVISE_SYMBOLS[devise]} {sizes[0].price}
-      </span>
-    );
-  }
-
-  const prices = sizes.map((s) => s.price);
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-
-  return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors"
-      >
-        <span className="whitespace-nowrap">
-          {DEVISE_SYMBOLS[devise]} {min} – {DEVISE_SYMBOLS[devise]} {max}
-        </span>
-        <ChevronDown
-          size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div
-          className={`
-            absolute z-50 left-1/2 -translate-x-1/2
-            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
-            w-max max-w-50 rounded-xl border border-beige-300
-            bg-card-bg shadow-lg px-3 py-2
-            flex flex-col gap-1.5
-          `}
-        >
-          <div
-            className={`
-              absolute left-1/2 -translate-x-1/2
-              w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
-            `}
-          />
-          {sizes.map((size, i) => (
-            <div key={i} className="flex items-center justify-between gap-3 text-sm">
-              <span className="truncate max-w-24 text-text-700">{size.name || "—"}</span>
-              <span className="text-text-500 shrink-0">
-                {DEVISE_SYMBOLS[devise]} {size.price}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface SizesEditorProps {
-  sizes: DishSize[];
-  setForm: React.Dispatch<React.SetStateAction<UpdateDishRequest>>;
-  devise: Devise;
-  addSizeLabel: string;
-  sizeNamePlaceholder: string;
-  error?: string;
-}
-
-function SizesEditor({ sizes, setForm, devise, addSizeLabel, sizeNamePlaceholder, error }: SizesEditorProps) {
-  const updateSize = (index: number, patch: Partial<DishSize>) => {
-    setForm((p) => ({
-      ...p,
-      sizes: (p.sizes ?? []).map((s, i) => (i === index ? { ...s, ...patch } : s)),
-    }));
-  };
-
-  const addSize = () => {
-    setForm((p) => ({ ...p, sizes: [...(p.sizes ?? []), { name: "", price: 0 }] }));
-  };
-
-  const removeSize = (index: number) => {
-    setForm((p) => ({ ...p, sizes: (p.sizes ?? []).filter((_, i) => i !== index) }));
-  };
-
-  return (
-    <div className="flex flex-col gap-1.5 w-full py-1">
-      {sizes.map((size, index) => (
-        <div key={index} className="flex items-center gap-1">
-          <input
-            value={size.name}
-            placeholder={sizeNamePlaceholder}
-            onChange={(e) => updateSize(index, { name: e.target.value })}
-            className="w-16 h-8 px-2 rounded-md border border-beige-400 text-xs text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
-          />
-          <span className="text-xs text-text-400 shrink-0">{DEVISE_SYMBOLS[devise]}</span>
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={size.price}
-            onChange={(e) => updateSize(index, { price: Number(e.target.value) })}
-            className="w-16 h-8 px-1 rounded-md border border-beige-400 text-xs text-center text-dark-700 bg-cream-200 focus:outline-none focus:border-primary-500"
-          />
-          {sizes.length > 1 && (
-            <button
-              type="button"
-              onClick={() => removeSize(index)}
-              className="text-text-400 hover:text-error transition-colors shrink-0"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={addSize}
-        className="text-xs text-primary-700 hover:underline self-center"
-      >
-        + {addSizeLabel}
-      </button>
-      {error && <span className="text-xs text-error text-center">{error}</span>}
-    </div>
-  );
-}
-
-interface DishSupplementsPopoverProps {
-  dishId: string;
-  attached: SupplementUI[];
-  isFirst?: boolean;
-  emptyLabel: string;
-  noneYetLabel: string;
-}
-
-function DishSupplementsPopover({
-  dishId,
-  attached,
-  isFirst,
-  emptyLabel,
-  noneYetLabel,
-}: DishSupplementsPopoverProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const { restaurantId, menuId } = useAuth();
-  const queryClient = useQueryClient();
-  const dishesKey = ["dishes", restaurantId];
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  // Lazy-fetched only when the popover is open, and shares the same cache
-  // key as the Supplements page — no duplicate network cost if that page
-  // was already visited this session.
-  const { data, isLoading } = useQuery({
-    queryKey: ["supplements", restaurantId, menuId],
-    queryFn: () => supplementService.loadSupplementsPageData(restaurantId!, menuId!),
-    enabled: open && !!restaurantId && !!menuId,
-  });
-
-  const catalog = data?.supplements ?? [];
-  const attachedIds = new Set(attached.map((s) => String(s.id)));
-
-  const addMutation = useMutation({
-    mutationFn: ({ supplementId }: { supplementId: string }) =>
-      supplementService.addSupplementToDish(supplementId, dishId),
-    onMutate: async ({ supplementId }) => {
-      await queryClient.cancelQueries({ queryKey: dishesKey });
-      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-      const supplementToAdd = catalog.find((s) => s.id === supplementId);
-      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
-        if (!old || !supplementToAdd) return old;
-        return {
-          ...old,
-          menus: old.menus.map((menu) => ({
-            ...menu,
-            categories: menu.categories.map((cat) => ({
-              ...cat,
-              dishes: cat.dishes.map((d) =>
-                d.id === dishId
-                  ? { ...d, supplements: [...(d.supplements ?? []), supplementToAdd] }
-                  : d,
-              ),
-            })),
-          })),
-        };
-      });
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
-  });
-
-  const removeMutation = useMutation({
-    mutationFn: ({ supplementId }: { supplementId: string }) =>
-      supplementService.removeSupplementFromDish(supplementId, dishId),
-    onMutate: async ({ supplementId }) => {
-      await queryClient.cancelQueries({ queryKey: dishesKey });
-      const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
-      queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          menus: old.menus.map((menu) => ({
-            ...menu,
-            categories: menu.categories.map((cat) => ({
-              ...cat,
-              dishes: cat.dishes.map((d) =>
-                d.id === dishId
-                  ? { ...d, supplements: (d.supplements ?? []).filter((s) => s.id !== supplementId) }
-                  : d,
-              ),
-            })),
-          })),
-        };
-      });
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      queryClient.setQueryData<AllDishesResponse>(dishesKey, context?.previous);
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dishesKey }),
-  });
-
-  const toggle = (supplementId: string, isAttached: boolean) => {
-    if (isAttached) removeMutation.mutate({ supplementId });
-    else addMutation.mutate({ supplementId });
-  };
-
-  const summaryNames = attached
-    .map((s) => s.english || s.french || s.arabic)
-    .filter(Boolean)
-    .join(", ");
-
-  return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-35"
-      >
-        <span className={`truncate ${attached.length === 0 ? "text-text-300" : ""}`}>
-          {attached.length > 0 ? summaryNames : emptyLabel}
-        </span>
-        <ChevronDown
-          size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div
-          className={`
-            absolute z-50 left-1/2 -translate-x-1/2
-            ${isFirst ? "top-full mt-2" : "bottom-full mb-2"}
-            w-56 rounded-xl border border-beige-300
-            bg-card-bg shadow-lg p-3
-            flex flex-col gap-2 max-h-60 overflow-y-auto
-          `}
-        >
-          <div
-            className={`
-              absolute left-1/2 -translate-x-1/2
-              w-3 h-3 rotate-45 bg-card-bg border-beige-300
-              ${isFirst ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-r border-b"}
-            `}
-          />
-          {isLoading ? (
-            <span className="text-xs text-text-400 text-center py-2">…</span>
-          ) : catalog.length === 0 ? (
-            <span className="text-xs text-text-400 text-center py-2">{noneYetLabel}</span>
-          ) : (
-            catalog.map((s) => {
-              const ui = supplementResponseToUI(s);
-              const name = ui.english || ui.french || ui.arabic || "—";
-              const isAttached = attachedIds.has(String(s.id));
-              return (
-                <label
-                  key={String(s.id)}
-                  className="flex items-center gap-2 text-sm text-text-700 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isAttached}
-                    onChange={() => toggle(String(s.id), isAttached)}
-                    className="accent-primary-700"
-                  />
-                  <span className="truncate flex-1">{name}</span>
-                </label>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
+function DishRow({ dish, devise, isLast, languages }: DishRowProps) {
   const { language } = useLanguage();
   const t = dishRowText[language];
 
@@ -706,6 +189,12 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
     reader.readAsDataURL(file);
   };
 
+  const handleDescriptionChange = (lang: "en" | "fr" | "ar", value: string) => {
+    const field =
+      lang === "en" ? "englishDescription" : lang === "fr" ? "frenchDescription" : "arabicDescription";
+    setForm((p) => ({ ...p, [field]: value }));
+  };
+
   const isMissingEnglish = languages.showEnglish && (form.englishName?.trim().length ?? 0) < 1;
   const isMissingFrench  = languages.showFrench  && (form.frenchName?.trim().length ?? 0) < 1;
   const isMissingArabic  = languages.showArabic  && (form.arabicName?.trim().length ?? 0) < 1;
@@ -790,7 +279,7 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
             {error && <span className="text-xs text-error text-center">{error}</span>}
           </div>
         ) : dish.english ? (
-          <NamePopover label={dish.english} dir="ltr" isFirst={isFirst} />
+          <NamePopover label={dish.english} dir="ltr" />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>{t.missing}</span>
         )}
@@ -805,7 +294,7 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
             className={`${inputClass} ${isMissingFrench ? "border-warning" : ""}`}
           />
         ) : dish.french ? (
-          <NamePopover label={dish.french} dir="ltr" isFirst={isFirst} />
+          <NamePopover label={dish.french} dir="ltr" />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>{t.missing}</span>
         )}
@@ -821,7 +310,7 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
             className={`${inputClass} ${isMissingArabic ? "border-warning" : ""}`}
           />
         ) : dish.arabic ? (
-          <NamePopover label={dish.arabic} dir="rtl" isFirst={isFirst} />
+          <NamePopover label={dish.arabic} dir="rtl" />
         ) : (
           <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>{t.missing}</span>
         )}
@@ -831,9 +320,20 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
       <TableCell>
         <div className="flex justify-center">
           {isEditing ? (
-            <DescriptionEdit form={form} setForm={setForm} languages={languages} />
+            <MultilingualTextEditor
+              englishText={form.englishDescription}
+              frenchText={form.frenchDescription}
+              arabicText={form.arabicDescription}
+              onChange={handleDescriptionChange}
+              languages={languages}
+            />
           ) : (
-            <DescriptionPopover dish={dish} languages={languages} isFirst={isFirst} />
+            <MultilingualTextPopover
+              englishText={dish.englishDescription}
+              frenchText={dish.frenchDescription}
+              arabicText={dish.arabicDescription}
+              languages={languages}
+            />
           )}
         </div>
       </TableCell>
@@ -844,14 +344,14 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
           {isEditing ? (
             <SizesEditor
               sizes={form.sizes ?? []}
-              setForm={setForm}
+              onChange={(sizes) => setForm((p) => ({ ...p, sizes }))}
               devise={devise}
               addSizeLabel={t.addSize}
               sizeNamePlaceholder={t.sizeNamePlaceholder}
               error={sizesError}
             />
           ) : (
-            <SizesPopover sizes={dish.sizes} devise={devise} isFirst={isFirst} />
+            <SizesPopover sizes={dish.sizes} devise={devise} />
           )}
         </div>
       </TableCell>
@@ -862,7 +362,6 @@ function DishRow({ dish, devise, isLast, isFirst, languages }: DishRowProps) {
           <DishSupplementsPopover
             dishId={String(dish.id)}
             attached={dish.supplements ?? []}
-            isFirst={isFirst}
             emptyLabel={t.noSupplements}
             noneYetLabel={t.noSupplementsInCatalog}
           />

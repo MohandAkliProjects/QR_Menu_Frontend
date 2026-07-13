@@ -3,7 +3,6 @@ import { ChevronDown } from "lucide-react";
 import FloatingPanel from "./FloatingPanel";
 import type { LanguageConfig } from "./category/CategoryRow";
 
-
 export type MultilingualLang = "en" | "fr" | "ar";
 
 interface MultilingualTextPopoverProps {
@@ -30,7 +29,9 @@ export function MultilingualTextPopover({
 
   const hasAny = englishText || frenchText || arabicText;
 
-  if (!hasAny) return <span className="text-sm text-text-300 select-none">{emptyLabel}</span>;
+  if (!hasAny) {
+    return <span className="text-sm text-text-300 select-none">{emptyLabel}</span>;
+  }
 
   const entries = [
     languages.showEnglish && englishText && { label: "EN", text: englishText, dir: "ltr" as const },
@@ -44,23 +45,37 @@ export function MultilingualTextPopover({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors ${triggerMaxWidthClassName}`}
+        className={`relative flex items-center justify-center mx-auto px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors ${triggerMaxWidthClassName}`}
       >
-        <span className="truncate">{englishText || frenchText || arabicText}</span>
+        <span className="truncate">
+          {englishText || frenchText || arabicText}
+        </span>
+
         <ChevronDown
           size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`absolute left-full ml-1 shrink-0 text-text-400 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
         />
       </button>
 
-      <FloatingPanel anchorRef={triggerRef} open={open} onClose={() => setOpen(false)} width={panelWidth}>
+      <FloatingPanel
+        anchorRef={triggerRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={panelWidth}
+      >
         <div className="flex flex-col gap-3">
           {entries.map((entry) => (
             <div key={entry.label} className="flex flex-col gap-1">
               <span className="text-[10px] font-semibold tracking-widest uppercase text-text-400">
                 {entry.label}
               </span>
-              <p dir={entry.dir} className="text-sm text-text-700 leading-relaxed wrap-break-words">
+
+              <p
+                dir={entry.dir}
+                className="text-sm text-text-700 leading-relaxed wrap-break-words"
+              >
                 {entry.text}
               </p>
             </div>
@@ -138,7 +153,11 @@ export function MultilingualTextEditor({
               onClick={() => setActiveTab(tab.key)}
               className={`
                 px-2 py-0.5 text-[10px] font-semibold transition-colors
-                ${activeTab === tab.key ? "bg-primary-700 text-cream-500" : "bg-card-bg text-text-500 hover:bg-beige-100"}
+                ${
+                  activeTab === tab.key
+                    ? "bg-primary-700 text-cream-500"
+                    : "bg-card-bg text-text-500 hover:bg-beige-100"
+                }
               `}
             >
               {tab.label}
@@ -146,6 +165,7 @@ export function MultilingualTextEditor({
           ))}
         </div>
       )}
+
       {active && (
         <textarea
           key={active.key}

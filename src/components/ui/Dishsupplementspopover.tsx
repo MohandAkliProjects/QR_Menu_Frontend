@@ -8,7 +8,6 @@ import type { AllDishesResponse } from "../../services/dish.service";
 import type { SupplementUI } from "../../types/ui";
 import { supplementResponseToUI } from "../../lib/mappers";
 
-
 interface DishSupplementsPopoverProps {
   dishId: string;
   attached: SupplementUI[];
@@ -44,8 +43,10 @@ function DishSupplementsPopover({
       await queryClient.cancelQueries({ queryKey: dishesKey });
       const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
       const supplementToAdd = catalog.find((s) => s.id === supplementId);
+
       queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
         if (!old || !supplementToAdd) return old;
+
         return {
           ...old,
           menus: old.menus.map((menu) => ({
@@ -54,13 +55,17 @@ function DishSupplementsPopover({
               ...cat,
               dishes: cat.dishes.map((d) =>
                 d.id === dishId
-                  ? { ...d, supplements: [...(d.supplements ?? []), supplementToAdd] }
-                  : d,
+                  ? {
+                      ...d,
+                      supplements: [...(d.supplements ?? []), supplementToAdd],
+                    }
+                  : d
               ),
             })),
           })),
         };
       });
+
       return { previous };
     },
     onError: (_err, _vars, context) => {
@@ -75,8 +80,10 @@ function DishSupplementsPopover({
     onMutate: async ({ supplementId }) => {
       await queryClient.cancelQueries({ queryKey: dishesKey });
       const previous = queryClient.getQueryData<AllDishesResponse>(dishesKey);
+
       queryClient.setQueryData<AllDishesResponse>(dishesKey, (old) => {
         if (!old) return old;
+
         return {
           ...old,
           menus: old.menus.map((menu) => ({
@@ -85,13 +92,19 @@ function DishSupplementsPopover({
               ...cat,
               dishes: cat.dishes.map((d) =>
                 d.id === dishId
-                  ? { ...d, supplements: (d.supplements ?? []).filter((s) => s.id !== supplementId) }
-                  : d,
+                  ? {
+                      ...d,
+                      supplements: (d.supplements ?? []).filter(
+                        (s) => s.id !== supplementId
+                      ),
+                    }
+                  : d
               ),
             })),
           })),
         };
       });
+
       return { previous };
     },
     onError: (_err, _vars, context) => {
@@ -101,8 +114,11 @@ function DishSupplementsPopover({
   });
 
   const toggle = (supplementId: string, isAttached: boolean) => {
-    if (isAttached) removeMutation.mutate({ supplementId });
-    else addMutation.mutate({ supplementId });
+    if (isAttached) {
+      removeMutation.mutate({ supplementId });
+    } else {
+      addMutation.mutate({ supplementId });
+    }
   };
 
   const summaryNames = attached
@@ -116,28 +132,43 @@ function DishSupplementsPopover({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-35"
+        className="relative flex items-center justify-center mx-auto px-2 py-1 rounded-lg text-sm text-text-600 hover:bg-beige-100 transition-colors max-w-35"
       >
-        <span className={`truncate ${attached.length === 0 ? "text-text-300" : ""}`}>
+        <span
+          className={`truncate ${
+            attached.length === 0 ? "text-text-300" : ""
+          }`}
+        >
           {attached.length > 0 ? summaryNames : emptyLabel}
         </span>
+
         <ChevronDown
           size={13}
-          className={`shrink-0 text-text-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`absolute left-full ml-1 shrink-0 text-text-400 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
         />
       </button>
 
-      <FloatingPanel anchorRef={triggerRef} open={open} onClose={() => setOpen(false)} width={224}>
+      <FloatingPanel
+        anchorRef={triggerRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={224}
+      >
         <div className="flex flex-col gap-2">
           {isLoading ? (
             <span className="text-xs text-text-400 text-center py-2">…</span>
           ) : catalog.length === 0 ? (
-            <span className="text-xs text-text-400 text-center py-2">{noneYetLabel}</span>
+            <span className="text-xs text-text-400 text-center py-2">
+              {noneYetLabel}
+            </span>
           ) : (
             catalog.map((s) => {
               const ui = supplementResponseToUI(s);
               const name = ui.english || ui.french || ui.arabic || "—";
               const isAttached = attachedIds.has(String(s.id));
+
               return (
                 <label
                   key={String(s.id)}
@@ -149,6 +180,7 @@ function DishSupplementsPopover({
                     onChange={() => toggle(String(s.id), isAttached)}
                     className="accent-primary-700"
                   />
+
                   <span className="truncate flex-1">{name}</span>
                 </label>
               );

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { Copy, Download, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import PageHeader from "../../components/shared/PageHeader";
 import PageErrorState from "../../components/shared/PageErrorState";
 import PageLoadingState from "../../components/shared/PageLoadingState";
@@ -51,7 +51,7 @@ function MenuQrCard({
   isDefault: boolean;
   t: QrDisplayText;
   onCopy: (url: string) => void;
-  onDownload: (canvasId: string, filename: string) => void;
+  onDownload: (elementId: string, filename: string) => void;
   onTest: (url: string) => void;
 }) {
 
@@ -74,7 +74,7 @@ function MenuQrCard({
 
       <div className="flex flex-col items-center gap-4">
         {qrUrl ? (
-          <QRCodeCanvas
+          <QRCodeSVG
             id={canvasId}
             value={qrUrl}
             size={200}
@@ -114,7 +114,7 @@ function MenuQrCard({
             onClick={() =>
               onDownload(
                 canvasId,
-                `${title.replace(/\s+/g, "-").toLowerCase()}-qr.png`
+                `${title.replace(/\s+/g, "-").toLowerCase()}-qr.svg`
               )
             }
             disabled={!qrUrl}
@@ -149,7 +149,7 @@ function SingleMenuQrView({
   slug: string;
   t: QrDisplayText;
   onCopy: (url: string) => void;
-  onDownload: (canvasId: string, filename: string) => void;
+  onDownload: (elementId: string, filename: string) => void;
   onTest: (url: string) => void;
 }) {
   const qrUrl = menuService.getMenuRedirectUrl(menuId);
@@ -163,7 +163,7 @@ function SingleMenuQrView({
         description={`${t.yourQrCodeDescription} — ${title}`}
         showDescription={true}
       />
-      <div id="qr-canvas-active">
+      <div id="qr-canvas-active-wrapper">
         <Card
           className="
             flex flex-col items-center justify-center gap-6
@@ -174,7 +174,7 @@ function SingleMenuQrView({
           "
         >
           {qrUrl ? (
-            <QRCodeCanvas
+            <QRCodeSVG
               id={canvasId}
               value={qrUrl}
               size={256}
@@ -227,7 +227,7 @@ function SingleMenuQrView({
           onClick={() =>
             onDownload(
               canvasId,
-              `${title.replace(/\s+/g, "-").toLowerCase()}-qr.png`,
+              `${title.replace(/\s+/g, "-").toLowerCase()}-qr.svg`,
             )
           }
           disabled={!qrUrl}
@@ -283,9 +283,9 @@ function QrDisplayPage() {
   }, []);
 
   const handleDownload = useCallback(
-    (canvasId: string, filename: string) => {
-      const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
-      if (!canvas) {
+    (elementId: string, filename: string) => {
+      const svg = document.getElementById(elementId) as SVGSVGElement | null;
+      if (!svg) {
         showToast(
           "error",
           t.toastDownloadFailedTitle,
@@ -293,10 +293,20 @@ function QrDisplayPage() {
         );
         return;
       }
+
+      const svgClone = svg.cloneNode(true) as SVGSVGElement;
+      svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+      const svgString = new XMLSerializer().serializeToString(svgClone);
+      const blob = new Blob([svgString], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+
       const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
+      link.href = url;
       link.download = filename;
       link.click();
+
+      URL.revokeObjectURL(url);
       showToast("success", t.toastDownloadedTitle, t.toastDownloadedMessage);
     },
     [showToast, t],

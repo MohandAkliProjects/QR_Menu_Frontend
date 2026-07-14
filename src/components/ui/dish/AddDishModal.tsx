@@ -156,13 +156,18 @@ function AddDishModal({
         ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-1";
 
-  const activeTab = descTabs.find((tab) => tab.key === activeDescTab);
-  const isActiveArabic = activeDescTab === "ar";
+  // Fall back to the first available tab if the stored key no longer
+  // exists in descTabs (e.g. switched to a menu with different
+  // supported languages) — prevents the description block from
+  // silently disappearing.
+  const activeTab = descTabs.find((tab) => tab.key === activeDescTab) ?? descTabs[0];
+  const activeKey = activeTab?.key;
+  const isActiveArabic = activeKey === "ar";
 
   const descPlaceholder =
     isActiveArabic
       ? t.descriptionPlaceholderAr
-      : activeDescTab === "fr"
+      : activeKey === "fr"
         ? t.descriptionPlaceholderFr
         : t.descriptionPlaceholderEn;
 
@@ -285,7 +290,7 @@ function AddDishModal({
                         className={`
                           px-3 py-1 text-xs font-medium transition-colors
                           ${
-                            activeDescTab === tab.key
+                            activeKey === tab.key
                               ? "bg-primary-700 text-cream-500"
                               : "bg-card-bg text-text-500 hover:bg-beige-100"
                           }

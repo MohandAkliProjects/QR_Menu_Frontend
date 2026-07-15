@@ -55,7 +55,6 @@ function MenuQrCard({
   onTest: (url: string) => void;
 }) {
 
-  const qrUrl = menuService.getMenuRedirectUrl(menuId);
 
 
   const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuKey)}`;
@@ -73,10 +72,10 @@ function MenuQrCard({
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        {qrUrl ? (
+        {displayUrl ? (
           <QRCodeSVG
             id={canvasId}
-            value={qrUrl}
+            value={displayUrl}
             size={200}
             className="w-44 h-44 sm:w-48 sm:h-48"
           />
@@ -117,7 +116,7 @@ function MenuQrCard({
                 `${title.replace(/\s+/g, "-").toLowerCase()}-qr.svg`
               )
             }
-            disabled={!qrUrl}
+            disabled={!displayUrl}
           />
 
           <Button
@@ -134,7 +133,6 @@ function MenuQrCard({
 }
 
 function SingleMenuQrView({
-  menuId,
   menuKey,
   title,
   slug,
@@ -152,7 +150,7 @@ function SingleMenuQrView({
   onDownload: (elementId: string, filename: string) => void;
   onTest: (url: string) => void;
 }) {
-  const qrUrl = menuService.getMenuRedirectUrl(menuId);
+
   const displayUrl = `${window.location.origin}${ROUTES.publicMenu(slug, menuKey)}`;
   const canvasId = "qr-canvas-active";
 
@@ -173,10 +171,10 @@ function SingleMenuQrView({
             mx-auto py-8 px-6 sm:py-10 sm:px-10
           "
         >
-          {qrUrl ? (
+          {displayUrl ? (
             <QRCodeSVG
               id={canvasId}
-              value={qrUrl}
+              value={displayUrl}
               size={256}
               className="w-36 h-36 sm:w-48 sm:h-48 lg:w-64 lg:h-64"
             />
@@ -230,7 +228,7 @@ function SingleMenuQrView({
               `${title.replace(/\s+/g, "-").toLowerCase()}-qr.svg`,
             )
           }
-          disabled={!qrUrl}
+          disabled={!displayUrl}
         />
         <Button
           label={t.testUrl}

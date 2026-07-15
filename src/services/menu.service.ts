@@ -57,9 +57,6 @@ export async function getMenusBySlug(slug: string): Promise<MenuResponse[]> {
   return apiRequest<MenuResponse[]>(`/api/menus/slug/${slug}/list`, { auth: false });
 }
 
-export function getMenuRedirectUrl(menuId: string): string {
-  return `${import.meta.env.VITE_API_BASE_URL}/api/menus/${menuId}/redirect`;
-}
 
 export function sumMenuLikes(fullMenu: FullMenuResponse): number {
   return fullMenu.categories.reduce(

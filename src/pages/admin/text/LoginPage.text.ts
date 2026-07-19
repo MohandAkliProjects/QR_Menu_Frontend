@@ -1,6 +1,6 @@
 export const loginText = {
   en: {
-    appTitle: "Spectral QR",
+    appTitle: "QResto",
     appSubtitle: "Restaurant Admin Dashboard",
     welcomeBack: "Welcome Back",
     emailLabel: "Email",
@@ -14,10 +14,10 @@ export const loginText = {
     invalidEmailOrPassword: "Invalid email or password.",
     passwordRequired: "Password is required.",
     passwordMinLength: "Password must be at least 6 characters.",
-    copyright: "© 2024 Spectral QR. All rights reserved.",
+    copyright: "© 2026 QResto. All rights reserved.",
   },
   fr: {
-    appTitle: "Spectral QR",
+    appTitle: "QResto",
     appSubtitle: "Tableau de bord administrateur",
     welcomeBack: "Bon retour",
     emailLabel: "E-mail",
@@ -31,6 +31,6 @@ export const loginText = {
     invalidEmailOrPassword: "Adresse e-mail ou mot de passe incorrect.",
     passwordRequired: "Le mot de passe est requis.",
     passwordMinLength: "Le mot de passe doit contenir au moins 6 caractères.",
-    copyright: "© 2024 Spectral QR. Tous droits réservés.",
+    copyright: "© 2026 QResto. Tous droits réservés.",
   },
 } as const;

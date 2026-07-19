@@ -104,13 +104,17 @@ export default function MenuPicker({
           {menus.map((menu) => {
             const title = getMenuTitle(menu, activeLanguage);
             const itemCount = menu.totalDishes ?? 0;
+            // Use the friendly publicKey (falls back to id) so this matches
+            // how QrDisplayPage builds its URLs, and how PublicMenuPage
+            // resolves the "?menu=" query param against menu.publicKey.
+            const menuKey = menu.publicKey ?? menu.id;
 
             return (
               <button
                 key={menu.id}
                 type="button"
                 onClick={() =>
-                  navigate(ROUTES.publicMenu(slug, menu.id), { replace: true })
+                  navigate(ROUTES.publicMenu(slug, menuKey), { replace: true })
                 }
                 className="group rounded-2xl border border-(--menu-border) bg-(--menu-card) p-5 text-left transition hover:border-(--menu-accent) hover:shadow-md active:scale-[0.99]"
               >

@@ -32,7 +32,7 @@ function BannerCard({
       <img
         src={src}
         alt="Banner"
-        className={`w-full h-full object-cover transition-all duration-200 ${
+        className={`w-full h-auto object-cover object-center transition-all duration-200 ${
           !visible ? "opacity-40" : ""
         }`}
       />

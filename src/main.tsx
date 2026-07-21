@@ -5,12 +5,13 @@ import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import "./styles/index.css";
 import { LanguageProvider } from "./i18n/LanguageProvider";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 1000 * 30,
+      // staleTime: 1000 * 30,
     },
   },
 });
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <LanguageProvider>
             <App />
+            <ReactQueryDevtools initialIsOpen={false} />
         </LanguageProvider>
       </AuthProvider>
     </QueryClientProvider>

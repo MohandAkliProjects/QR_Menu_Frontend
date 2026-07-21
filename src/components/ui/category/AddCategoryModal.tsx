@@ -75,7 +75,7 @@ function AddCategoryModal({
       onSuccess();
       onClose();
       setForm(EMPTY);
-      showToast("success", t.toastSuccessTitle, t.toastSuccessMessage);
+      showToast("success", t.toastSuccessTitle, t.toastSuccessMessage); 
     },
     onError: () => showToast("error", gt.savingErrorTitle, gt.savingError),
     onSettled() {

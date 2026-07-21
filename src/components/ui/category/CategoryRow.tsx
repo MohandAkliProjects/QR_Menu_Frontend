@@ -132,7 +132,8 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
       queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
       showToast("error", t.toastDeleteFailedTitle, getErrorMessage(err));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: categoriesKey }),
+    onSettled: () =>
+       queryClient.invalidateQueries({ queryKey: categoriesKey })
   });
 
   const updateMutation = useMutation({

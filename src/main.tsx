@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import "./styles/index.css";
 import { LanguageProvider } from "./i18n/LanguageProvider";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <LanguageProvider>
             <App />
             <ReactQueryDevtools initialIsOpen={false} />
+            <SpeedInsights />
         </LanguageProvider>
       </AuthProvider>
     </QueryClientProvider>

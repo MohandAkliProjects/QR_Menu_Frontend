@@ -72,7 +72,11 @@ export default function PublicMenuPage() {
 
   // Always fetch the menu list now — we need it to resolve the friendly
   // key back to a real menu id, whether or not "?menu=" is present.
-  const { data: menuList, isLoading: menuListLoading, error: menuListError } = useQuery({
+  const {
+    data: menuList,
+    isLoading: menuListLoading,
+    error: menuListError,
+  } = useQuery({
     queryKey: ["public-menu-list", slug],
     queryFn: () => getMenusBySlug(slug!),
     enabled: !!slug,
@@ -80,19 +84,17 @@ export default function PublicMenuPage() {
     retry: false,
   });
 
-const resolvedMenuId = useMemo(() => {
-  if (!menuList) return null;
-  if (menuKeyFromQr) {
-    const match = menuList.find((m) => m.publicKey === menuKeyFromQr);
-    return match?.id ?? null;
-  }
-  if (menuList.length === 1) return menuList[0].id;
-  return null;
-}, [menuKeyFromQr, menuList]);
+  const resolvedMenuId = useMemo(() => {
+    if (!menuList) return null;
+    if (menuKeyFromQr) {
+      const match = menuList.find((m) => m.publicKey === menuKeyFromQr);
+      return match?.id ?? null;
+    }
+    if (menuList.length === 1) return menuList[0].id;
+    return null;
+  }, [menuKeyFromQr, menuList]);
 
-
-  const menuKeyNotFound =
-    !!menuKeyFromQr && !!menuList && !resolvedMenuId;
+  const menuKeyNotFound = !!menuKeyFromQr && !!menuList && !resolvedMenuId;
 
   const {
     data: menu,
@@ -101,9 +103,7 @@ const resolvedMenuId = useMemo(() => {
   } = useQuery({
     queryKey: ["public-menu", slug, resolvedMenuId],
     queryFn: () =>
-      resolvedMenuId
-        ? getFullMenu(resolvedMenuId)
-        : getFullMenuBySlug(slug!),
+      resolvedMenuId ? getFullMenu(resolvedMenuId) : getFullMenuBySlug(slug!),
     enabled:
       !!slug &&
       !menuKeyNotFound &&
@@ -113,10 +113,7 @@ const resolvedMenuId = useMemo(() => {
   });
 
   const showMenuPicker =
-    !menuKeyFromQr &&
-    !menuListLoading &&
-    !!menuList &&
-    menuList.length > 1;
+    !menuKeyFromQr && !menuListLoading && !!menuList && menuList.length > 1;
 
   const { data: restaurantBySlug } = useQuery({
     queryKey: ["restaurant-by-slug", slug],
@@ -130,14 +127,13 @@ const resolvedMenuId = useMemo(() => {
     menuListLoading ||
     (!showMenuPicker && !menuKeyNotFound && menuLoading && !menu);
   const error = menuListError ?? menuError;
-
-  useEffect(() => {
-    if (!menu?.id) return;
-    if (!shouldRecordView(menu.id)) return;
-    fetch(`${API_BASE}/api/menus/${menu.id}/addView`, {
-      method: "PATCH",
-    }).catch(() => {});
-  }, [menu?.id]);
+useEffect(() => {
+  if (!menu?.restaurantId) return;
+  if (!shouldRecordView(menu.restaurantId)) return;
+  fetch(`${API_BASE}/api/restaurants/${menu.restaurantId}/addView`, {
+    method: "PATCH",
+  }).catch(() => {});
+}, [menu?.restaurantId]);
 
   const availableLanguages = useMemo(() => {
     if (menu) return Object.keys(menu.translations) as Language[];

@@ -3,7 +3,7 @@ import { LayoutGrid } from "lucide-react";
 
 import type { CategoryWithDishesResponse } from "../../types/api";
 import type { Language } from "../../types/enums";
-import { getCategoryName } from "../../utils/menu-display";
+import { getCacheBustedImageUrl, getCategoryName } from "../../utils/menu-display";
 import type { MenuStrings } from "../../lib/constants/menu-strings";
 
 interface CategoryFilterProps {
@@ -89,7 +89,7 @@ function CategoryFilter({ categories, activeCategoryId, language, onSelect, allI
                   }}
                 >
                   {category.iconUrl ? (
-                    <img src={category.iconUrl} alt={name} className="w-full h-full object-cover" />
+                    <img src={getCacheBustedImageUrl(category.iconUrl, category.iconUpdateDate)} alt={name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-lg font-bold text-[var(--menu-primary)]">
                       {name.charAt(0).toUpperCase()}

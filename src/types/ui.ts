@@ -15,6 +15,7 @@ export interface CategoryUI {
   id: UniqueIdentifier;
   order: number;
   icon: string | null;
+  iconUpdateDate: Date | null;
   english?: string;
   french?: string;
   arabic?: string;

@@ -91,7 +91,7 @@ function CategoryTile({
     >
       {hasImage ? (
         <img
-          src={category.iconUrl}
+          src={getCacheBustedImageUrl(category.iconUrl, category.iconUpdateDate)}
           alt={label}
           className="absolute inset-0 w-full h-full object-cover"
         />

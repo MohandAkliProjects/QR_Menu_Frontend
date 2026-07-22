@@ -25,6 +25,7 @@ import type { CategoryUI as Category } from "../../../types/ui.ts";
 import { categoryRowText } from "../text/CategoryRow.text";
 
 import NamePopover from "../Namepopover.tsx";
+import { getCacheBustedImageUrl } from "../../../utils/menu-display.ts";
 
 export interface LanguageConfig {
   showEnglish: boolean;
@@ -50,8 +51,14 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
   const iconInputRef = useRef<HTMLInputElement>(null);
   const { toasts, showToast, removeToast } = useToast();
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: category.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -68,9 +75,12 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
     reader.readAsDataURL(file);
   };
 
-  const isMissingEnglish = languages.showEnglish && (form.english?.trim().length ?? 0) < 3;
-  const isMissingFrench  = languages.showFrench  && (form.french?.trim().length ?? 0) < 3;
-  const isMissingArabic  = languages.showArabic  && (form.arabic?.trim().length ?? 0) < 3;
+  const isMissingEnglish =
+    languages.showEnglish && (form.english?.trim().length ?? 0) < 3;
+  const isMissingFrench =
+    languages.showFrench && (form.french?.trim().length ?? 0) < 3;
+  const isMissingArabic =
+    languages.showArabic && (form.arabic?.trim().length ?? 0) < 3;
 
   const handleSave = () => {
     if (languages.showEnglish && (form.english?.trim().length ?? 0) < 3) {
@@ -87,8 +97,8 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
     }
     const hasAny =
       (languages.showEnglish && (form.english?.trim().length ?? 0) >= 3) ||
-      (languages.showFrench  && (form.french?.trim().length ?? 0) >= 3) ||
-      (languages.showArabic  && (form.arabic?.trim().length ?? 0) >= 3);
+      (languages.showFrench && (form.french?.trim().length ?? 0) >= 3) ||
+      (languages.showArabic && (form.arabic?.trim().length ?? 0) >= 3);
     if (!hasAny) {
       setError(t.errorAtLeastOne);
       return;
@@ -121,19 +131,25 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
     mutationFn: (id: string) => categoryService.deleteCategory(id),
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: categoriesKey });
-      const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+      const previous =
+        queryClient.getQueryData<CategoriesPageData>(categoriesKey);
       queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
         if (!old) return old;
-        return { ...old, categories: old.categories.filter((cat) => cat.id !== id) };
+        return {
+          ...old,
+          categories: old.categories.filter((cat) => cat.id !== id),
+        };
       });
       return { previous };
     },
     onError: (err, _variables, context) => {
-      queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+      queryClient.setQueryData<CategoriesPageData>(
+        categoriesKey,
+        context?.previous,
+      );
       showToast("error", t.toastDeleteFailedTitle, getErrorMessage(err));
     },
-    onSettled: () =>
-       queryClient.invalidateQueries({ queryKey: categoriesKey })
+    onSettled: () => queryClient.invalidateQueries({ queryKey: categoriesKey }),
   });
 
   const updateMutation = useMutation({
@@ -143,14 +159,16 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
       queryClient.invalidateQueries({ queryKey: categoriesKey });
       showToast("success", t.toastUpdatedTitle, t.toastUpdatedMessage);
     },
-    onError: (err) => showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
+    onError: (err) =>
+      showToast("error", t.toastSaveFailedTitle, getErrorMessage(err)),
   });
 
   const toggleMutation = useMutation({
     mutationFn: (id: string) => categoryService.toggleCategoryVisible(id),
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: categoriesKey });
-      const previous = queryClient.getQueryData<CategoriesPageData>(categoriesKey);
+      const previous =
+        queryClient.getQueryData<CategoriesPageData>(categoriesKey);
       queryClient.setQueryData<CategoriesPageData>(categoriesKey, (old) => {
         if (!old) return old;
         return {
@@ -163,7 +181,10 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
       return { previous };
     },
     onError: (err, _variables, context) => {
-      queryClient.setQueryData<CategoriesPageData>(categoriesKey, context?.previous);
+      queryClient.setQueryData<CategoriesPageData>(
+        categoriesKey,
+        context?.previous,
+      );
       showToast("error", t.toastSaveFailedTitle, getErrorMessage(err));
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: categoriesKey }),
@@ -205,7 +226,15 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
           {form.icon ? (
-            <img src={form.icon} alt="" className="w-full h-full object-cover" />
+            <img
+              src={
+                form.icon?.startsWith("data:")
+                  ? form.icon
+                  : getCacheBustedImageUrl(form.icon, category.iconUpdateDate)
+              }
+              alt=""
+              className="w-full h-full object-cover"
+            />
           ) : isEditing ? (
             <Upload size={16} className="text-text-400" />
           ) : (
@@ -229,15 +258,21 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
           <div className="flex flex-col gap-1">
             <input
               value={form.english}
-              onChange={(e) => setForm((p) => ({ ...p, english: e.target.value }))}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, english: e.target.value }))
+              }
               className={`${inputClass} ${error || isMissingEnglish ? "border-error" : ""}`}
             />
-            {error && <span className="text-xs text-error text-center">{error}</span>}
+            {error && (
+              <span className="text-xs text-error text-center">{error}</span>
+            )}
           </div>
         ) : category.english ? (
           <NamePopover label={category.english} dir="ltr" />
         ) : (
-          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+          <span
+            className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}
+          >
             {t.missing}
           </span>
         )}
@@ -254,7 +289,9 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
         ) : category.french ? (
           <NamePopover label={category.french} dir="ltr" />
         ) : (
-          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+          <span
+            className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}
+          >
             {t.missing}
           </span>
         )}
@@ -272,7 +309,9 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
         ) : category.arabic ? (
           <NamePopover label={category.arabic} dir="rtl" />
         ) : (
-          <span className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}>
+          <span
+            className={`text-sm px-2 py-1 rounded-lg text-warning ${missingClass}`}
+          >
             {t.missing}
           </span>
         )}
@@ -281,7 +320,9 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
       {/* Status */}
       <TableCell>
         <div className="flex justify-center">
-          <Badge variant={category.status === "visible" ? "visible" : "hidden"} />
+          <Badge
+            variant={category.status === "visible" ? "visible" : "hidden"}
+          />
         </div>
       </TableCell>
 
@@ -309,7 +350,11 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
               onClick={handleToggleStatus}
               className="w-9 h-9 flex items-center justify-center rounded-lg text-text-400 hover:bg-beige-200 hover:text-primary-700 transition-colors hover:cursor-pointer"
             >
-              {category.status === "visible" ? <Eye size={17} /> : <EyeOff size={17} />}
+              {category.status === "visible" ? (
+                <Eye size={17} />
+              ) : (
+                <EyeOff size={17} />
+              )}
             </button>
             <button
               onClick={() => setIsEditing(true)}

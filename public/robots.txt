@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://qrestodz.app/sitemap.xml
+Sitemap: https://www.qrestodz.app/sitemap.xml

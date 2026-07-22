@@ -10,7 +10,6 @@ import type {
 import type { Language } from "../../types/enums";
 import {
   formatPrice,
-  getCacheBustedImageUrl,
   getCategoryName,
   getDishText,
   isDishAvailable,
@@ -91,7 +90,7 @@ function CategoryTile({
     >
       {hasImage ? (
         <img
-          src={getCacheBustedImageUrl(category.iconUrl, category.iconUpdateDate)}
+          src={category.iconUrl}
           alt={label}
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -444,7 +443,7 @@ function FullScreenDish({
         <div className="relative shrink-0" style={{ height: 240 }}>
           {dish.imageUrl ? (
             <img
-               src={getCacheBustedImageUrl(dish.imageUrl, dish.imageUpdateDate)}
+               src={dish.imageUrl}
               alt={name}
               className="w-full h-full object-cover"
             />

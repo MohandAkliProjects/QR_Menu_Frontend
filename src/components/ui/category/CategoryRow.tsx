@@ -23,9 +23,7 @@ import ToastContainer from "../../../components/ui/ToastContainer";
 import type { UpdateCategoryRequest } from "../../../types/api";
 import type { CategoryUI as Category } from "../../../types/ui.ts";
 import { categoryRowText } from "../text/CategoryRow.text";
-
 import NamePopover from "../Namepopover.tsx";
-import { getCacheBustedImageUrl } from "../../../utils/menu-display.ts";
 
 export interface LanguageConfig {
   showEnglish: boolean;
@@ -227,11 +225,7 @@ function CategoryRow({ category, isLast, languages }: CategoryRowProps) {
         >
           {form.icon ? (
             <img
-              src={
-                form.icon?.startsWith("data:")
-                  ? form.icon
-                  : getCacheBustedImageUrl(form.icon, category.iconUpdateDate)
-              }
+              src={form.icon}
               alt=""
               className="w-full h-full object-cover"
             />

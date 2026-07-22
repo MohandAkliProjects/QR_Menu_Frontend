@@ -53,7 +53,6 @@ export interface DishResponse {
   categoryId: string;
   sizes: DishSize[];
   imageUrl?: string;
-  imageUpdateDate?: Date | null;
   likesCount: number;
   isAvailable: boolean;
   /** @deprecated */
@@ -70,7 +69,6 @@ export interface CategoryResponse {
   id: string;
   menuId: string;
   iconUrl?: string;
-  iconUpdateDate?: Date | null;
   isVisible: boolean;
   /** @deprecated */
   visible: boolean;
@@ -81,7 +79,6 @@ export interface CategoryResponse {
 export interface CategoryWithDishesResponse {
   id: string;
   iconUrl?: string;
-  iconUpdateDate?: Date | null;
   order: number;
   isVisible: boolean;
   /** @deprecated */

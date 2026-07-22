@@ -35,7 +35,6 @@ import {
 } from "../Multilingualtextpopover";
 import { SizesPopover, SizesEditor } from "../Sizespopover";
 import DishSupplementsPopover from "../Dishsupplementspopover";
-import { getCacheBustedImageUrl } from "../../../utils/menu-display";
 
 interface DishRowProps {
   dish: Dish;
@@ -293,22 +292,18 @@ function DishRow({ dish, devise, isLast, languages }: DishRowProps) {
           onClick={() => isEditing && imageInputRef.current?.click()}
           className={`w-10 h-10 flex items-center justify-center mx-auto rounded-lg border border-beige-400 bg-cream-300 overflow-hidden ${isEditing ? "cursor-pointer hover:border-primary-500" : ""}`}
         >
-            {form.image ? (
-    <img
-      src={
-        form.image.startsWith("data:")
-          ? form.image // freshly picked file, base64 preview — no cache-busting needed
-          : getCacheBustedImageUrl(form.image, dish.imageUpdateDate)
-      }
-      alt=""
-      className="w-full h-full object-cover"
-    />
-  ) : isEditing ? (
-    <Upload size={16} className="text-text-400" />
-  ) : (
-    <ImageIcon size={16} className="text-text-300" />
-  )}
-</div>
+          {form.image ? (
+            <img
+              src={form.image}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : isEditing ? (
+            <Upload size={16} className="text-text-400" />
+          ) : (
+            <ImageIcon size={16} className="text-text-300" />
+          )}
+        </div>
         {isEditing && (
           <input
             ref={imageInputRef}

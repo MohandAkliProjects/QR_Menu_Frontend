@@ -15,7 +15,6 @@ export interface CategoryUI {
   id: UniqueIdentifier;
   order: number;
   icon: string | null;
-  iconUpdateDate: Date | null;
   english?: string;
   french?: string;
   arabic?: string;
@@ -31,7 +30,6 @@ export interface DishUI {
   id: UniqueIdentifier;
   order: number;
   image: string | null;
-  imageUpdateDate: Date | null;
   english: string;
   french?: string;
   arabic?: string;

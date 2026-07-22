@@ -113,7 +113,6 @@ const { categoryOptions, dishes, supportedLanguages, devise } =
             id: dish.id,
             order: dish.order,
             image: dish.image,
-             imageUpdateDate: dish.imageUpdateDate ?? null, 
             english: dish.english,
             french: dish.french,
             arabic: dish.arabic,

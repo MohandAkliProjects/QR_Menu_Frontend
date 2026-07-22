@@ -20,7 +20,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/landingpage" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/menu/:slug" element={<PublicMenuPage />} />
         <Route path="/menu-unavailable" element={<RestaurantClosed />} />
@@ -44,7 +44,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/landingpage" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

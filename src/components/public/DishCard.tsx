@@ -2,7 +2,7 @@ import { Heart } from "lucide-react";
 
 import type { DishResponse } from "../../types/api";
 import type { Devise, Language } from "../../types/enums";
-import { formatPrice, getDishText, isDishAvailable } from "../../utils/menu-display";
+import { formatPrice, getCacheBustedImageUrl, getDishText, isDishAvailable } from "../../utils/menu-display";
 import type { MenuStrings } from "../../lib/constants/menu-strings";
 
 interface DishCardProps {
@@ -56,7 +56,7 @@ function DishCard({ dish, devise, language, liked, onLike, onClick, t }: DishCar
       <div className="relative" style={{ paddingTop: "72%" }}>
         {dish.imageUrl ? (
           <img
-            src={dish.imageUrl}
+            src={getCacheBustedImageUrl(dish.imageUrl, dish.imageUpdateDate)}
             alt={name}
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"

@@ -30,6 +30,7 @@ export interface DishUI {
   id: UniqueIdentifier;
   order: number;
   image: string | null;
+  imageUpdateDate: Date | null;
   english: string;
   french?: string;
   arabic?: string;

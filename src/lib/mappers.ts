@@ -79,6 +79,7 @@ export function dishResponseToUI(dish: DishResponse): DishUI {
     id: dish.id,
     order: dish.order,
     image: dish.imageUrl ?? null,
+    imageUpdateDate: dish.imageUpdateDate ?? null,
     english: en?.name ?? "",
     french: fr?.name ?? "",
     arabic: ar?.name ?? "",

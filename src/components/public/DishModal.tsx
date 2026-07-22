@@ -3,7 +3,7 @@ import { Heart, X } from "lucide-react";
 
 import type { DishResponse, SupplementResponse } from "../../types/api";
 import type { Devise, Language } from "../../types/enums";
-import { formatPrice, getDishText, isDishAvailable } from "../../utils/menu-display";
+import { formatPrice, getCacheBustedImageUrl, getDishText, isDishAvailable } from "../../utils/menu-display";
 import type { MenuStrings } from "../../lib/constants/menu-strings";
 import Button from "../ui/Button";
 
@@ -80,7 +80,7 @@ function DishModal({ dish, devise, language, liked, onLike, onClose, t }: DishMo
         {/* Hero image */}
         <div className="relative shrink-0" style={{ height: 240 }}>
           {dish.imageUrl ? (
-            <img src={dish.imageUrl} alt={name} className="w-full h-full object-cover" />
+            <img  src={getCacheBustedImageUrl(dish.imageUrl, dish.imageUpdateDate)} alt={name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-(--menu-secondary) text-5xl">
               🍽️

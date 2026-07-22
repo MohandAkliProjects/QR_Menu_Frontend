@@ -91,3 +91,11 @@ export function getSupplementName(
     ""
   );
 }
+
+export function getCacheBustedImageUrl(imageUrl?: string | null, imageUpdateDate?: string | Date | null): string | undefined {
+  if (!imageUrl) return undefined;
+  if (!imageUpdateDate) return imageUrl;
+  const timestamp = new Date(imageUpdateDate).getTime();
+  const separator = imageUrl.includes("?") ? "&" : "?";
+  return `${imageUrl}${separator}v=${timestamp}`;
+}

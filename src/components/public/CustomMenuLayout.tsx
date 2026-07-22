@@ -10,6 +10,7 @@ import type {
 import type { Language } from "../../types/enums";
 import {
   formatPrice,
+  getCacheBustedImageUrl,
   getCategoryName,
   getDishText,
   isDishAvailable,
@@ -443,7 +444,7 @@ function FullScreenDish({
         <div className="relative shrink-0" style={{ height: 240 }}>
           {dish.imageUrl ? (
             <img
-              src={dish.imageUrl}
+               src={getCacheBustedImageUrl(dish.imageUrl, dish.imageUpdateDate)}
               alt={name}
               className="w-full h-full object-cover"
             />

@@ -53,6 +53,7 @@ export interface DishResponse {
   categoryId: string;
   sizes: DishSize[];
   imageUrl?: string;
+  imageUpdateDate?: Date | null;
   likesCount: number;
   isAvailable: boolean;
   /** @deprecated */

@@ -193,7 +193,7 @@ function Hero() {
           </div>
 
           <h1 className="text-4xl lg:text-5xl font-semibold text-primary leading-tight mb-5" style={DISPLAY_FONT}>
-            Digitalisez votre carte en{" "}
+            Digitalisez votre menu en{" "}
             <span className="text-accent">quelques minutes</span>
           </h1>
 
@@ -257,7 +257,7 @@ function Features() {
     {
       icon: <BarChart3 className="w-6 h-6" />,
       title: "Analytiques intégrées",
-      desc: "Suivez les plats les plus consultés et optimisez votre carte selon les tendances.",
+      desc: "Suivez les plats les plus consultés et optimisez votre menu selon les tendances.",
     },
   ];
 
@@ -534,7 +534,7 @@ function ContactCTA() {
       <div className="max-w-3xl mx-auto px-6 text-center">
         <p className="text-accent text-sm font-bold tracking-widest uppercase mb-4">Passez à l'action</p>
         <h2 className="text-3xl lg:text-5xl font-semibold text-white mb-5 leading-tight" style={DISPLAY_FONT}>
-          Prêt à digitaliser votre carte ?
+          Prêt à digitaliser votre menu ?
         </h2>
         <p className="text-white/60 text-lg mb-10 max-w-xl mx-auto">
           Contactez-nous directement sur WhatsApp. Nous répondons en moins d'une heure et vous guidons pas à pas.

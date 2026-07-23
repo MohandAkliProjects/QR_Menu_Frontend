@@ -9,12 +9,12 @@
 
     <meta
       name="description"
-      content="QResto vous permet de créer un menu digital accessible par QR code : mise à jour en temps réel, sans réimpression, multilingue. Idéal pour restaurants, cafés et fast-foods."
+      content="Créez un menu digital QR code pour votre restaurant, café ou hôtel. Mise à jour en temps réel, multilingue, sans réimpression. Essayez QResto dès maintenant."
     />
 
     <meta
       name="keywords"
-      content="menu QR code, menu digital, menu restaurant, QR menu, carte digitale restaurant, QResto"
+      content="menu QR code, menu digital, menu restaurant, QR menu, menu numérique restaurant, QResto"
     />
 
     <meta name="robots" content="index, follow" />
@@ -140,7 +140,12 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Crawler fallback: instantly replaced once React mounts -->
+      <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">
+        QResto — Créez votre menu digital QR code en quelques minutes
+      </h1>
+    </div>
 
     <script
       type="module"

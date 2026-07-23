@@ -554,7 +554,7 @@ function ContactCTA() {
           {[
             { icon: <Phone className="w-4 h-4" />,     label: "0771356474",            href: "tel:+213771356474" },
             { icon: <Mail className="w-4 h-4" />,      label: "qrestoalger@gmail.com", href: "mailto:qrestoalger@gmail.com" },
-            { icon: <InstagramIcon className="w-4 h-4" />, label: "@qrestoalger",          href: "https://www.instagram.com/qrestoalger/" },
+            { icon: <InstagramIcon className="w-4 h-4" />, label: "@qrestodz.app",          href: "https://www.instagram.com/qrestodz.app/" },
           ].map((c) => (
             <a
               key={c.label}
@@ -606,7 +606,7 @@ function Footer() {
             <LogIn className="w-4 h-4" />
             Connexion
           </button>
-          <a href="https://www.instagram.com/qrestoalger/" target="_blank" rel="noreferrer" className="hover:text-white/70 transition-colors">
+          <a href="https://www.instagram.com/qrestodz.app/" target="_blank" rel="noreferrer" className="hover:text-white/70 transition-colors">
             <InstagramIcon className="w-5 h-5" />
           </a>
           <a href={WA_URL} target="_blank" rel="noreferrer" className="hover:text-white/70 transition-colors">

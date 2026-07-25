@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap');
+:root {
+  --menu-bg: #faf7f4;
+  --menu-card: #ffffff;
+  --menu-border: #ece4dd;
+  --menu-secondary: #f3efec;
+  --menu-muted: #8a7b72;
+  --menu-foreground: #2b2420;
+  --menu-primary: #63432b;
+  --menu-accent: #b68d37;
+  --menu-danger: #e53e3e;
+
+  --menu-font-display: "Playfair Display", Georgia, serif;
+}
+
+.menu-font-display {
+  font-family: var(--menu-font-display);
+}
+
+@keyframes menu-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.menu-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+[data-theme="ember"] {
+  --menu-bg: #14110f;
+  --menu-card: #1f1a17;
+  --menu-border: #332920;
+  --menu-secondary: #241d19;
+  --menu-muted: #a3927f;
+  --menu-foreground: #f2e9dd;
+  --menu-primary: #f2e9dd;
+  --menu-accent: #d1552b;
+  --menu-danger: #ff6b5c;
+
+  --menu-font-display: "Fraunces", Georgia, serif;
+  --menu-font-body: "Work Sans", system-ui, sans-serif;
+}
+

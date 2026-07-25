@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600;6..96,700&family=Inter:wght@400;500;600;700&display=swap');
+
+[data-theme="noir"] {
+  --menu-bg: #0b0b0d;
+  --menu-card: #17171a;
+  --menu-border: #2c2b2f;
+  --menu-secondary: #201f23;
+  --menu-muted: #8d8a90;
+  --menu-foreground: #f3f1ec;
+  --menu-primary: #f3f1ec;
+  --menu-accent: #b8963f;
+  --menu-danger: #a8392d;
+
+  --menu-font-display: "Bodoni Moda", Georgia, serif;
+  --menu-font-body: "Inter", system-ui, sans-serif;
+}

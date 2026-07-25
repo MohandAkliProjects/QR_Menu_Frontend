@@ -13,7 +13,6 @@ function MenuFilterBar() {
     enabled: !!restaurantId,
   });
 
-  // Only worth showing a filter when there's actually a choice to make
   if (menus.length <= 1) return null;
 
   const labelFor = (menu: (typeof menus)[number]) => {

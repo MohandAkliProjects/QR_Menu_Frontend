@@ -18,8 +18,9 @@ import MenuFilterBar from "../../components/ui/menu/MenuFilterBar.tsx";
 import { DEFAULT_THEME } from "../../components/public/themes";
 
 function ThemePage() {
-  const { restaurantId } = useAuth();
-  const { currentMenuId, currentMenu, refetchMenus } = useMenu();
+  const { restaurantId, menuId } = useAuth();
+  const { menus, refetchMenus } = useMenu();
+  const currentMenu = menus.find((m) => m.id === menuId) ?? null;
   const { language } = useLanguage();
   const t = themePageText[language];
   const queryClient = useQueryClient();
@@ -39,7 +40,7 @@ function ThemePage() {
   const applyThemeMutation = useMutation({
     mutationFn: (theme: string) =>
       themeService.updateMenuTheme(restaurantId!, {
-        menuId: currentMenuId!,
+        menuId: menuId!,
         theme,
       }),
     onSuccess: () => {
@@ -51,7 +52,7 @@ function ThemePage() {
       showToast("error", t.toastErrorTitle, getErrorMessage(err)),
   });
 
-  const noMenuError = !currentMenuId ? t.noMenuError : null;
+  const noMenuError = !menuId ? t.noMenuError : null;
   const effectiveTheme = currentMenu?.theme ?? DEFAULT_THEME;
 
   return (
@@ -79,7 +80,7 @@ function ThemePage() {
       ) : !themes || themes.length === 0 ? (
         <PageErrorState message={t.noThemesError} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {themes.map((theme) => {
             const isSelected = effectiveTheme === theme.key;
             const isApplying =

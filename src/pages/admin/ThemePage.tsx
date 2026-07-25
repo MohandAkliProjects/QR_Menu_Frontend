@@ -100,7 +100,7 @@ function ThemePage() {
       ) : !themes || themes.length === 0 ? (
         <PageErrorState message={t.noThemesError} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {themes.map((theme) => {
             const isSelected = effectiveTheme === theme.key;
             const isApplying =
@@ -112,7 +112,7 @@ function ThemePage() {
                 key={theme.id}
                 className="flex flex-col gap-4 p-0 overflow-hidden transition-shadow duration-200 hover:shadow-md"
               >
-                <div className="relative aspect-3/4 bg-beige-100">
+                <div className="relative aspect-4/3 sm:aspect-3/4 bg-beige-100">
                   <img
                     src={theme.imageUrl}
                     alt={theme.key}
@@ -129,8 +129,8 @@ function ThemePage() {
 
                 <div className="flex items-center justify-between gap-3 px-4 pb-4">
                   <div className="flex items-center gap-2 text-dark-800">
-                    <Palette size={15} className="text-primary-600" />
-                    <span className="text-sm font-medium capitalize">
+                    <Palette size={15} className="text-primary-600 shrink-0" />
+                    <span className="text-sm font-medium capitalize truncate">
                       {theme.key}
                     </span>
                   </div>

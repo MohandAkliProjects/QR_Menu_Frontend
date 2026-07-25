@@ -21,6 +21,7 @@ export const ROUTES = {
     banners: "/dashboard/banners",
     qr: "/dashboard/qr",
     menuPreview: "/dashboard/menu",
+    theme: "/dashboard/theme",
   },
 
 

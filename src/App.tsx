@@ -14,7 +14,7 @@ import PublicMenuPage from "./pages/public/PublicMenuPage";
 import RestaurantClosed from "./components/public/RestaurantClosed";
 import LandingPage from "./pages/landing/LandingPage";
 import SupplementsPage from "./pages/admin/SupplementsPage";
-
+import ThemePage from "./pages/admin/ThemePage";
 
 function App() {
   return (
@@ -41,6 +41,7 @@ function App() {
             <Route path="banners" element={<BannersPage />} />
             <Route path="qr" element={<QrDisplayPage />} />
             <Route path="menu" element={<MenuPage />} />
+            <Route path="theme" element={<ThemePage />} />
           </Route>
         </Route>
 

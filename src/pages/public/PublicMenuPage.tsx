@@ -14,26 +14,15 @@ import {
 import * as restaurantService from "../../services/restaurant.service";
 import useToast from "../../hooks/useToast";
 import ToastContainer from "../../components/ui/ToastContainer";
-import HeroCarousel from "../../components/public/HeroCarousel";
-import RestaurantHeader from "../../components/public/RestaurantHeader";
-import SearchBar from "../../components/public/SearchBar";
-import CategoryFilter from "../../components/public/CategoryFilter";
-import DishCard from "../../components/public/DishCard";
-import DishModal from "../../components/public/DishModal";
-import EmptyCategory from "../../components/public/EmptyCategory";
-import RestaurantInfoCard from "../../components/public/RestaurantInfoCard";
 import SocialFab from "../../components/public/SocialFab";
-import Footer from "../../components/public/Footer";
 import RestaurantClosed from "../../components/public/RestaurantClosed";
 import MenuPicker from "../../components/public/MenuPicker";
 import { shouldRecordView } from "../../lib/view-tracker";
-import CustomMenuLayout from "../../components/public/CustomMenuLayout";
+import { MENU_THEMES, DEFAULT_THEME } from "../../components/public/themes";
 import {
-  getCategoryName,
-  getDishText,
   isCategoryVisible,
   isDishVisible,
-  isRTL,
+  getDishText,
 } from "../../utils/menu-display";
 import "../../styles/public-menu.css";
 import {
@@ -127,13 +116,14 @@ export default function PublicMenuPage() {
     menuListLoading ||
     (!showMenuPicker && !menuKeyNotFound && menuLoading && !menu);
   const error = menuListError ?? menuError;
-useEffect(() => {
-  if (!menu?.restaurantId) return;
-  if (!shouldRecordView(menu.restaurantId)) return;
-  fetch(`${API_BASE}/api/restaurants/${menu.restaurantId}/addView`, {
-    method: "PATCH",
-  }).catch(() => {});
-}, [menu?.restaurantId]);
+
+  useEffect(() => {
+    if (!menu?.restaurantId) return;
+    if (!shouldRecordView(menu.restaurantId)) return;
+    fetch(`${API_BASE}/api/restaurants/${menu.restaurantId}/addView`, {
+      method: "PATCH",
+    }).catch(() => {});
+  }, [menu?.restaurantId]);
 
   const availableLanguages = useMemo(() => {
     if (menu) return Object.keys(menu.translations) as Language[];
@@ -352,21 +342,6 @@ useEffect(() => {
 
   if (!menu || !language) return null;
 
-  const CUSTOM_LAYOUT_SLUG = "le-916";
-
-  if (slug === CUSTOM_LAYOUT_SLUG) {
-    return (
-      <CustomMenuLayout
-        menu={menu}
-        language={language}
-        availableLanguages={availableLanguages}
-        onLanguageChange={setSelectedLanguage}
-        liked={liked}
-        onLike={toggleLike}
-        t={t}
-      />
-    );
-  }
   const menuTitle =
     menu.translations[language]?.title ??
     Object.values(menu.translations)[0]?.title ??
@@ -374,160 +349,39 @@ useEffect(() => {
 
   const banners = (menu.restaurant.banners ?? []).filter((b) => b.visible);
 
+  const themeKey = menu.theme ?? DEFAULT_THEME;
+
+  const ThemeLayout = MENU_THEMES[themeKey] ?? MENU_THEMES[DEFAULT_THEME];
+
   return (
-    <div
-      dir={isRTL(language) ? "rtl" : "ltr"}
-      className="min-h-screen"
-      style={{
-        background: "var(--menu-bg)",
-        fontFamily: '"Nunito", system-ui, sans-serif',
-      }}
-    >
+    <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      {selectedDish && (
-        <DishModal
-          dish={selectedDish}
-          devise={menu.devise}
-          language={language}
-          liked={liked.has(selectedDish.id)}
-          onLike={() => toggleLike(selectedDish.id)}
-          onClose={() => setSelectedDish(null)}
-          t={t}
-        />
-      )}
-      <div className="w-full sm:max-w-2xl lg:max-w-5xl mx-auto px-4 pb-24">
-        {banners.length > 0 && (
-          <div className="pt-4">
-            <HeroCarousel banners={banners} />
-          </div>
-        )}
-
-        <div className="pt-5 pb-4">
-          <RestaurantHeader
-            restaurant={menu.restaurant}
-            menuTitle={menuTitle}
-            availableLanguages={availableLanguages}
-            selectedLanguage={language}
-            onLanguageChange={setSelectedLanguage}
-          />
-        </div>
-
-        <div
-          ref={stickyRef}
-          className="sticky top-0 z-20 -mx-4 px-4 py-3 border-b border-(--menu-border)"
-          style={{ background: "var(--menu-bg)" }}
-        >
-          <div className="mb-3">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              placeholder={t.searchPlaceholder}
-            />
-          </div>
-          {!search && (
-            <CategoryFilter
-              categories={categoriesWithDishes}
-              activeCategoryId={activeCategoryId}
-              language={language}
-              onSelect={scrollToCategory}
-              allId={ALL_ID}
-              t={t}
-            />
-          )}
-        </div>
-
-        {searchResults !== null ? (
-          <div className="pt-4">
-            <p className="text-xs text-(--menu-muted) mb-3">
-              {t.searchResults(searchResults.length, search)}
-            </p>
-
-            {searchResults.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {searchResults.map((dish) => (
-                  <DishCard
-                    key={dish.id}
-                    dish={dish}
-                    devise={menu.devise}
-                    language={language}
-                    liked={liked.has(dish.id)}
-                    onLike={() => toggleLike(dish.id)}
-                    onClick={() => setSelectedDish(dish)}
-                    t={t}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <div className="text-5xl mb-4">🔍</div>
-                <p className="text-base font-semibold text-(--menu-primary) menu-font-display">
-                  {t.noResults}
-                </p>
-                <p className="text-xs text-(--menu-muted) mt-1">
-                  {t.noResultsHint}
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex flex-col gap-2 pt-6">
-              {categoriesWithDishes.map((category) => {
-                const catLabel = getCategoryName(category, language);
-
-                return (
-                  <section
-                    key={category.id}
-                    ref={(el) => {
-                      sectionRefs.current[category.id] = el;
-                    }}
-                    style={{ scrollMarginTop: STICKY_OFFSET_FALLBACK + 8 }}
-                    className="pb-4"
-                  >
-                    <h2 className="text-lg font-bold text-(--menu-primary) mb-3 menu-font-display">
-                      {catLabel}
-                    </h2>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {category.dishes.map((dish) => (
-                        <DishCard
-                          key={dish.id}
-                          dish={dish}
-                          devise={menu.devise}
-                          language={language}
-                          liked={liked.has(dish.id)}
-                          onLike={() => toggleLike(dish.id)}
-                          onClick={() => setSelectedDish(dish)}
-                          t={t}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                );
-              })}
-
-              {categoriesWithDishes.length === 0 && (
-                <EmptyCategory
-                  title={t.noItemsTitle}
-                  message={t.noDishes}
-                  hint={t.noItemsHint}
-                />
-              )}
-            </div>
-
-            <div className="my-6 border-t border-(--menu-border)" />
-
-            <RestaurantInfoCard restaurant={menu.restaurant} showMap={true} />
-
-            <Footer restaurant={menu.restaurant} language={language} />
-          </>
-        )}
-      </div>
+      <ThemeLayout
+        menu={menu}
+        menuTitle={menuTitle}
+        banners={banners}
+        categoriesWithDishes={categoriesWithDishes}
+        language={language}
+        availableLanguages={availableLanguages}
+        onLanguageChange={setSelectedLanguage}
+        liked={liked}
+        onLike={toggleLike}
+        selectedDish={selectedDish}
+        onSelectDish={setSelectedDish}
+        search={search}
+        onSearchChange={setSearch}
+        searchResults={searchResults}
+        activeCategoryId={activeCategoryId}
+        onCategorySelect={scrollToCategory}
+        allId={ALL_ID}
+        sectionRefs={sectionRefs}
+        stickyRef={stickyRef}
+        t={t}
+      />
 
       <SocialFab restaurant={menu.restaurant} />
-
       <ReviewFab restaurant={menu.restaurant} language={language} />
-    </div>
+    </>
   );
 }

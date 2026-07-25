@@ -6,24 +6,25 @@ import type {
   DishResponse,
   FullMenuResponse,
   SupplementResponse,
-} from "../../types/api";
-import type { Language } from "../../types/enums";
+} from "../../../types/api";
+import type { Language } from "../../../types/enums";
 import {
   formatPrice,
   getCategoryName,
   getDishText,
   isDishAvailable,
   isRTL,
-} from "../../utils/menu-display";
-import type { MenuStrings } from "../../lib/constants/menu-strings";
+} from "../../../utils/menu-display";
+import type { MenuStrings } from "../../../lib/constants/menu-strings";
 
-import HeroCarousel from "./HeroCarousel";
-import SocialLinksBar from "./SocialLinksBar";
-import ReviewFab from "./Reviewfab";
-import Footer from "./Footer";
-import DishCard from "./DishCard";
-import EmptyCategory from "./EmptyCategory";
-import Button from "../ui/Button";
+import HeroCarousel from "../HeroCarousel";
+import SocialLinksBar from "../SocialLinksBar";
+import ReviewFab from "../Reviewfab";
+import Footer from "../Footer";
+import DishCard from "../DishCard";
+import EmptyCategory from "../EmptyCategory";
+import Button from "../../ui/Button";
+import type { MenuThemeProps } from "./types";
 
 const LANGUAGE_LABELS: Record<Language, string> = {
   en: "EN",
@@ -60,15 +61,7 @@ function getSupplementName(
   );
 }
 
-interface CustomMenuLayoutProps {
-  menu: FullMenuResponse;
-  language: Language;
-  availableLanguages: Language[];
-  onLanguageChange: (language: Language) => void;
-  liked: Set<string>;
-  onLike: (dishId: string) => void;
-  t: MenuStrings;
-}
+type CustomMenuLayoutProps = MenuThemeProps;
 
 function CategoryTile({
   category,

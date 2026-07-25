@@ -96,6 +96,7 @@ export interface MenuResponse {
   totalCategories: number;
   totalDishes: number;
   publicKey: string;
+  theme?: string;
 }
 
 export interface RestaurantInfo {
@@ -121,6 +122,7 @@ export interface FullMenuResponse {
   devise: Devise;
   categories: CategoryWithDishesResponse[];
   restaurant: RestaurantInfo;
+  theme?: string;
 }
 
 export interface MenuWithCategoriesResponse {
@@ -307,4 +309,16 @@ export interface CreateSupplementRequest extends BaseSupplementRequest {
 
 export interface UpdateSupplementRequest extends BaseSupplementRequest {
   supplementId: string;
+}
+
+export interface ThemeResponse {
+  id: string;
+  key: string;
+  active: boolean;
+  imageUrl: string;
+}
+
+export interface UpdateMenuThemeRequest {
+  menuId: string;
+  theme: string;
 }

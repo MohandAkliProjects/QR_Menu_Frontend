@@ -17,14 +17,16 @@ import {
   PlusSquare,
   PanelLeftClose,
   PanelLeftOpen,
+  Palette,
 } from "lucide-react";
 
 const linkConfig = [
   { to: "/dashboard", key: "overview" as const, icon: LayoutDashboard, end: true },
   { to: "/dashboard/categories", key: "categories" as const, icon: LayoutGrid, end: false },
   { to: "/dashboard/dishes", key: "dishes" as const, icon: UtensilsCrossed, end: false },
-  { to: "/dashboard/supplements", key: "supplements" as const, icon: PlusSquare, end: false }, // new
+  { to: "/dashboard/supplements", key: "supplements" as const, icon: PlusSquare, end: false },
   { to: "/dashboard/menu", key: "menu" as const, icon: BookOpen, end: false },
+  { to: "/dashboard/theme", key: "theme" as const, icon: Palette, end: false },
   { to: "/dashboard/banners", key: "banners" as const, icon: Image, end: false },
   { to: "/dashboard/qr", key: "qrDisplay" as const, icon: QrCode, end: false },
   { to: "/dashboard/information", key: "information" as const, icon: Info, end: false },

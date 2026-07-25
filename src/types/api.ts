@@ -1,7 +1,6 @@
 import type {
   Devise,
   Language,
-  RestaurantState,
   Role,
   TypeOfView,
 } from "./enums";
@@ -156,7 +155,6 @@ export interface RestaurantResponse {
   logoUrl?: string;
   publicImageUrl?: string;
   banners: string[];
-  state: RestaurantState;
 }
 
 

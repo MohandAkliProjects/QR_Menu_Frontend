@@ -64,9 +64,6 @@ function getSupplementName(
 
 type EmberMenuLayoutProps = MenuThemeProps;
 
-// Signature element: a circular "branding-iron stamp" instead of a
-// square tile — evokes something literally marked/branded, fitting
-// a grill / bar / late-night menu rather than a bright app grid.
 function StampCategoryTile({
   category,
   language,
@@ -243,7 +240,6 @@ export default function EmberMenuLayout({
         fontFamily: 'var(--menu-font-body, "Work Sans", system-ui, sans-serif)',
       }}
     >
-      {/* FULL SCREEN DISH VIEW */}
       {selectedDish && (
         <FullScreenDish
           key={selectedDish.id}
@@ -264,7 +260,6 @@ export default function EmberMenuLayout({
           </div>
         )}
 
-        {/* Restaurant identity, with a warm ember glow behind it */}
         <div className="relative pt-6 pb-4 flex flex-col items-center text-center">
           <div
             className="absolute inset-x-0 top-0 h-44 pointer-events-none"
@@ -326,7 +321,7 @@ export default function EmberMenuLayout({
           )}
         </div>
 
-        {/* CATEGORY GRID (stamp tiles) or DISH LIST */}
+  
         {activeCategory === null ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-5 pt-4">
             {menu.categories.map((category) => (

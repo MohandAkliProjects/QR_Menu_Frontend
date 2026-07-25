@@ -51,7 +51,7 @@ function CornerBracket({
   );
 }
 
-// One corner cut at 45° — Noir's shape language, opposite of Ember's circle stamp.
+
 function cutCorner(px: number) {
   return `polygon(0 0, calc(100% - ${px}px) 0, 100% ${px}px, 100% 100%, 0 100%)`;
 }
@@ -204,8 +204,7 @@ export default function NoirMenuLayout({
           </div>
         )}
 
-        {/* Masthead — brass-bracketed rule, no icon tile. Logo (if any)
-            sits inline next to the name instead of as its own box. */}
+      
         <div
           className="relative mt-6 py-6 text-center"
           style={{

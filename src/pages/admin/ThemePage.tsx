@@ -37,19 +37,39 @@ function ThemePage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const menusKey = ["menus", restaurantId];
+
   const applyThemeMutation = useMutation({
     mutationFn: (theme: string) =>
       themeService.updateMenuTheme(restaurantId!, {
         menuId: menuId!,
         theme,
       }),
+
+    onMutate: async (theme: string) => {
+      await queryClient.cancelQueries({ queryKey: menusKey });
+      const previous = queryClient.getQueryData<typeof menus>(menusKey);
+
+      queryClient.setQueryData<typeof menus>(menusKey, (old) =>
+        old?.map((m) => (m.id === menuId ? { ...m, theme } : m)),
+      );
+
+      return { previous };
+    },
+
+    onError: (err, _theme, context) => {
+      queryClient.setQueryData(menusKey, context?.previous);
+      showToast("error", t.toastErrorTitle, getErrorMessage(err));
+    },
+
     onSuccess: () => {
-      refetchMenus();
-      queryClient.invalidateQueries({ queryKey: ["menus", restaurantId] });
       showToast("success", t.toastSavedTitle, t.toastSavedMessage);
     },
-    onError: (err) =>
-      showToast("error", t.toastErrorTitle, getErrorMessage(err)),
+
+    onSettled: () => {
+      refetchMenus();
+      queryClient.invalidateQueries({ queryKey: menusKey });
+    },
   });
 
   const noMenuError = !menuId ? t.noMenuError : null;
